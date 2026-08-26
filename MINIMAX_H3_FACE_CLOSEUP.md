@@ -9,6 +9,7 @@
 - 9章: Shot 1 → 2 → 3 を1本に通す全体プロンプト
 - 10章: ComfyUI でローカル実行する場合の差分
 - 11章: Turbo LoRA(4ステップ蒸留)を使う場合の全文プロンプト
+- 12章: 4本のクリップを1回のキューで繋ぐワークフロー
 
 ---
 
@@ -870,6 +871,105 @@ non_diegetic_music: none.
 
 ---
 
+## 12. 4本のクリップを1回のキューで繋ぐ
+
+11章の4クリップ構成は、**別々にキューする必要はない**。
+1つのワークフローに4本ぶんを並べて、キュー1回で13秒を出せる。
+
+> 用語注意: 「4ステップ」はサンプラーのステップ数(Turbo LoRA が4回のデノイズで
+> 済む)のことで、クリップの本数とは無関係。
+
+### ワークフローの組み方
+
+チェーンするのは Clip 2 → 3 → 4 だけ。Clip 1 と Clip 2 の間はハードカットなので、
+Clip 2 は Clip 1 の続きではなく独立した T2V。
+
+```
+[H3 モデル + Turbo LoRA ローダー]   ← 1回だけ。4本で共有する
+   │
+   ├─ Clip 1 (T2V)  TextEncode → Sampler → VAEDecode → 96フレーム
+   │                └→ ImageFromBatch(index=0, length=72)  ← 3秒に切る
+   │
+   └─ Clip 2 (T2V)  TextEncode → Sampler → VAEDecode → 96フレーム
+        ├→ ImageFromBatch(index=0, length=72)   ← 3秒に切る
+        └→ ImageFromBatch(index=71, length=1)   ← 次の開始フレーム
+              │
+              ↓ first frame
+           Clip 3 (FL2V) → 96フレーム
+              ├→ ImageFromBatch(index=0, length=72)
+              └→ ImageFromBatch(index=71, length=1)
+                    │
+                    ↓ first frame
+                 Clip 4 (FL2V) → 120フレーム
+                    └→ ImageFromBatch(index=0, length=96)
+
+   4本の出力 → ImageBatch ×3 で連結 → VHS_VideoCombine → 13秒の動画
+```
+
+### 最重要:渡すのは「切り出した後」の最終フレーム
+
+次のクリップに渡すのは、生成した最後のフレームではなく
+**トリムした後の最後のフレーム**。
+
+Clip 2 は96フレーム生成して72フレームに切るので、Clip 3 に渡すのは
+index 95 ではなく **index 71**。ここを間違えると繋いだ瞬間に0.9秒ぶん飛ぶ。
+
+フレーム数は 24fps 換算(4秒 = 96、5秒 = 120)。
+
+| クリップ | 生成 | トリム | 次に渡す index |
+|---|---|---|---|
+| Clip 1 | 96 (4秒) | 0–71 (3秒) | — (ハードカット) |
+| Clip 2 | 96 (4秒) | 0–71 (3秒) | 71 |
+| Clip 3 | 96 (4秒) | 0–71 (3秒) | 71 |
+| Clip 4 | 120 (5秒) | 0–95 (4秒) | — |
+
+合計 72 + 72 + 72 + 96 = 312 フレーム = 13秒 @ 24fps。
+
+### Subgraph でまとめる
+
+4本ぶんのノードを手で並べる必要はない。ComfyUI の Subgraph 機能で
+「TextEncode → Sampler → VAEDecode → トリム」を1つのサブグラフにまとめ、
+入力を prompt / first_image / length / seed にしておけば、それを4個並べるだけ。
+サブグラフを直せば4箇所すべてに反映される。
+
+### 音声は繋がない
+
+H3 は映像と音声を同時に出すが、Turbo の音声は既知の弱点なうえ、4本ぶんの
+音声連結はノードが増えて面倒。VideoCombine に audio を挿さず、音は後から乗せる。
+
+### 自動化のトレードオフ
+
+**最初から自動化するのは勧めない。**
+
+| | 4回手動 | 1回で自動 |
+|---|---|---|
+| モデルのロード | 毎回 or 常駐 | 1回で済む(速い) |
+| 途中でNGが出たとき | そこで止めて直せる | 最後まで走ってから気づく |
+| Clip 4 だけやり直す | できる | 全部回し直し |
+
+Turbo は4ステップなので1本あたりが速く、**まず手動で各クリップのプロンプトと
+シードを詰めて、確定してから自動化する**ほうが結果的に速い。
+自動化は「決まったものを量産する段階」の道具。
+
+### チェーン特有の劣化
+
+Clip 3 は Clip 2 の**生成画像**から、Clip 4 は Clip 3 の生成画像から始まるので、
+世代を重ねるほど色ズレやディテールの崩れが乗る。4本なら実用範囲だが、
+Clip 4 の背面で服や髪が変わったらそこだけ手動で引き直す。
+各クリップのシードは別々の固定値にしておくと、やり直しが効く。
+
+### 進め方の順番
+
+1. **まず1本通しを試す**
+   15秒尺で9章Aのプロンプトを入れて1回回す。4ステップなので時間はかからない。
+   意図どおりなら分割は不要。
+2. **崩れたら4分割**
+   (ハードカットにならない / 回転が完了しない / 途中で画角が変わる、が判断基準)
+   11章のプロンプトで手動で詰める。
+3. **確定したらサブグラフで1キュー化**
+
+---
+
 ## 参考
 
 - [MiniMax H3 プロンプトガイドの翻訳(dskjal)](https://dskjal.com/deeplearning/minimax-h3-prompt-guide)
@@ -893,3 +993,6 @@ non_diegetic_music: none.
 - [MiniMax H3 Turbo LoRA v1.0: 8-Step and 768p FL2V (ComfyUI Wiki)](https://comfyui-wiki.com/en/news/2026-08-11-minimax-h3-turbo-lightx2v-v1)
 - [MiniMax H3 Turbo LoRA in ComfyUI: 4-Step Setup and Fixes (InstaSD)](https://www.instasd.com/post/minimax-h3-turbo-lora-comfyui-4-steps)
 - [MiniMax H3 — Turbo LoRA comparisons](https://jo-nike.github.io/h3-turbo-eval/)
+- [Subgraph - Simplify your workflow (ComfyUI 公式ドキュメント)](https://docs.comfy.org/interface/features/subgraph)
+- [動画の最終フレームを保存する(ImageFromBatch, SaveImage) (Zenn)](https://zenn.dev/isi00141/books/e90d1a1ab5e64d/viewer/715dbb)
+- [2種類の動画作成＋動画の結合を1つのワークフローで行う (Zenn)](https://zenn.dev/isi00141/books/e90d1a1ab5e64d/viewer/97c1b3)
