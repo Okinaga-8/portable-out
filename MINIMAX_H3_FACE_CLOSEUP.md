@@ -8,6 +8,7 @@
 - 8章: Shot 3(回転して側面2秒静止 → さらに回転して3秒静止)
 - 9章: Shot 1 → 2 → 3 を1本に通す全体プロンプト
 - 10章: ComfyUI でローカル実行する場合の差分
+- 11章: Turbo LoRA(4ステップ蒸留)を使う場合の全文プロンプト
 
 ---
 
@@ -724,6 +725,151 @@ Turbo 系の4ステップ蒸留 LoRA(MiniMax H3 Turbo Ref2V など)を使うと 
 
 ---
 
+## 11. Turbo LoRA(4ステップ蒸留)を使う場合の全文
+
+10章の内容から、さらに2点が変わる。
+
+1. **CFG=1 なのでネガティブプロンプト欄は無視される**。否定は本文に戻す。
+2. **4ステップ蒸留はプロンプト追従が弱い**。13秒の3ショット通し(秒数指定つき)は
+   Turbo では崩れる。**1ショット1クリップに分けて、各プロンプトを短く前寄せに
+   書く**のが正解。
+
+動きが弱く出る傾向は Shot 1・2 の静止には有利だが Shot 3 の回転には不利なので、
+回転は90°ずつ2本に割る。
+
+**LoRA は FL2V 版を使う。** Ref2V Turbo は v0.1 プレビューで、参照追従は
+4ステップ蒸留の中でも特に弱い。下の構成は first/last frame で繋ぐので FL2V で足りる。
+
+### クリップ構成
+
+| | 内容 | 生成尺 | 開始フレーム | 編集後 |
+|---|---|---|---|---|
+| Clip 1 | Shot 1 顔アップ | 4秒 | — | 3秒 |
+| Clip 2 | Shot 2 全身正面・静止 | 4秒 | — | 3秒 |
+| Clip 3 | Shot 3a 正面→右側面 | 4秒 | Clip 2 の最終フレーム | 3秒 |
+| Clip 4 | Shot 3b 右側面→背面 | 5秒 | Clip 3 の最終フレーム | 4秒 |
+
+Clip 1 と Clip 2 の間だけハードカット、Clip 2〜4 は繋いで1つの連続ショットになる。
+
+### Clip 1(Shot 1・顔アップ / T2V・4秒)
+
+```
+Extreme close-up portrait, straight-on and frontal, eye level, locked-off
+static camera that never moves — no push in, no zoom, no pan, no drift.
+A woman in her late twenties, fair skin, thick straight eyebrows, dark brown
+eyes, black hair pulled back off the forehead. Her face fills the entire frame
+edge to edge: forehead and chin cropped by the frame edges, almost no
+headroom, shoulders and clothing out of frame. She looks directly into the
+lens and blinks slowly once. 85mm lens, shallow depth of field, plain light
+grey studio backdrop far out of focus, soft even frontal light.
+overall_soundscape: quiet studio room tone only, no speech, no footsteps.
+non_diegetic_music: none.
+```
+
+### Clip 2(Shot 2・全身正面 / T2V・4秒)
+
+```
+Full body shot, straight-on and frontal, camera at chest height with the lens
+level, locked-off static camera that never moves — no push in, no zoom, no
+pan, no drift. The same woman stands centred, her whole body visible from the
+top of her head to the soles of her shoes, filling almost the full height of
+the frame with a small margin above her head and below her feet, nothing
+cropped. Plain white button-down shirt, straight-leg indigo jeans, white
+sneakers. Arms relaxed at her sides, feet shoulder-width apart, chin level,
+looking into the lens. She stands completely still — no steps, no gestures, no
+turning — only faint breathing. 50mm lens, deep focus, plain light grey studio
+backdrop, soft even frontal light, full-length soft shadow on the floor.
+overall_soundscape: quiet studio room tone only, no speech, no footsteps.
+non_diegetic_music: none.
+```
+
+### Clip 3(Shot 3a・正面→右側面 / FL2V・4秒)
+
+first frame に Clip 2 の最終フレームを入れる。
+
+```
+Full body shot, locked-off static camera that never moves — the camera does
+not orbit, does not arc, does not circle her, no pan, no zoom, no dolly. Only
+the woman turns. She starts facing the camera, then over one second rotates 90
+degrees to her own left, pivoting on the spot with her feet, her right
+shoulder swinging toward the camera and her head turning with her body — she
+does not look back at the camera — until she is in full profile facing screen
+right. She then stands completely still for the rest of the shot, no steps, no
+gestures, only faint breathing. She stays centred at the same distance from
+the camera; her size in the frame and the head-to-toe framing do not change.
+Same light grey studio backdrop, same soft frontal light, same clothing.
+overall_soundscape: quiet studio room tone, a faint rustle of fabric on the
+turn, no footsteps.
+non_diegetic_music: none.
+```
+
+### Clip 4(Shot 3b・右側面→背面 / FL2V・5秒)
+
+first frame に Clip 3 の最終フレームを入れる。
+
+```
+Full body shot, locked-off static camera that never moves — the camera does
+not orbit, does not arc, does not circle her, no pan, no zoom, no dolly. Only
+the woman turns. She starts in full profile facing screen right, then over one
+second rotates a further 90 degrees in the same direction, pivoting on the
+spot with her feet, until her back is fully to the camera. She then stands
+completely still for the rest of the shot, no steps, no gestures, only faint
+breathing. She stays centred at the same distance from the camera; her size in
+the frame and the head-to-toe framing do not change. Same light grey studio
+backdrop, same soft frontal light, same clothing.
+overall_soundscape: quiet studio room tone, a faint rustle of fabric on the
+turn, no footsteps.
+non_diegetic_music: none.
+```
+
+### ComfyUI 側の設定
+
+| 項目 | 値 |
+|---|---|
+| CFG | 1.0(Turbo LoRA は guidance-free) |
+| steps | 4以上 |
+| scheduler | simple |
+| sampler | er_sde または sa_solver |
+| LoRA strength | 1.0(lightx2v の 768p v1.0 系は 0.75)。ノイズが出たら 0.6〜0.8 に下げる |
+| shift | video 12 / audio 3(larryvrh v4 系)、6 / 3(lightx2v 768p v1.0) |
+| 解像度 | 768 × 1344(9:16) |
+| ネガティブプロンプト | **空欄でよい。書いても無視される** |
+
+使っている Turbo LoRA の配布元 README に推奨値があればそちらを優先する。
+上記はバリアントによって違う。
+
+### 9章から書き方を変えた点
+
+- **否定を本文の前半に置いた**
+  CFG=1 でネガティブが使えないぶん、
+  `locked-off static camera that never moves — no push in, no zoom, no pan`
+  を各プロンプトの1〜2文目に入れている。4ステップ蒸留は長いプロンプトの後半を
+  取りこぼすので、末尾に置くと効かない。
+
+- **秒数指定を減らした**
+  9章では `6.0–7.0s` のような絶対時刻を使ったが、Turbo ではこの粒度は
+  再現されない。`over one second` と `for the rest of the shot` の2段階だけにした。
+
+- **Clip 3・4 では人物の描写を削った**
+  first frame が同一性を持っているので、テキストで顔や服を細かく書く必要がない。
+  短いほど4ステップでの追従が良くなる。`same clothing` の一言だけ残して
+  服の変化を抑えている。
+
+### うまくいかないときの順番
+
+1. **回転が完了しない / 途中で止まる**
+   4ステップの動きの弱さが原因。LoRA strength を 0.75 → 0.6 に下げると動きが
+   出やすくなる。それでも足りなければ Clip 3・4 の尺を1秒ずつ延ばす。
+2. **カメラが回り込む**
+   否定句をさらに前に出し、`Only the woman turns.` を文頭に移動する。
+3. **ノイズが乗る**
+   LoRA strength を 0.6〜0.8 に下げる。sampler を er_sde と sa_solver で
+   入れ替えて比較する。
+4. **音がおかしい**
+   Turbo の音声は既知の弱点。音が不要なら生成後に捨てるのが早い。
+
+---
+
 ## 参考
 
 - [MiniMax H3 プロンプトガイドの翻訳(dskjal)](https://dskjal.com/deeplearning/minimax-h3-prompt-guide)
@@ -741,3 +887,9 @@ Turbo 系の4ステップ蒸留 LoRA(MiniMax H3 Turbo Ref2V など)を使うと 
 - [MiniMax H3 Turbo Ref2V v0.1 (ComfyUI Wiki)](https://comfyui-wiki.com/ja/news/2026-08-13-minimax-h3-turbo-ref2v)
 - [ComfyUI-MiniMax-H3-Promptor](https://github.com/1038lab/Comfyui-Minimax-H3-Promptor)
 - [ComfyUI-MiniMax-H3-Guide](https://github.com/ethanfel/ComfyUI-MiniMax-H3-Guide)
+- [larryvrh/MiniMax-H3-Turbo-Lora (Hugging Face)](https://huggingface.co/larryvrh/MiniMax-H3-Turbo-Lora)
+- [ComfyUI-MiniMax-H3-Turbo](https://github.com/Larryvrh/ComfyUI-MiniMax-H3-Turbo)
+- [ModelTC/Minimax-H3-Turbo (4ステップ蒸留)](https://github.com/ModelTC/Minimax-H3-Turbo)
+- [MiniMax H3 Turbo LoRA v1.0: 8-Step and 768p FL2V (ComfyUI Wiki)](https://comfyui-wiki.com/en/news/2026-08-11-minimax-h3-turbo-lightx2v-v1)
+- [MiniMax H3 Turbo LoRA in ComfyUI: 4-Step Setup and Fixes (InstaSD)](https://www.instasd.com/post/minimax-h3-turbo-lora-comfyui-4-steps)
+- [MiniMax H3 — Turbo LoRA comparisons](https://jo-nike.github.io/h3-turbo-eval/)
