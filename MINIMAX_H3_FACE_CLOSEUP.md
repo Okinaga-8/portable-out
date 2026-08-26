@@ -7,6 +7,7 @@
 - 7章: Shot 2(全身の立ち姿・3秒静止)
 - 8章: Shot 3(回転して側面2秒静止 → さらに回転して3秒静止)
 - 9章: Shot 1 → 2 → 3 を1本に通す全体プロンプト
+- 10章: ComfyUI でローカル実行する場合の差分
 
 ---
 
@@ -607,6 +608,122 @@ exactly the same throughout.
 
 ---
 
+## 10. ComfyUI でローカル実行する場合
+
+### 結論:構造化フォーマットはそのまま使える
+
+H3 はオープンウェイトで公開されており、ComfyUI は 0.30.0 からネイティブ対応。
+**ローカルで動くのは Web/API と同じモデル**なので、9章までの構造化フォーマットは
+そのまま効く。
+
+むしろローカルのほうが重要になる。Web UI や API は入力を
+**プロンプトエンハンサーで自動的に書き換えてから**モデルに渡しているが、
+ローカルは生のまま渡る。短い雑なプロンプトが Web では通るのにローカルでは
+通らないのはこのため。9〜10章のプロンプトは既に「エンハンサー通過後の形」に
+近いので、そのまま渡すのが正解。
+
+### ローカル固有の差分(4点)
+
+**1. 解像度は短辺 768px がネイティブ(2K ではない)**
+
+9:16 なら `768 × 1344` をノードの width/height に直接入力する。
+Resolution Selector の Megapixels なら 0.98。1.0 にすると 1376×768 になり
+モデルの画素数上限を超える。
+Shot 1 の `skin texture, fine hairs and pores clearly visible` のような描写は
+2K 前提なので、ローカルでは期待値を下げる。
+
+**2. ネガティブプロンプトが使える(最大の違い)**
+
+Web UI にはないが、ComfyUI のワークフローには positive / negative の
+TextEncode がある。9章のプロンプトに大量に入れた否定文
+(`does not orbit`, `no zoom`, `no dissolve` …)を**ネガティブ側に移せる**。
+本文が短くなり、ポジティブ側の指示が薄まらない。
+
+**3. チェックポイントが2つあり、用途で選ぶ**
+
+| | 用途 | 使いどころ |
+|---|---|---|
+| `fl2va` | first/last frame(テキスト＋画像駆動) | 9章 C 案の「前クリップの最終フレームを次の開始フレームに」がそのまま実装できる |
+| `ref2va` | 参照駆動(人物同一性・スタイル・声を固定) | 3ショット通しで同じ人物を保つ場合 |
+
+**4. 尺は 4〜15秒(モデル仕様は Web と同じ)**
+
+ただし VRAM 次第で13秒通しはかなり重い。分割生成(9章 C 案)は
+ローカルではさらに有利。
+
+### ComfyUI 用に書き換えた版
+
+**positive**(9章 A の構造化プロンプトから否定文を抜いたもの / Shot 3 部分の例)
+
+```
+[Shot 3] 6.0–13.0s. Same locked-off camera setup, framing and lighting as
+Shot 2, continuous action.
+  6.0– 7.0s : she rotates 90 degrees to her own left, pivoting on the spot,
+              her right shoulder swinging toward the camera, her feet and her
+              head turning with her body.
+  7.0– 9.0s : full profile facing screen right, holding completely still for
+              two seconds, only faint breathing.
+  9.0–10.0s : she rotates a further 90 degrees in the same direction, still
+              pivoting on the spot.
+ 10.0–13.0s : her back fully to the camera, holding completely still for three
+              seconds.
+She stays centred at a constant distance from the camera; the head-to-toe
+framing is identical in the front, profile and back positions.
+```
+
+**negative**
+
+```
+camera orbit, arc shot, camera circling the subject, dolly, push in, pull out,
+zoom, pan, tilt, handheld shake, crossfade, dissolve, fade, morph transition,
+slow motion, walking, stepping forward, stepping out of frame, changing
+distance from camera, cropped head, cropped feet, extra limbs, changing
+outfit, changing hairstyle, looking back at the camera, text, watermark,
+subtitles
+```
+
+**ネガティブが効くのは CFG > 1 のときだけ**。
+Turbo 系の4ステップ蒸留 LoRA(MiniMax H3 Turbo Ref2V など)を使うと CFG=1 で
+回るため、ネガティブプロンプトは無効になる。その場合は否定文を positive 側に
+戻す(9章の版をそのまま使う)。
+
+### もっと適切なもの
+
+- **Context IR(プロンプトエンハンサー)ノードは今回は通さない**
+  ComfyUI コア同梱の `MinimaxHailuo03ContextIRNode` は、ラフな文を構造化
+  プロンプトに書き換えるノード。9章のプロンプトは既に構造化済みなので、
+  通すと秒数指定やハードカット指定が丸められて意図が薄まる可能性がある。
+  使うなら「自作の構造化プロンプトが公式の型に沿っているか検証する」用途。
+  フォーマットの取りこぼしが不安なら、6ブロックを規定の順序で厳密に
+  組み立てるサードパーティノード(ComfyUI-MiniMax-H3-Promptor、
+  ComfyUI-MiniMax-H3-Guide など)のほうが目的に合う。
+
+- **Shot 3 の回転はテキストより制御系のほうが適切(ローカルの強み)**
+  H3 のテキスト指定だと「だいたい90°」「だいたい2秒」にしかならない。
+  ControlNet / OpenPose や Wan2.x の VACE でポーズ列を与えれば、角度と
+  タイミングを厳密に決められる。H3 自体に ControlNet はないので、その部分だけ
+  VACE 系で作るか、H3 の `ref2va` に回転の参照動画を渡す形になる。
+  **正確なターンアラウンドが必要ならこの方法を推奨**。
+
+- **4面キャラシートを参照画像に渡すのは避ける**
+  正面・側面・背面を1枚に並べた画像を参照に渡す方法は H3 では効かなかった
+  という検証がある(構造化プロンプトのほうが効いた)。ターンアラウンドを
+  キャラシートで解決しようとしない。
+
+### ライセンスの注意
+
+オープンウェイトのライセンスは **US / EU / UK / 韓国でのローカル配備を除外**
+している。日本は対象外なので使えるが、商用利用時は UI に「MiniMax H3」の
+表示が必要で、年商 $20M 超は別途書面での許諾が必要。
+
+### ノード名の確認
+
+`MinimaxHailuo03TextToVideoNode` 系の名前のノードは**クラウド API ノード
+(従量課金)の可能性がある**。ローカルで回すなら fl2va / ref2va のモデル
+ローダー経由のワークフローを使う。手元の ComfyUI でノード名を確認すること。
+
+---
+
 ## 参考
 
 - [MiniMax H3 プロンプトガイドの翻訳(dskjal)](https://dskjal.com/deeplearning/minimax-h3-prompt-guide)
@@ -616,3 +733,11 @@ exactly the same throughout.
 - [Hailuo Video Prompt Guide: Camera Moves & Examples](https://minimax-ai.chat/guide/hailuo-video-prompts/)
 - [MiniMax H3 Prompt Guide (RunDiffusion)](https://www.rundiffusion.com/minimax-h3-prompt-guide)
 - [4面キャラシートは効かなかった — MiniMax H3で効いていたのは構造化プロンプト(Zenn)](https://zenn.dev/toki_mwc/articles/minimax-h3-structured-prompt-ab)
+- [MiniMax H3 Day-0 Support in ComfyUI (Comfy Blog)](https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui)
+- [MiniMax H3 ComfyUIチュートリアル (ComfyUI 公式ドキュメント)](https://docs.comfy.org/ja/tutorials/video/minimax/minimax-h3)
+- [MiniMax H3で人物を固定する ―FL2VA(キーフレーム)とREF2VA(参照)を実測比較 (Zenn)](https://zenn.dev/ccie26302/articles/zenn-minimax-h3-character-consistency)
+- [MiniMax H3 Open Source Weights: 42.5 GB, and 4 Excluded Countries (Atlas Cloud)](https://www.atlascloud.ai/blog/tips/minimax-h3-open-source-weights)
+- [MiniMax H3 ComfyUI Guide: Setup, VRAM, Workflows & Fixes (kingy.ai)](https://kingy.ai/ai/ai-guides/minimax-h3-comfyui-local-guide/)
+- [MiniMax H3 Turbo Ref2V v0.1 (ComfyUI Wiki)](https://comfyui-wiki.com/ja/news/2026-08-13-minimax-h3-turbo-ref2v)
+- [ComfyUI-MiniMax-H3-Promptor](https://github.com/1038lab/Comfyui-Minimax-H3-Promptor)
+- [ComfyUI-MiniMax-H3-Guide](https://github.com/ethanfel/ComfyUI-MiniMax-H3-Guide)
