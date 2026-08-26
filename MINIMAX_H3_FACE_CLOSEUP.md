@@ -1,8 +1,12 @@
-# MiniMax H3(Hailuo 03)で顔を画面いっぱいに映すプロンプトの書き方
+# MiniMax H3(Hailuo 03)プロンプト設計メモ
 
-顔の正面を、ほぼ画面いっぱいの画角で映したいときのプロンプト設計メモ。
-1〜6章が Shot 1(顔の超クローズアップ)、7章が Shot 2(全身の立ち姿・3秒静止)、
-8章が Shot 3(回転して側面2秒静止 → さらに回転して3秒静止)。
+顔アップから全身ターンアラウンドまで、3ショット構成の映像を出すための
+プロンプト設計メモ。
+
+- 1〜6章: Shot 1(顔の正面を画面いっぱいに映す超クローズアップ)
+- 7章: Shot 2(全身の立ち姿・3秒静止)
+- 8章: Shot 3(回転して側面2秒静止 → さらに回転して3秒静止)
+- 9章: Shot 1 → 2 → 3 を1本に通す全体プロンプト
 
 ---
 
@@ -417,6 +421,189 @@ same colour grade as the previous shots.
 - **足の処理**
   `she pivots on the spot, her feet turning with her body` を書かないと、
   歩いて向きを変えたり、フレームから出ていったりする。
+
+---
+
+## 9. 全体プロンプト(Shot 1 → 2 → 3 通し)
+
+3ショットを1本の映像として通す場合の全体プロンプト。
+
+### タイムライン(13秒)
+
+```
+ 0.0– 3.0s  Shot 1  顔の超クローズアップ、静止
+ 3.0s       ─── ハードカット ───
+ 3.0– 6.0s  Shot 2  全身の立ち姿、正面、3秒静止
+ 6.0– 7.0s  Shot 3  90°回転
+ 7.0– 9.0s          右側面で2秒静止
+ 9.0–10.0s          さらに90°回転
+10.0–13.0s          背面で3秒静止
+```
+
+H3 の上限は15秒なので収まる。
+
+**カットは Shot 1 → Shot 2 の1回だけ**。Shot 2 と Shot 3 は同じ据え置きカメラの
+連続した1テイクなので切らない。ここを混同すると Shot 3 の頭に余計なカットが入る。
+
+**アスペクト比は 9:16(縦)を推奨**。Shot 2・3 で頭からつま先を画角いっぱいに
+入れる必要があるため、全体を縦に統一するのがいちばん破綻しない。
+
+### A. 構造化フォーマット版(推奨)
+
+```
+[subject_definitions]
+<Subject 1>: A woman in her late twenties.
+  Face: fair skin with visible pores, thick straight eyebrows, dark brown
+  eyes, black hair pulled back off the forehead, no visible make-up.
+  Body and wardrobe (visible from Shot 2 onward only): slim build, plain
+  white button-down shirt tucked into straight-leg indigo jeans, white
+  leather sneakers.
+
+[summary]
+A locked-off extreme close-up of <Subject 1>'s face hard-cuts to a locked-off
+full body shot of the same woman, who holds a still front-facing pose, then
+turns 90° to profile and holds, then turns a further 90° to her back and holds.
+
+[retention_analysis]
+<Subject 1>'s face, hairline, eyebrow shape and hair colour are identical in
+every shot. Her wardrobe, proportions and height do not change once visible.
+The backdrop, lighting direction and colour grade are the same throughout:
+plain seamless light grey studio backdrop, soft even frontal key light.
+
+[detailed_description]
+[Shot 1] 0.0–3.0s. Extreme close-up, straight-on frontal portrait, eye level.
+<Subject 1>'s face fills the entire frame edge to edge — the top of her
+forehead and her chin are cropped by the frame edges, almost no headroom,
+shoulders and clothing out of frame, background not visible. Symmetrical
+composition, eyes on the horizontal centreline, looking directly into the
+lens. Skin texture, fine hairs and pores clearly visible. She blinks slowly
+once, then the corners of her mouth lift slightly. Static shot, locked-off
+camera — no push in, no zoom, no pan, the frame never moves. 85mm lens,
+shallow depth of field, light grey backdrop far out of focus behind her.
+
+HARD CUT at 3.0s — an instant cut, not a transition. The camera does not pull
+out, does not zoom out, does not travel from the face to the body. No
+dissolve, no fade, no morph. One frame is the close-up, the next frame is the
+full body shot.
+
+[Shot 2] 3.0–6.0s. Full body shot, straight-on frontal, camera at chest
+height, lens level (not tilted down). <Subject 1> stands centred, her entire
+body visible from the top of her head to the soles of her shoes, filling
+almost the full height of the frame — a small margin of empty space above her
+head and below her feet, nothing cropped at any edge. Arms relaxed at her
+sides, feet shoulder-width apart, weight even on both legs, chin level,
+looking directly into the lens. She holds this pose completely still for
+three seconds — no steps, no gestures, no turning, no weight shift; only the
+faint rise and fall of her breathing. Static shot, locked-off camera, the
+frame never moves. 50mm lens, deep focus, full-length soft shadow on the floor.
+
+[Shot 3] 6.0–13.0s. NO CUT — the camera setup, framing and lighting are
+exactly the same as Shot 2 and the action continues without interruption.
+  6.0– 7.0s : she rotates 90 degrees to her own left, pivoting on the spot,
+              her right shoulder swinging toward the camera, her feet turning
+              with her body, her head turning with her body — she does not
+              look back at the camera.
+  7.0– 9.0s : full profile facing screen right. She holds completely still for
+              two seconds — no steps, no gestures, no weight shift, only faint
+              breathing.
+  9.0–10.0s : she rotates a further 90 degrees in the same direction, still
+              pivoting on the spot.
+ 10.0–13.0s : her back is fully to the camera. She holds completely still for
+              three seconds. If the clip runs longer than 13 seconds she
+              simply continues to hold this final pose until the end.
+Only the woman turns — the camera does not orbit, does not arc, does not
+circle her, does not pan, does not zoom, does not move at any point. She
+pivots in place: no steps forward or backward, she stays centred, her size in
+the frame does not change, the head-to-toe framing is identical in the front,
+profile and back positions.
+
+[overall_soundscape]
+A quiet studio room tone throughout. A faint rustle of fabric on each turn.
+No footsteps.
+
+[non_diegetic_music]
+None.
+```
+
+### B. 自由文一括版
+
+フィールド記法が使えない UI 向けの、同じ内容の一枚テキスト。
+
+```
+Locked-off studio sequence of the same woman in her late twenties — fair skin,
+thick straight eyebrows, dark brown eyes, black hair pulled back off the
+forehead, plain white button-down shirt, straight-leg indigo jeans, white
+sneakers. Plain seamless light grey backdrop, soft even frontal light, same
+lighting and colour grade throughout.
+
+First three seconds: extreme close-up, straight-on frontal, eye level. Her
+face fills the entire frame edge to edge, forehead and chin cropped by the
+frame edges, shoulders out of frame, looking directly into the lens. She
+blinks slowly once, then the corners of her mouth lift slightly. Static,
+locked-off, 85mm, shallow depth of field.
+
+Then a hard cut — an instant cut, not a transition. The camera does not pull
+out, zoom out or travel from the face to the body. No dissolve, no fade.
+
+After the cut: full body shot, straight-on frontal, camera at chest height,
+lens level. She stands centred, her whole body visible from head to toe,
+filling almost the full height of the frame with a small margin above her head
+and below her feet. Arms relaxed at her sides, feet shoulder-width apart,
+chin level, looking into the lens. She holds this pose completely still for
+three seconds — only faint breathing. Static, locked-off, 50mm, deep focus.
+
+Then, with no cut and the same framing, she rotates 90 degrees to her own left
+over about one second, pivoting on the spot, her right shoulder swinging
+toward the camera, her head turning with her body — she does not look back at
+the camera — until she is in full profile facing screen right. She holds that
+profile completely still for two seconds. She then rotates a further 90
+degrees in the same direction over about one second until her back is fully
+to the camera, and holds completely still for three seconds.
+
+Only the woman turns — the camera does not orbit, does not arc, does not
+circle her, does not pan, does not zoom, does not move at any point. She
+pivots in place: no steps forward or backward, she stays centred, her size in
+the frame does not change, the head-to-toe framing is identical in the front,
+profile and back positions. Her face, hairstyle, proportions and clothing stay
+exactly the same throughout.
+```
+
+### C. 分割して繋ぐ場合(品質重視ならこちら)
+
+13秒を一発で通すと後半ほどキャラが崩れる。仕上がりを優先するなら3本に分けて
+編集で繋ぐ。
+
+| | 内容 | 尺 | 開始フレーム |
+|---|---|---|---|
+| 1本目 | Shot 1 顔アップ | 5秒 | — |
+| 2本目 | Shot 2 全身正面・静止 | 5秒 | — |
+| 3本目 | Shot 3 回転 | 10秒 | 2本目の最終フレーム |
+
+ポイントは3本目。**2本目の最終フレームを3本目の開始フレームに指定する**
+(first/last frame 機能)と、服・体型・立ち位置が引き継がれ、繋いだときに
+段差が出ない。1本目と2本目の間はもともとハードカットなので、編集で単純に
+繋ぐだけで成立する。
+
+### 通しで組むときの追加の注意
+
+- **服装の記述場所が Shot 1 と Shot 2/3 で衝突する**
+  `subject_definitions` に服を書くと Shot 1 が引く。上の版では
+  `(visible from Shot 2 onward only)` と但し書きを付け、Shot 1 の本文に
+  `shoulders and clothing out of frame` を入れて両側から押さえている。
+  ここを省くと顔アップが甘くなる。
+
+- **Shot 1 の背景を Shot 2/3 と揃える**
+  顔アップ単体なら暗い背景が映えるが、通しで使うとカット後に背景が変わって
+  別ロケに見える。上の版では全編を light grey studio backdrop に統一している。
+
+- **識別用の参照画像があるなら使う**
+  顔の同一性はテキストだけでは13秒もたない。参照画像を渡せる場合は
+  `<Picture 1> controls <Subject 1>'s face and identity` のように役割を
+  明示して `subject_definitions` に紐付ける。
+
+- **まず5秒で画角だけ確認する**
+  いきなり13秒を回さず、Shot 1 単体・Shot 2 単体を5秒で出して画角が
+  意図どおりか見てから通しに入ると、原因の切り分けが早い。
 
 ---
 
