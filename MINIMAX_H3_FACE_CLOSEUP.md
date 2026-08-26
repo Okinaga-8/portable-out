@@ -10,6 +10,7 @@
 - 10章: ComfyUI でローカル実行する場合の差分
 - 11章: Turbo LoRA(4ステップ蒸留)を使う場合の全文プロンプト
 - 12章: 4本のクリップを1回のキューで繋ぐワークフロー
+- 13章: 一本通し用プロンプト(Turbo LoRA・ローカル)
 
 ---
 
@@ -960,13 +961,115 @@ Clip 4 の背面で服や髪が変わったらそこだけ手動で引き直す�
 
 ### 進め方の順番
 
-1. **まず1本通しを試す**
-   15秒尺で9章Aのプロンプトを入れて1回回す。4ステップなので時間はかからない。
-   意図どおりなら分割は不要。
+1. **まず1本通しを試す**(→ 13章のプロンプト)
+   13秒尺で1回回す。4ステップなので時間はかからない。意図どおりなら分割は不要。
 2. **崩れたら4分割**
    (ハードカットにならない / 回転が完了しない / 途中で画角が変わる、が判断基準)
    11章のプロンプトで手動で詰める。
 3. **確定したらサブグラフで1キュー化**
+
+---
+
+## 13. 一本通し用プロンプト(Turbo LoRA・ローカル)
+
+12章の「まず1本通しを試す」で使うプロンプト。
+9章Aとの違いは、**カメラ固定と否定をすべて冒頭の GLOBAL RULES に集約した**点。
+4ステップ蒸留はプロンプトの後半を落とすので、絶対に守らせたい制約を先頭に置く。
+
+### 全文
+
+```
+GLOBAL RULES (apply to the whole clip):
+The camera is locked off on a tripod and never moves at any point — no push
+in, no pull out, no zoom, no pan, no tilt, no dolly, no orbit, no arc, no
+circling the subject, no handheld shake, no drift, no reframing. Only the
+woman moves. There is exactly one cut in this video, a hard cut at 3 seconds;
+everywhere else the image is continuous, with no dissolve, no fade, no morph.
+The same woman appears throughout: late twenties, fair skin, thick straight
+eyebrows, dark brown eyes, black hair pulled back off the forehead, plain
+white button-down shirt, straight-leg indigo jeans, white sneakers. Her face,
+hairstyle, proportions and clothing never change. Plain seamless light grey
+studio backdrop, soft even frontal light, same colour grade throughout.
+
+0–3s: Extreme close-up, straight-on frontal, eye level. Her face fills the
+entire frame edge to edge — forehead and chin cropped by the frame edges,
+almost no headroom, shoulders and clothing out of frame. She looks directly
+into the lens and blinks slowly once. 85mm lens, shallow depth of field.
+
+HARD CUT at 3s.
+
+3–6s: Full body shot, straight-on frontal, camera at chest height, lens level.
+She stands centred, her whole body visible from the top of her head to the
+soles of her shoes, filling almost the full height of the frame with a small
+margin above her head and below her feet, nothing cropped. Arms relaxed at her
+sides, feet shoulder-width apart, chin level, looking into the lens. She
+stands completely still — no steps, no gestures, only faint breathing. 50mm
+lens, deep focus, full-length soft shadow on the floor.
+
+6–7s: Same framing, no cut. She rotates 90 degrees to her own left, pivoting
+on the spot with her feet, her right shoulder swinging toward the camera, her
+head turning with her body — she does not look back at the camera.
+
+7–9s: Full profile facing screen right. She holds completely still for two
+seconds.
+
+9–10s: She rotates a further 90 degrees in the same direction, still pivoting
+on the spot.
+
+10–13s: Her back is fully to the camera. She holds completely still for three
+seconds until the end.
+
+Throughout both turns she stays centred at the same distance from the camera;
+she never steps forward or backward, never leaves the frame, and her size in
+the frame and the head-to-toe framing are identical in the front, profile and
+back positions.
+
+overall_soundscape: quiet studio room tone, a faint rustle of fabric on each
+turn, no speech, no footsteps.
+non_diegetic_music: none.
+```
+
+### 生成設定
+
+| 項目 | 値 |
+|---|---|
+| ノード | T2V(first frame なし) |
+| 尺 | 13秒(312フレーム @24fps) |
+| 解像度 | 768 × 1344(9:16) |
+| CFG | 1.0 |
+| steps | 4 |
+| scheduler | simple |
+| sampler | er_sde または sa_solver |
+| LoRA strength | 配布元の推奨値(1.0 または 0.75) |
+| ネガティブ | **空欄**(CFG=1 で無効) |
+
+尺を秒で指定できないノードなら 312 フレーム。13秒が選べず15秒になる場合は、
+最後の `until the end` がそのまま効くので放置でよい。
+
+### 判定のしかた
+
+**シードを変えて2〜3回振ってから判断する。** 4ステップ蒸留は振れ幅が大きく、
+1回だけ見て「効かない」と判断すると誤る。
+
+見るポイントは4つ。
+
+1. **3秒でカットになっているか** — ズームアウトで繋がっていたら失敗
+2. **Shot 2 で頭からつま先が入っているか** — 足が切れていないか
+3. **回転がカメラの回り込みになっていないか** — 背景が動いていたら失敗
+4. **90°×2 が完了して静止しているか** — 回りきらない / 回り続ける / 往復する
+
+### ダメだったときの切り分け
+
+| 症状 | 次の一手 |
+|---|---|
+| 3秒でカットにならない(ズームアウトする) | 一本通しは諦めて11章の分割へ。4ステップでは詰めにくい |
+| 回転がカメラの回り込みになる | `Only the woman moves.` を GLOBAL RULES の**1文目**に移動して再試行 |
+| 回転が完了しない・止まる | LoRA strength を 0.6〜0.75 に下げる。それでもダメなら分割へ |
+| Shot 2 で足が切れる | 9:16 になっているか確認。横長のままだと必ず切れる |
+| 後半だけ崩れる(服や髪が変わる) | 一本通しの限界。11章の分割へ |
+
+1〜2番だけの失敗なら一本通しで粘る価値がある。3番以降が出るようなら
+分割に切り替えたほうが早い。
 
 ---
 
