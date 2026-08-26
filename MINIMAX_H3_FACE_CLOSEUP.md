@@ -1,7 +1,8 @@
 # MiniMax H3(Hailuo 03)で顔を画面いっぱいに映すプロンプトの書き方
 
 顔の正面を、ほぼ画面いっぱいの画角で映したいときのプロンプト設計メモ。
-1〜6章が Shot 1(顔の超クローズアップ)、7章が Shot 2(全身の立ち姿・3秒静止)。
+1〜6章が Shot 1(顔の超クローズアップ)、7章が Shot 2(全身の立ち姿・3秒静止)、
+8章が Shot 3(回転して側面2秒静止 → さらに回転して3秒静止)。
 
 ---
 
@@ -294,6 +295,128 @@ None.
   ハードカット指定でも通らない場合は、Shot 1 と Shot 2 を別々に生成して
   編集で繋ぐほうが確実。1本でやるなら5秒では足りないので、15秒尺で
   「最初の4秒が Shot 1、カット後の3秒が Shot 2」のように秒数を明記する。
+
+---
+
+## 8. Shot 3:回転して側面 → 2秒静止 → さらに回転 → 3秒静止
+
+Shot 2 の立ち姿から、体を回して側面をカメラに向けて2秒静止、
+さらに同じ方向へ回して3秒静止するターンアラウンド。
+ここでは 正面 → 右側面 → 背面 の90°刻みで組む。
+
+### いちばん失敗するポイント
+
+「回転」を**カメラが被写体の周りを回り込む動き(アークショット)**と解釈される。
+公式カメラ語彙に `Arc Shot` があるため、`Static Shot` の指定だけでは足りず、
+アークを名指しで否定する必要がある。
+
+```
+Only the woman turns — the camera does not orbit, does not arc, does not
+circle her, does not pan, does not zoom, does not move at all.
+```
+
+### Shot 3 のプロンプト
+
+```
+Full body shot, camera at chest height, lens level. The same woman stands
+centred in frame, her whole body visible from head to toe with a small margin
+above her head and below her feet. She begins facing the camera.
+
+Over about one second she rotates 90 degrees to her own left, pivoting on the
+spot, her right shoulder swinging toward the camera, until her body is in full
+profile facing screen right. Her head turns with her body — she does not look
+back at the camera. She holds this profile pose completely still for two
+seconds — no steps, no gestures, no weight shift; only faint breathing.
+
+Then she rotates another 90 degrees in the same direction over about one
+second, until her back is fully to the camera. She holds this pose completely
+still for three seconds.
+
+Only the woman turns — the camera does not orbit, does not arc, does not
+circle her, does not pan, does not zoom, does not move at all. Static shot,
+locked-off camera, the frame never moves. She pivots in place: no steps
+forward or backward, she stays centred, her size in the frame does not change,
+the head-to-toe framing stays identical throughout.
+Her face, hairstyle, body proportions and clothing stay exactly the same in
+every position — plain white button-down shirt, straight-leg indigo jeans,
+white sneakers.
+50mm lens, deep focus, plain seamless light grey studio backdrop, soft even
+frontal light, full-length soft shadow on the floor.
+```
+
+### 構造化フォーマット版
+
+```
+[detailed_description]
+[Shot 3] Full body shot, camera at chest height, lens level, static and
+locked-off. <Subject 1> stands centred, head to toe in frame.
+  0.0–1.0s : she rotates 90° to her own left, pivoting on the spot, right
+             shoulder swinging toward the camera, head turning with the body.
+  1.0–3.0s : full profile facing screen right. She holds completely still —
+             no steps, no gestures, no weight shift, only faint breathing.
+  3.0–4.0s : she rotates a further 90° in the same direction, still pivoting
+             on the spot.
+  4.0–7.0s : her back is fully to the camera. She holds completely still for
+             three seconds.
+The camera does not orbit, arc, pan, zoom or move at any point — the subject
+turns, the camera does not. Framing, distance and subject size are identical
+in all three positions.
+
+[retention_analysis]
+Keep <Subject 1>'s hairstyle, body proportions and wardrobe identical in the
+front, profile and back positions. Same backdrop, same lighting direction,
+same colour grade as the previous shots.
+```
+
+### 回転方向の指定
+
+方向を書かないと途中で反転したり往復したりする。3つの言い方を重ねると安定する。
+
+| 回す方向 | カメラに向く側 | 体の向き |
+|---|---|---|
+| `rotates 90° to her own left` | `right shoulder toward the camera` | `in profile facing screen right` |
+| `rotates 90° to her own right` | `left shoulder toward the camera` | `in profile facing screen left` |
+
+### 2回目の停止位置を変える場合
+
+2回目の角度だけ差し替える。
+
+| 到達点 | 書き方 |
+|---|---|
+| 背面 | `rotates another 90 degrees ... until her back is fully to the camera` |
+| 後ろ斜め45° | `rotates another 45 degrees ... until she is seen from three-quarter rear, her far shoulder hidden` |
+| 反対側の側面 | `rotates another 180 degrees ... until she is in full profile facing screen left` |
+| 正面に戻る | `rotates another 270 degrees in the same direction, back to facing the camera` |
+
+### Shot 3 固有の注意点
+
+- **顔がカメラを追いかける**
+  何も書かないと、体だけ回して顔はカメラ目線のまま、という不自然な絵になる。
+  `her head turns with her body — she does not look back at the camera` を必ず入れる。
+  逆に顔だけカメラに残す演出なら
+  `her head stays turned toward the camera while her body turns away` と明示する。
+
+- **回転の所要時間も書く**
+  停止時間だけ指定すると、回転が一瞬で終わったり間延びしたりする。
+  回転ごとに `over about one second` を添える。
+
+- **尺は最低7秒**
+  1秒 + 2秒 + 1秒 + 3秒 = 7秒。余裕をみて10秒尺で生成し、
+  余った分は最後の静止を伸ばすか編集で切る。
+
+- **Shot 2 との連続性は first frame で担保する**
+  Shot 3 は Shot 2 の終わりと同じ立ち姿から始まるので、Shot 2 の最終フレームを
+  Shot 3 の開始フレームとして渡す(first/last frame 機能)と、服や体型のブレが
+  激減する。テキストだけで繋ぐより確実。
+
+- **回転はキャラ崩れが最も出るショット**
+  背面に回った瞬間に髪型や服が変わることがある。`retention_analysis` に
+  髪型・体型・服を明記し、本文にも `stay exactly the same in every position` と
+  重ねて書く。それでも崩れるなら90°ごとに分けて生成する。
+
+- **足の処理**
+  `she pivots on the spot, her feet turning with her body` を書かないと、
+  歩いて向きを変えたり、フレームから出ていったりする。
 
 ---
 
