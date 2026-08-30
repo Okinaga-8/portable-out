@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>H3 クリップの継ぎ目</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=IBM+Plex+Sans+JP:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#EDF0EF; --surface:#FFFFFF; --surface-2:#F5F7F6;
+  --ink:#111A1B; --ink-2:#415254; --muted:#718586; --border:#D3DCDA; --rule:#E2E9E7;
+  --accent:#0F8175; --accent-soft:#DDEEEB; --accent-ink:#0A5D54;
+  --audio:#9C610B; --audio-soft:#F6EBD6;
+  --risk:#AF2F45; --risk-soft:#F8E2E6;
+  --shadow:0 1px 2px rgba(17,26,27,.05), 0 8px 24px -14px rgba(17,26,27,.28);
+  --font-display:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  --font-body:"IBM Plex Sans JP","Hiragino Sans","Yu Gothic",sans-serif;
+  --font-mono:"JetBrains Mono",SFMono-Regular,Consolas,"Hiragino Sans",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1314; --surface:#141D1E; --surface-2:#1A2526;
+    --ink:#E4EDEB; --ink-2:#B3C4C2; --muted:#849796; --border:#26383A; --rule:#1F2E30;
+    --accent:#3FBFAE; --accent-soft:#12312E; --accent-ink:#6FD6C7;
+    --audio:#D9A64A; --audio-soft:#2C2314;
+    --risk:#E8778A; --risk-soft:#33191F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1314; --surface:#141D1E; --surface-2:#1A2526;
+  --ink:#E4EDEB; --ink-2:#B3C4C2; --muted:#849796; --border:#26383A; --rule:#1F2E30;
+  --accent:#3FBFAE; --accent-soft:#12312E; --accent-ink:#6FD6C7;
+  --audio:#D9A64A; --audio-soft:#2C2314;
+  --risk:#E8778A; --risk-soft:#33191F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -14px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--font-body); font-size:16px; line-height:1.85;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px; margin:0 auto; padding:0 22px 96px}
+
+/* ---- header ---- */
+header.masthead{padding:52px 0 28px; border-bottom:1px solid var(--border)}
+.eyebrow{
+  font-family:var(--font-mono); font-size:11px; font-weight:600;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--accent-ink);
+}
+h1{
+  font-family:var(--font-display); font-weight:700; font-size:clamp(30px,4.6vw,46px);
+  line-height:1.28; margin:14px 0 0; text-wrap:balance; letter-spacing:.01em;
+}
+.lede{margin:16px 0 0; max-width:64ch; color:var(--ink-2); font-size:17px}
+.meta{
+  margin-top:24px; display:flex; flex-wrap:wrap; gap:8px 10px;
+  font-family:var(--font-mono); font-size:11.5px; color:var(--muted);
+}
+.meta span{border:1px solid var(--border); border-radius:2px; padding:3px 9px; background:var(--surface)}
+
+/* ---- layout ---- */
+.cols{display:block}
+@media (min-width:1060px){
+  .cols{display:grid; grid-template-columns:214px minmax(0,1fr); gap:56px; align-items:start}
+  nav.toc{position:sticky; top:24px; padding-top:44px}
+}
+nav.toc{font-size:13.5px; line-height:1.6}
+nav.toc .toc-head{
+  font-family:var(--font-mono); font-size:10.5px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--muted); margin-bottom:12px;
+}
+nav.toc ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px}
+nav.toc a{
+  display:block; padding:5px 10px; color:var(--ink-2); text-decoration:none;
+  border-left:2px solid var(--rule); border-radius:0 3px 3px 0;
+}
+nav.toc a:hover{color:var(--accent-ink); border-left-color:var(--accent); background:var(--surface)}
+nav.toc a:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+@media (max-width:1059px){
+  nav.toc{margin:28px 0 0; padding:18px 20px; background:var(--surface); border:1px solid var(--border); border-radius:4px}
+  nav.toc ol{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+}
+
+/* ---- sections ---- */
+section{padding-top:52px; scroll-margin-top:20px}
+.sec-label{
+  font-family:var(--font-mono); font-size:11px; font-weight:600; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted); display:block; margin-bottom:8px;
+}
+h2{
+  font-family:var(--font-display); font-weight:700; font-size:clamp(21px,2.6vw,27px);
+  line-height:1.4; margin:0 0 6px; text-wrap:balance;
+  padding-bottom:12px; border-bottom:2px solid var(--accent);
+  display:inline-block;
+}
+h3{
+  font-family:var(--font-display); font-weight:700; font-size:17.5px;
+  margin:32px 0 8px; line-height:1.5; color:var(--ink);
+}
+h4{font-family:var(--font-display); font-weight:500; font-size:15px; margin:22px 0 6px; color:var(--ink-2)}
+p{margin:12px 0; max-width:70ch}
+ul,ol{max-width:70ch; padding-left:1.3em}
+li{margin:6px 0}
+strong{font-weight:600; color:var(--ink)}
+a{color:var(--accent-ink); text-underline-offset:2px}
+a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+code{
+  font-family:var(--font-mono); font-size:.86em; background:var(--surface-2);
+  border:1px solid var(--rule); border-radius:3px; padding:1px 5px;
+}
+
+/* ---- callouts ---- */
+.box{
+  background:var(--surface); border:1px solid var(--border); border-radius:4px;
+  padding:20px 22px; margin:22px 0; box-shadow:var(--shadow);
+}
+.box > :first-child{margin-top:0}
+.box > :last-child{margin-bottom:0}
+.box.tint{background:var(--accent-soft); border-color:transparent; box-shadow:none}
+.box.warn{background:var(--risk-soft); border-color:transparent; box-shadow:none}
+.box.audio{background:var(--audio-soft); border-color:transparent; box-shadow:none}
+.box-title{
+  font-family:var(--font-mono); font-size:11px; font-weight:600; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--muted); margin-bottom:8px;
+}
+
+/* ---- tables ---- */
+.scroll{overflow-x:auto; margin:20px 0; border:1px solid var(--border); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; min-width:600px; font-size:14px; line-height:1.65}
+th,td{padding:11px 14px; text-align:left; vertical-align:top; border-bottom:1px solid var(--rule)}
+thead th{
+  background:var(--surface-2); font-family:var(--font-display); font-weight:700; font-size:12.5px;
+  letter-spacing:.03em; color:var(--ink-2); border-bottom:1px solid var(--border);
+  position:sticky; top:0;
+}
+tbody tr:last-child td{border-bottom:none}
+td.num{font-variant-numeric:tabular-nums; font-family:var(--font-mono); font-size:13px; white-space:nowrap}
+
+/* ---- confidence chips ---- */
+.c{
+  display:inline-block; font-family:var(--font-mono); font-size:10.5px; font-weight:600;
+  letter-spacing:.06em; padding:1px 6px; border-radius:2px; white-space:nowrap; vertical-align:.08em;
+}
+.c1{background:var(--accent-soft); color:var(--accent-ink)}
+.c2{background:var(--surface-2); color:var(--ink-2); border:1px solid var(--border)}
+.c3{background:var(--risk-soft); color:var(--risk)}
+
+/* ---- code ---- */
+pre{
+  font-family:var(--font-mono); font-size:12.8px; line-height:1.7;
+  background:var(--surface-2); border:1px solid var(--border); border-left:3px solid var(--accent);
+  border-radius:3px; padding:15px 17px; margin:16px 0; overflow-x:auto;
+}
+pre code{background:none; border:none; padding:0; font-size:inherit}
+.cap{font-size:12.5px; color:var(--muted); margin:-8px 0 18px; max-width:70ch}
+
+/* ---- checklist ---- */
+ul.check{list-style:none; padding-left:0}
+ul.check li{position:relative; padding-left:28px}
+ul.check li::before{
+  content:""; position:absolute; left:0; top:.52em; width:13px; height:13px;
+  border:1.5px solid var(--muted); border-radius:2px;
+}
+
+/* ---- steps ---- */
+.step{
+  display:grid; grid-template-columns:auto minmax(0,1fr); gap:0 18px;
+  border-left:1px solid var(--border); padding:0 0 4px 0; margin:0;
+}
+.step-n{
+  grid-column:1; font-family:var(--font-mono); font-weight:600; font-size:12px;
+  color:var(--surface); background:var(--accent); width:26px; height:26px;
+  display:grid; place-items:center; border-radius:50%; margin-left:-13.5px;
+}
+.step-b{grid-column:2; padding-bottom:26px}
+.step-b > :first-child{margin-top:0}
+
+figure{margin:26px 0}
+figure svg{display:block; width:100%; height:auto}
+figcaption{font-size:12.5px; color:var(--muted); margin-top:10px; max-width:70ch}
+
+footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); font-size:13px; color:var(--muted)}
+/* ---- diagram ---- */
+.dia{font-family:var(--font-body)}
+.dia .lane{fill:var(--muted); font-family:var(--font-mono); font-size:11px; letter-spacing:1.5px}
+.dia .clip{fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.5}
+.dia .clip-t{fill:var(--accent-ink); font-size:14px}
+.dia .arrow{stroke:var(--accent); stroke-width:1.5; fill:none}
+.dia .head{fill:var(--accent)}
+.dia .t-strong{fill:var(--ink); font-size:13px; font-weight:600}
+.dia .t-mute{fill:var(--muted); font-size:12px}
+.dia .edit-bar{fill:var(--surface-2); stroke:var(--border); stroke-width:1}
+.dia .seam{stroke:var(--risk); stroke-width:2; stroke-dasharray:4 3}
+.dia .t-edit{fill:var(--ink-2); font-size:13px}
+.dia .out-bar{fill:var(--surface); stroke:var(--ink-2); stroke-width:1.5}
+.dia .t-out{fill:var(--ink); font-size:13px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <span class="eyebrow">リサーチ土台 · 2026-08-30 作成</span>
+  <h1>H3 クリップの継ぎ目</h1>
+  <p class="lede">MiniMax H3 でローカル生成した短尺クリップを、内容の連続性を保ったまま一本にまとめるための調査ノート。結論を出す文書ではなく、<strong>今夕 PC の前で、二人で最適解を詰めるための共通の土台</strong>です。</p>
+  <div class="meta">
+    <span>ComfyUI + 量子化(GGUF/INT8)</span>
+    <span>VRAM 16GB 以下</span>
+    <span>ネイティブ音声あり</span>
+    <span>調査時点 2026-08-30</span>
+  </div>
+</header>
+
+<div class="cols">
+
+<nav class="toc">
+  <div class="toc-head">目次</div>
+  <ol>
+    <li><a href="#s0">この文書の読み方</a></li>
+    <li><a href="#s1">まず用語を整える</a></li>
+    <li><a href="#s2">H3 側の制約</a></li>
+    <li><a href="#s3">継ぎ目で壊れるもの</a></li>
+    <li><a href="#s4">4 つの選択肢</a></li>
+    <li><a href="#s5">継続系カスタムノード</a></li>
+    <li><a href="#s6">音声 — 最難関</a></li>
+    <li><a href="#s7">ffmpeg 実務レシピ</a></li>
+    <li><a href="#s8">16GB での現実解</a></li>
+    <li><a href="#s9">今夕の最小実験</a></li>
+    <li><a href="#s10">未解決の論点</a></li>
+    <li><a href="#s11">YouTube メモ</a></li>
+    <li><a href="#s12">出典と確度</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<section id="s0">
+  <span class="sec-label">前提</span>
+  <h2>この文書の読み方</h2>
+
+  <p>「短い動画を、連続性を保ったまま結合する」という課題に対して、<strong>いま分かっていること・分かっていないこと・確かめる順番</strong>を並べてあります。読み終えたときに手が動く状態になっているのが目標です。</p>
+
+  <div class="box tint">
+    <div class="box-title">確度の表記</div>
+    <p style="margin:0"><span class="c c1">一次</span> GitHub の README や公式 PR 番号など、出所が特定できるもの。<br>
+    <span class="c c2">一致</span> 複数の二次情報が同じことを言っているもの。<br>
+    <span class="c c3">要検証</span> 単一の解説記事のみ、または私の推論。<strong>実機で確かめてから信じてください。</strong></p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">この調査の限界</div>
+    <p style="margin:0">今回のセッションのネットワークから <code>docs.comfy.org</code> と <code>huggingface.co</code> に到達できませんでした。つまり <strong>ComfyUI 公式チュートリアルと Hugging Face のモデルカード(一次情報の本命)を直接読めていません</strong>。PC 側でその 2 つを開くところから始めるのが最短です。§12 にリンクを置いてあります。</p>
+  </div>
+
+  <h3>あなたの環境(この文書の前提)</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">項目</th><th>内容</th><th style="width:34%">効いてくる場面</th></tr></thead>
+      <tbody>
+        <tr><td>モデル</td><td>MiniMax H3(オープンウェイト版)をローカル実行</td><td>クリップ長・解像度の上限が API 版と違う → §2</td></tr>
+        <tr><td>実行環境</td><td>ComfyUI + 量子化(GGUF / INT8)</td><td>量子化はコミュニティ製。色ドリフトの一因になり得る → §3, §8</td></tr>
+        <tr><td>VRAM</td><td>16GB 以下</td><td>潜在(latent)を保持し続ける手法が使えるかの分かれ目 → §8</td></tr>
+        <tr><td>音声</td><td>H3 のネイティブ・ステレオ音声を使う</td><td><strong>ここが最難関</strong> → §6</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="s1">
+  <span class="sec-label">用語</span>
+  <h2>まず用語を整える</h2>
+
+  <h3>「MiniMax H3」という呼び方は正しい</h3>
+  <p>訂正すべき点はありません。<strong>MiniMax H3</strong> がモデル名、<strong>Hailuo(海螺)</strong> が同社の動画サービスのブランド名で、H3 は Hailuo 3 系にあたります。2026-08-03 にオープンウェイトが公開され、同日に ComfyUI がネイティブ対応しました <span class="c c1">一次</span>。「ローカルで使っている」という表現も、この文脈では正しいです。</p>
+
+  <h3>ただし「結合」は 3 つの別問題に分けたほうがいい</h3>
+  <p>ここが今回いちばん大事な整理です。「結合方法が分からない」と感じているとき、実際には性質のまったく違う 3 つの作業が混ざっています。</p>
+
+  <figure>
+    <svg class="dia" viewBox="0 0 820 300" role="img" aria-labelledby="digTitle digDesc">
+      <title id="digTitle">3 つの「結合」が起きる場所</title>
+      <desc id="digDesc">生成段でクリップ2をクリップ1の続きとして作る「継続」、編集段で継ぎ目をならす「遷移」、出力段でファイルを繋ぐ「連結」の三層を示した図。</desc>
+
+      <text class="lane" x="0" y="30">GENERATE</text>
+      <text class="lane" x="0" y="150">EDIT</text>
+      <text class="lane" x="0" y="245">OUTPUT</text>
+
+      <rect class="clip" x="96" y="14" width="180" height="46" rx="3"/>
+      <text class="clip-t" x="186" y="42" text-anchor="middle">クリップ 1</text>
+      <rect class="clip" x="316" y="14" width="180" height="46" rx="3"/>
+      <text class="clip-t" x="406" y="42" text-anchor="middle">クリップ 2</text>
+      <rect class="clip" x="536" y="14" width="180" height="46" rx="3"/>
+      <text class="clip-t" x="626" y="42" text-anchor="middle">クリップ 3</text>
+
+      <path class="arrow" d="M276 37 L306 37" marker-end="url(#ar)"/>
+      <path class="arrow" d="M496 37 L526 37" marker-end="url(#ar)"/>
+
+      <text class="t-strong" x="406" y="84" text-anchor="middle">① 継続 — 前の終端を条件にして次を生成する</text>
+      <text class="t-mute" x="406" y="103" text-anchor="middle">ComfyUI の仕事。連続性の大半はここで決まる</text>
+
+      <rect class="edit-bar" x="96" y="126" width="620" height="34" rx="3"/>
+      <line class="seam" x1="296" y1="126" x2="296" y2="160"/>
+      <line class="seam" x1="516" y1="126" x2="516" y2="160"/>
+      <text class="t-edit" x="406" y="148" text-anchor="middle">② 遷移 — 継ぎ目をならす(トリム / クロスフェード / デクリック)</text>
+      <text class="t-mute" x="406" y="182" text-anchor="middle">ffmpeg または編集ソフトの仕事。①の取りこぼしを隠す</text>
+
+      <rect class="out-bar" x="96" y="215" width="620" height="40" rx="3"/>
+      <text class="t-out" x="406" y="240" text-anchor="middle">③ 連結 — 1 本のファイルにする</text>
+      <text class="t-mute" x="406" y="278" text-anchor="middle">ffmpeg concat の仕事。実は作業量としては全体の数%</text>
+
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path class="head" d="M0 0 L10 5 L0 10 z"/>
+        </marker>
+      </defs>
+    </svg>
+    <figcaption>「結合」と呼んでいる作業は三層に分かれる。③ だけを頑張っても連続性は出ない。</figcaption>
+  </figure>
+
+  <div class="box">
+    <p style="margin:0"><strong>要点。</strong>「内容の連続性を保持したまま結合する」という要求の本体は <strong>① 継続</strong> です。③ の連結(<code>ffmpeg -f concat</code>)は 3 行で終わります。もし今「ffmpeg のコマンドが分からない」で止まっているなら、それは問題の 5% の場所で止まっている、ということになります。</p>
+  </div>
+
+  <h3>付随する用語</h3>
+  <ul>
+    <li><strong>潜在 / latent</strong> — モデルが内部で扱う圧縮表現。動画ピクセルに戻す前の状態。「潜在のまま繋ぐ」とは、PNG や MP4 に一度戻さずに次の生成へ渡すこと。往復による劣化が乗らない。</li>
+    <li><strong>T2VA / I2VA / FL2VA / Ref2VA</strong> — H3 の条件付けモード。末尾の <strong>A</strong> は Audio。それぞれ Text / Image / First-Last frame / Reference から映像+音声を生成する。<span class="c c2">一致</span></li>
+    <li><strong>ドリフト</strong> — 連鎖を重ねるにつれ、色・明るさ・キャラの顔などが少しずつずれていく現象。</li>
+    <li><strong>フリーズ</strong> — FL2VA でクリップ末尾の数フレームが固まる/崩れる現象。<span class="c c1">一次</span></li>
+  </ul>
+</section>
+
+<section id="s2">
+  <span class="sec-label">制約</span>
+  <h2>H3 側の制約</h2>
+
+  <p>結合の設計は、H3 が「どういう単位で動画を作るか」に強く縛られます。ここを押さえないと、トリムするフレーム数を決められません。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:22%">項目</th><th style="width:30%">値</th><th>結合設計への影響</th></tr></thead>
+      <tbody>
+        <tr><td>フレームレート</td><td class="num">24 fps</td><td>秒とフレームの換算基準。<span class="c c2">一致</span></td></tr>
+        <tr><td>フレーム数の粒度</td><td class="num">17k + 5</td><td>17 フレーム単位のブロック + 5。要求した秒数は次の 17k+5 に切り上げられる。<span class="c c2">一致</span></td></tr>
+        <tr><td>クリップ長</td><td class="num">約 5 〜 15 秒</td><td>15 秒指定で <strong>362 フレーム</strong>(360 ではない)。<span class="c c2">一致</span></td></tr>
+        <tr><td>ローカル解像度</td><td class="num">768p 級まで</td><td>2K は API 側のみ。ローカルの上限を前提に設計する。<span class="c c2">一致</span></td></tr>
+        <tr><td>音声</td><td>ステレオ、映像と同一パスで同時生成</td><td>後付けではないので、<strong>クリップごとに独立した音世界が立ち上がる</strong>。<span class="c c2">一致</span></td></tr>
+        <tr><td>ComfyUI 要件</td><td class="num">0.30.0 以降</td><td>継続系ノードはさらに新しいビルドを要求する(§5)。<span class="c c3">要検証</span></td></tr>
+        <tr><td>ライセンス</td><td>米国 / EU / 英国 / 韓国を除く地域</td><td><strong>日本は対象地域内</strong>。年商 2,000万 USD までは商用利用も無償。<span class="c c2">一致</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">17k+5 の検算 — ここは自分で確かめられる</div>
+    <p>15 秒 → 24 × 15 = 360 フレーム。360 以上で最小の 17k+5 は、k=21 のとき <strong>17×21+5 = 362</strong>。報じられている「15 秒で 362 フレーム」と一致します。</p>
+    <p style="margin-bottom:0">さらに面白いのは、継続系ノードが提示する文脈長の選択肢 <code>5 / 22 / 39 / 56</code> が、そのまま k=0,1,2,3 の 17k+5 になっていること。加えて「39 フレーム ≈ 1.625 秒」という記述も 39÷24 = 1.625 でぴったり合います。<strong>つまり継続に使う「のりしろ」も 17 フレーム格子の上に載る</strong>と考えてよさそうです。<span class="c c3">要検証(私の推論)</span> — 実機のノード UI で選択肢を見れば即座に裏が取れます。</p>
+  </div>
+</section>
+
+<section id="s3">
+  <span class="sec-label">原因</span>
+  <h2>継ぎ目で壊れるもの</h2>
+
+  <p>「単純に繋ぐと変になる」の中身を分解します。原因ごとに効く対策が違うので、今夕の観察ではこの 5 つを別々に記録してください。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:20%">壊れ方</th><th style="width:34%">原因</th><th>効く対策</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>動きが飛ぶ</strong></td>
+          <td>クリップ 2 がクリップ 1 の終端を知らないまま生成されている</td>
+          <td>ラストフレーム条件付け(I2VA/FL2VA)、または潜在の尾を引き継ぐ → §4-B / §4-C</td>
+        </tr>
+        <tr>
+          <td><strong>色・明るさが段差になる</strong></td>
+          <td>継ぎ目ごとの encode/decode 往復による損失の蓄積。量子化も一因になり得る</td>
+          <td>潜在のまま繋ぐ / 中間ファイルを可逆・準可逆で持つ → §7</td>
+        </tr>
+        <tr>
+          <td><strong>顔・服・画風が変わる</strong></td>
+          <td>連鎖に伴うドリフト。世代を重ねるほど累積する</td>
+          <td>Ref2VA による参照固定、定期的な「ラストフレームによる品質リセット」 <span class="c c1">一次</span></td>
+        </tr>
+        <tr>
+          <td><strong>末尾が固まる / 崩れる</strong></td>
+          <td>FL2VA 特有のフリーズ。終端フレームをそのまま次の起点にすると悪化が伝播する</td>
+          <td>終端の手前で切る(freeze-safe な境界を採る) → §9 実験 2</td>
+        </tr>
+        <tr>
+          <td><strong>音が途切れる / 環境音がリセットする</strong></td>
+          <td>クリップごとに音声が独立生成されるため、BGM も環境音も継ぎ目で作り直される</td>
+          <td>§6 全体(最難関)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="s4">
+  <span class="sec-label">選択肢</span>
+  <h2>4 つの選択肢</h2>
+
+  <p>取り得る道は大きく 4 つです。A から順に強くなりますが、その分だけ環境要件と手間も増えます。<strong>いきなり C から入らないこと</strong>をおすすめします。A と B を見ないと、C が何を解決したのか判断できないからです。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:16%">選択肢</th><th style="width:26%">やること</th><th style="width:29%">解決すること</th><th>残る問題</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>A. 素の連結</strong></td>
+          <td><code>ffmpeg -f concat</code> で無劣化に繋ぐだけ</td>
+          <td>ファイルが 1 本になる。劣化ゼロ、数秒で終わる</td>
+          <td>動き・色・音すべて継ぎ目で飛ぶ。<strong>ベースライン測定用</strong></td>
+        </tr>
+        <tr>
+          <td><strong>B. ラストフレーム連鎖</strong></td>
+          <td>クリップ 1 の終端画像を取り出し、I2VA / FL2VA でクリップ 2 の起点にする</td>
+          <td>構図・被写体・カメラ位置が繋がる。<strong>公式ノードだけで完結</strong></td>
+          <td>色ドリフト、フリーズ伝播、音は繋がらない</td>
+        </tr>
+        <tr>
+          <td><strong>C. 潜在での継続</strong></td>
+          <td>カスタムノードで前クリップの尾を潜在のまま次へ渡す(§5)</td>
+          <td>動きと音が本当に「続く」。往復劣化を回避</td>
+          <td>ComfyUI のバージョン要件、メモリ、導入コスト。長い連鎖では音がこもる</td>
+        </tr>
+        <tr>
+          <td><strong>D. 音を切り離す</strong></td>
+          <td>映像だけ B か C で連鎖させ、音は 1 本通しで別途用意して後乗せ</td>
+          <td><strong>音の連続性が確実に手に入る</strong>。最も破綻しにくい</td>
+          <td>H3 のネイティブ音声(リップシンク等)を捨てることになる</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">現時点での私の見立て</div>
+    <p style="margin:0">音声を重視し、VRAM が 16GB 以下という条件だと、<strong>「映像は C、音は D の考え方で二段構え」</strong>が落としどころになる可能性が高いと見ています。ただしこれは実測前の仮説です。§9 の実験で、C だけでどこまで音が保つかを見てから決めるべきで、今夕はまさにそこを確かめたい。</p>
+  </div>
+</section>
+
+<section id="s5">
+  <span class="sec-label">実装</span>
+  <h2>継続系カスタムノード</h2>
+
+  <p>H3 の「潜在での継続」を扱う ComfyUI 拡張が、少なくとも 3 つ公開されています。以下は各リポジトリの README を実際に読んで整理したものです <span class="c c1">一次</span>。<strong>いずれも個人開発のコミュニティ製</strong>で、MiniMax 公式でも Comfy-Org 公式でもない点は前提に置いてください。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:18%"></th><th style="width:27%">H3 Extender<br><span style="font-weight:400;color:var(--muted)">tritant</span></th><th style="width:27%">H3 Motion Context<br><span style="font-weight:400;color:var(--muted)">NikoDemon80</span></th><th>Infinite Continuation Suite<br><span style="font-weight:400;color:var(--muted)">HerrgottMargott</span></th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>継続の方式</strong></td>
+          <td>ディスクに潜在をキャッシュして次クリップへ連鎖。参照動画を <code>17k+5</code> 構造に自動整列</td>
+          <td>前クリップの尾を潜在から直接切り出し、ピン留めフレームを「数値としてビット単位で同一」に保つ</td>
+          <td>前クリップの映像+音声潜在をまるごと次の潜在空間へコピーし、ComfyUI ネイティブのストリーム別 denoise マスクで保護</td>
+        </tr>
+        <tr>
+          <td><strong>音声の扱い</strong></td>
+          <td>継ぎ目のデクリック補正。PCM から再構成し<strong>最後に一度だけエンコード</strong></td>
+          <td>ピン留め音声窓が継ぎ目の手前まで遡る → モデルが音を「似せる」のでなく「続ける」。<code>audio_context_length</code> は 24 フレーム(=1秒)推奨</td>
+          <td>音声は映像より先の尾まで独立して継続可能(視覚のカットをまたぐ台詞を保持)。既定で 15ms のクロスフェード</td>
+        </tr>
+        <tr>
+          <td><strong>主要パラメータ</strong></td>
+          <td>—(ノード: <code>MiniMax H3 Extender</code>, <code>Prompt Pack Bridge</code>, <code>Reference Pack Bridge</code>)</td>
+          <td><code>context_length</code> = 5 / 22 / 39 / 56(<strong>22 推奨</strong>)、<code>audio_context_length</code></td>
+          <td>映像文脈 39 フレーム、"Net New Content" 尺モード、"Full Previous Tail" 音声引き継ぎ、映像 4 フレーム / 音声 15ms のクロスフェード</td>
+        </tr>
+        <tr>
+          <td><strong>要件</strong></td>
+          <td>ComfyUI Manager から導入可。24fps 以外の参照は自動リサンプル</td>
+          <td>ComfyUI <strong>0.34.0 以降</strong>、全クリップ同一解像度</td>
+          <td><strong>PR #15375 を含むビルド</strong>必須(未対応だと起動を拒否)</td>
+        </tr>
+        <tr>
+          <td><strong>メモリ特性</strong></td>
+          <td>ディスクキャッシュ中心。v2.0.0 で RAM/VRAM 使用量を削減。中断・再開が可能</td>
+          <td>潜在を保持する設計。記載なし</td>
+          <td>39 フレームの保護プレフィックス分だけ計算資源を余分に消費</td>
+        </tr>
+        <tr>
+          <td><strong>弱点(README 記載)</strong></td>
+          <td>旧 "Motion Context Disk Join" は非推奨。検証が途切れると以降の連鎖が無効化される</td>
+          <td>連鎖が長いと品質が落ち、<strong>音が徐々にこもる</strong>。Turbo LoRA / Spectrum オプティマイザは音質を悪化させる。検証環境が限定的</td>
+          <td>音声は長い連鎖でドリフト。映像の「ラストフレームによる品質リセット」に相当する手段が音声側にない</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box">
+    <div class="box-title">16GB から試すなら</div>
+    <p style="margin:0"><strong>H3 Extender</strong> が第一候補になりそうです。ディスクキャッシュ主体でメモリに優しく、中断・再開でき、しかも「最後に一度だけエンコード」なので色ドリフトの主因(往復劣化)を構造的に避けています。次点が <strong>Motion Context</strong>(ComfyUI 0.34.0 以降が必要)。<strong>Infinite Continuation Suite</strong> は最も作り込まれている一方、特定 PR 入りビルドを要求するので導入の難度が一段上です。<span class="c c3">要検証</span></p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">アダプタを混ぜない</div>
+    <p style="margin:0">公式テンプレートでは <strong>T2V / I2V が fl2va、R2V が ref2va</strong> の拡散モデルを使います。「FL2VA と REF2VA のアダプタを混ぜたり、一方の shift を他方に流用したりしない」と明記されています。<span class="c c2">一致</span> 連鎖の途中でモードを切り替えるときは、ここが事故ポイントです。</p>
+  </div>
+</section>
+
+<section id="s6">
+  <span class="sec-label">難所</span>
+  <h2>音声 — 最難関</h2>
+
+  <p>H3 は音声を映像と同じパスで同時生成します。これは品質面では強みですが、結合という観点では<strong>構造的な難所</strong>になります。クリップごとに音世界が独立して立ち上がるため、環境音も BGM も残響も、継ぎ目でいったん作り直されるからです。</p>
+
+  <h3>対策は 4 段構え。上から順に効く</h3>
+
+  <div class="step">
+    <div class="step-n">1</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">プロンプト側 — 音の設計を全クリップで共有する</h4>
+      <p>最も安く、最初にやるべきこと。同じサウンドスケープの記述を全クリップのプロンプトに入れておく。「各セグメントが独自の音を生成するので、同じサウンドスケープの行を毎回入れない限り、継ぎ目で環境音がリセットする」と指摘されています <span class="c c2">一致</span>。逆に言えば、<strong>継ぎ目で矛盾する音の指示を書かないだけで改善する</strong>。</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">2</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">潜在側 — 音の尾を次のクリップに引き継ぐ</h4>
+      <p>§5 の継続系ノードの本領。ピン留めした音声窓を継ぎ目の手前まで遡らせることで、モデルに「似た音を作らせる」のではなく「続きを鳴らさせる」。<code>audio_context_length</code> は 24 フレーム = ちょうど 1 秒が推奨とされています <span class="c c1">一次</span>。</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">3</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">編集側 — デクリックとクロスフェード</h4>
+      <p>ここまでやっても継ぎ目には微小な段差が残ります。<code>acrossfade</code> で 15〜30ms 程度のクロスフェードをかけるとプチッというクリックノイズが消えます(§7 のレシピ 4)。<strong>15ms という値は Infinite Continuation Suite の既定値と一致</strong>しており、実用的な出発点として妥当そうです。</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">4</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">割り切り — 音を別トラックにする</h4>
+      <p>連続する BGM や環境音が主役なら、<strong>音は 1 本通しで作って後乗せするのが最も確実</strong>です。H3 のネイティブ音声は台詞やリップシンクなど「その画に固有の音」だけに使い、通しの音は別レイヤーで敷く。映像と音で連続性の担保方法を分ける、という発想です。</p>
+    </div>
+  </div>
+
+  <div class="box audio">
+    <div class="box-title">記録しておきたい既知の劣化</div>
+    <p style="margin:0">継続系ノードの README 自身が「<strong>連鎖を重ねると音がこもる(duller / more muffled)</strong>」と認めています <span class="c c1">一次</span>。何クリップ目から気になるかは環境依存なので、今夕の実験ではぜひ 3〜4 本連鎖させて、どこで許容範囲を超えるかを耳で測ってください。ここが「C 単独でいくか、D と併用するか」の分岐点になります。</p>
+  </div>
+</section>
+
+<section id="s7">
+  <span class="sec-label">実務</span>
+  <h2>ffmpeg 実務レシピ</h2>
+
+  <p>③ 連結の部分。ここは定型です。<strong>実行前に必ずレシピ 1 でパラメータの一致を確認</strong>してください。これが揃っていないと無劣化連結が使えません。</p>
+
+  <h3>レシピ 1 — 事前確認(ここから始める)</h3>
+<pre><code>for f in clip*.mp4; do
+  echo "== $f"
+  ffprobe -v error -select_streams v:0 \
+    -show_entries stream=codec_name,width,height,r_frame_rate,nb_frames \
+    -of default=nw=1 "$f"
+  ffprobe -v error -select_streams a:0 \
+    -show_entries stream=codec_name,sample_rate,channels \
+    -of default=nw=1 "$f"
+done</code></pre>
+  <p class="cap">コーデック・解像度・fps・音声のサンプルレートとチャンネル数が全クリップで一致していれば、レシピ 2 が使えます。<code>nb_frames</code> が 362 などになっていれば §2 の 17k+5 が裏取りできます。</p>
+
+  <h3>レシピ 2 — 無劣化連結(パラメータが揃っている場合)</h3>
+<pre><code># list.txt を作る
+for f in clip*.mp4; do echo "file '$PWD/$f'"; done &gt; list.txt
+
+ffmpeg -fflags +genpts -f concat -safe 0 -i list.txt -c copy out.mp4</code></pre>
+  <p class="cap">再エンコードしないので劣化ゼロ・一瞬。<code>-fflags +genpts</code> はタイムスタンプを振り直し、音ズレを防ぐための保険です。</p>
+
+  <h3>レシピ 3 — のりしろ分を捨ててから連結</h3>
+<pre><code># 先頭 39 フレーム(= 1.625 秒 @24fps)を落とす
+ffmpeg -i clip02.mp4 \
+  -vf "trim=start_frame=39,setpts=PTS-STARTPTS" \
+  -af "atrim=start=1.625,asetpts=PTS-STARTPTS" \
+  -c:v libx264 -crf 16 -preset slow -pix_fmt yuv420p \
+  -c:a aac -b:a 256k clip02_trim.mp4</code></pre>
+  <p class="cap">継続系ノードは前クリップの尾を「ピン留め」して重複生成するため、そのままだと同じ映像が二度出ます。捨てるフレーム数は使うノードの <code>context_length</code> に合わせてください(§2 の 17k+5 の話と直結します)。多くのノードはこのトリムを自前で持っているので、<strong>まず自動でやってくれるか確認</strong>を。</p>
+
+  <h3>レシピ 4 — 音の継ぎ目をならす</h3>
+<pre><code>ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
+ "[0:v][1:v]concat=n=2:v=1:a=0[v]; \
+  [0:a][1:a]acrossfade=d=0.03:c1=tri:c2=tri[a]" \
+ -map "[v]" -map "[a]" \
+ -c:v libx264 -crf 16 -pix_fmt yuv420p -c:a aac -b:a 256k out.mp4</code></pre>
+  <p class="cap">30ms のクロスフェードでクリックノイズを消します。<strong>注意</strong>: <code>acrossfade</code> は重ねた分だけ音声全体が短くなるため、映像と 30ms ずれます。実用上ほぼ問題になりませんが、多数の継ぎ目で積み上がると無視できなくなります。</p>
+
+  <h3>レシピ 5 — 映像もディゾルブさせる</h3>
+<pre><code># a.mp4 が 5.0 秒、0.25 秒かけて溶かす場合 offset = 5.0 - 0.25
+ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
+ "[0:v][1:v]xfade=transition=fade:duration=0.25:offset=4.75[v]; \
+  [0:a][1:a]acrossfade=d=0.25[a]" \
+ -map "[v]" -map "[a]" \
+ -c:v libx264 -crf 16 -pix_fmt yuv420p -c:a aac out.mp4</code></pre>
+  <p class="cap">連続性が作れなかったときの「隠す」手段。カット感が出てもよい場面では有効ですが、<strong>本来 ① で解決すべきものを ② で誤魔化している</strong>ことは意識しておいてください。</p>
+
+  <h3>レシピ 6 — 色ドリフトを数値で見る</h3>
+<pre><code>ffmpeg -i out.mp4 -vf "signalstats,metadata=print:key=lavfi.signalstats.YAVG" \
+  -f null - 2&gt;&amp;1 | grep YAVG</code></pre>
+  <p class="cap">フレームごとの平均輝度が並びます。継ぎ目のフレーム番号で段差が出ていれば色ドリフトが定量的に確認できます。「なんとなく変」を数字にできるので、対策の効果測定に使えます。</p>
+
+  <div class="box">
+    <div class="box-title">中間ファイルは劣化させない</div>
+    <p style="margin:0">継ぎ目ごとに H.264 で焼き直すと、まさに §3 で挙げた色ドリフトを自分で作り込むことになります。作業中は準可逆で持ってください。</p>
+<pre style="margin-bottom:0"><code>-c:v prores_ks -profile:v 3 -c:a pcm_s16le  # → .mov</code></pre>
+  </div>
+</section>
+
+<section id="s8">
+  <span class="sec-label">環境</span>
+  <h2>16GB での現実解</h2>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">項目</th><th>16GB 級での指針</th></tr></thead>
+      <tbody>
+        <tr><td>量子化</td><td><strong>Q4_K_M</strong> が 16GB の推奨。Q5_K_M は 24GB 向け、Q3 は互換性優先で品質は落ちる。<span class="c c3">要検証</span></td></tr>
+        <tr><td>システム RAM</td><td>CPU オフロード前提になるため <strong>64GB 以上が望ましい</strong>とされる。ここがボトルネックになりやすい。<span class="c c3">要検証</span></td></tr>
+        <tr><td>解像度</td><td>まずプレビュー解像度・短いクリップから。768p はローカルの上限であって常用値ではない。</td></tr>
+        <tr><td>GGUF の位置づけ</td><td><strong>公式パッケージではなくコミュニティ製</strong>。MiniMax / Comfy-Org のドキュメント化された手順の一部ではない。<span class="c c2">一致</span></td></tr>
+        <tr><td>音質への影響</td><td>Turbo LoRA や Spectrum オプティマイザは<strong>音質を劣化させる</strong>と明記あり。速度を稼ぐ設定が音を犠牲にしている可能性を疑う。<span class="c c1">一次</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">仮説として持っておきたいこと</div>
+    <p style="margin:0">量子化(特に低ビット)は、単発クリップでは気づかない程度の偏りを生んでも、<strong>連鎖を重ねるとドリフトとして増幅される</strong>可能性があります。「継ぎ目が汚いのは結合手法のせい」と思っていたものが、実は量子化レベルの問題だった、という筋も潰しておく価値があります。検証は簡単で、<strong>同じ連鎖を Q4 と Q5(あるいは非量子化)で 1 回ずつ回して §7 レシピ 6 で比べる</strong>だけです。<span class="c c3">要検証(私の推論)</span></p>
+  </div>
+</section>
+
+<section id="s9">
+  <span class="sec-label">次の一手</span>
+  <h2>今夕の最小実験</h2>
+
+  <p>この 3 つを順にやると、選択肢 A / B / C のどれで足りるかが判断できます。<strong>順番に意味があります</strong> — 前の結果がないと次の改善幅が測れないためです。所要は 1〜2 時間を想定。</p>
+
+  <div class="step">
+    <div class="step-n">1</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">ベースラインを取る(選択肢 A)</h4>
+      <p>いま手元にある短いクリップを 3 本、そのまま §7 レシピ 2 で連結する。<strong>直すためではなく、壊れ方を記録するための実験</strong>です。</p>
+      <ul class="check">
+        <li>レシピ 1 の出力(コーデック・fps・<code>nb_frames</code>・サンプルレート)を控える</li>
+        <li>継ぎ目の見た目 — 動きが飛ぶ / 構図が変わる / 被写体が変わる、のどれか</li>
+        <li>継ぎ目の音 — 途切れる / 環境音がリセットする / プチッと鳴る、のどれか</li>
+        <li>レシピ 6 の YAVG で継ぎ目に段差が出ているか</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">2</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">ラストフレーム連鎖(選択肢 B / 公式ノードのみ)</h4>
+      <p>カスタムノードを入れる前に、公式機能だけでどこまで行けるかを見ます。<strong>ここで十分なら C は要りません。</strong></p>
+<pre><code># 終端の少し手前を取る(末尾はフリーズしていることがある)
+ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></pre>
+      <ul class="check">
+        <li>取り出した <code>last_frame.png</code> が崩れていないか目視(崩れていたら <code>-sseof</code> をさらに手前へ)</li>
+        <li>その画像を I2VA / FL2VA の起点にしてクリップ 2 を生成</li>
+        <li>実験 1 と比べて<strong>映像</strong>がどれだけ繋がったか</li>
+        <li><strong>音は繋がらないはず</strong> — その通りかを確認(想定どおりなら §6 が必要という裏取りになる)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">3</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">継続系ノードを 1 つだけ入れる(選択肢 C)</h4>
+      <p>3 つ同時に入れないこと。ノード名が似ていて競合の切り分けが難しくなります。<strong>まず H3 Extender</strong>(§5 の理由)。</p>
+      <ul class="check">
+        <li>ComfyUI のバージョンを先に確認(Motion Context を選ぶなら 0.34.0 以降が必須)</li>
+        <li>4 本連鎖させて、<strong>何本目から音がこもり始めるか</strong>を耳で記録 — ここが §4 の結論を決める</li>
+        <li>のりしろのトリムをノードが自前でやるか、§7 レシピ 3 が要るか</li>
+        <li>16GB で完走できるか、落ちるならどの段階か(VRAM / システム RAM のどちらが先に尽きるか)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="box tint">
+    <p style="margin:0"><strong>記録の残し方。</strong>上のチェック結果をそのままチャットに貼ってもらえれば、次回この文書を更新します。特に <strong>実験 3 の「何本目で音がこもったか」</strong>と <strong>16GB で完走できたか</strong>の 2 点は、最適解の分岐に直結します。スクリーンショットやエラーログはそのままで構いません。</p>
+  </div>
+</section>
+
+<section id="s10">
+  <span class="sec-label">論点</span>
+  <h2>未解決の論点</h2>
+
+  <p>次回、一緒に詰めたい問いです。実験結果が出れば答えが決まるものと、調べ直しが要るものが混ざっています。</p>
+
+  <ol>
+    <li><strong>16GB + Q4_K_M で潜在継続が現実的に回るか。</strong> 潜在を保持し続ける手法は追加のメモリを食います。回らないなら、H3 Extender のディスクキャッシュ方式一択になります。<em>→ 実験 3 で決着</em></li>
+    <li><strong>量子化レベルと色ドリフトの関係。</strong> Q4 と Q5 で連鎖の劣化速度が変わるのか。§8 の仮説の検証。</li>
+    <li><strong>のりしろのフレーム数をいくつにするか。</strong> <code>context_length</code> 22 と 39 で、繋がりの良さと生成コストがどう釣り合うか。17k+5 格子との関係(§2)も併せて実機で確認したい。</li>
+    <li><strong>音は C で足りるか、D が要るか。</strong> 「何本目でこもるか」次第。作りたい尺が 1 分なら 4〜8 本の連鎖になるので、ここは避けて通れません。</li>
+    <li><strong>Ref2VA を連鎖に組み込むか。</strong> キャラの同一性を保つ手段ですが、fl2va と ref2va のアダプタは混ぜられません。連鎖の途中でどう切り替えるか(あるいは切り替えないか)は設計判断です。</li>
+    <li><strong>そもそも 1 本の長尺として作れないか。</strong> 15 秒を超える尺は連鎖が必須ですが、目標尺が 15 秒以内なら、この文書の大半は不要になります。<strong>作りたい動画の長さを最初に決めておくと話が早い</strong>です。</li>
+  </ol>
+</section>
+
+<section id="s11">
+  <span class="sec-label">保留</span>
+  <h2>YouTube メモ</h2>
+
+  <div class="box warn">
+    <div class="box-title">URL 待ち</div>
+    <p style="margin:0">動画の URL をいただければ、この節に要約を追記してこのファイルを更新します。<strong>私は動画そのものを再生できません。</strong>タイトル・概要欄・字幕テキスト・関連記事から要約します。字幕が非公開の動画は取得できないことがあるので、その場合は字幕テキストを貼っていただければ確実です。</p>
+  </div>
+
+  <h3>動画から拾いたい観点(要約時のチェックリスト)</h3>
+  <p>どんな動画であれ、この文書と突き合わせるために以下を確認します。ご自身で先に観る場合も、この観点でメモを取っておくと合流が早くなります。</p>
+  <ul class="check">
+    <li>扱っているのは §1 の ① 継続 / ② 遷移 / ③ 連結 のどれか</li>
+    <li>公式ノードだけの話か、カスタムノードを入れているか(入れているならどれか)</li>
+    <li><strong>音声に触れているか</strong> — 触れていなければ映像だけの話として割り引いて読む</li>
+    <li>GPU / VRAM と量子化レベル(16GB の話として読めるか)</li>
+    <li>ComfyUI のバージョン、および動画の公開日(この分野は 8 月に動いたばかりで陳腐化が速い)</li>
+    <li>のりしろのフレーム数など、具体的な数値が出ているか</li>
+    <li>この文書の §5 の 3 つ以外の手法が紹介されていないか</li>
+  </ul>
+</section>
+
+<section id="s12">
+  <span class="sec-label">出典</span>
+  <h2>出典と確度</h2>
+
+  <p>2026-08-30 時点の Web 調査に基づきます。この分野は 2026-08-03 のオープンウェイト公開から日が浅く、<strong>情報の陳腐化が速い</strong>点にご注意ください。</p>
+
+  <h3><span class="c c1">一次</span> 実際に README を読んだもの</h3>
+  <ul>
+    <li><a href="https://github.com/tritant/ComfyUI_MiniMax_H3_Extender">tritant / ComfyUI_MiniMax_H3_Extender</a></li>
+    <li><a href="https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context">NikoDemon80 / ComfyUI-H3-Motion-Context</a></li>
+    <li><a href="https://github.com/HerrgottMargott/Herrgotts-H3-Infinite-Continuation-Suite">HerrgottMargott / Herrgotts-H3-Infinite-Continuation-Suite</a></li>
+    <li><a href="https://github.com/Comfy-Org/workflow_templates/blob/main/templates/video_minimax_h3_r2v.json">Comfy-Org / workflow_templates — R2V テンプレート JSON</a></li>
+  </ul>
+
+  <h3 style="color:var(--risk)">未取得 — PC 側で最初に開くべき一次情報</h3>
+  <p>このセッションのネットワークから到達できませんでした。<strong>ここが本命です。</strong></p>
+  <ul>
+    <li><a href="https://docs.comfy.org/tutorials/video/minimax/minimax-h3">ComfyUI 公式チュートリアル — MiniMax H3(T2V / I2V / R2V)</a></li>
+    <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3">Hugging Face — MiniMaxAI/MiniMax-H3(モデルカード)</a></li>
+    <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3/raw/main/LICENSE">同 — COMMUNITY LICENSE AGREEMENT 全文</a></li>
+    <li><a href="https://comfyui-wiki.com/en/tutorial/advanced/video/minimax/minimax-h3">ComfyUI Wiki — MiniMax H3 ガイド</a></li>
+  </ul>
+
+  <h3><span class="c c2">一致</span> / <span class="c c3">要検証</span> 二次情報</h3>
+  <ul>
+    <li><a href="https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui">Comfy Blog — MiniMax H3 Day-0 Support in ComfyUI</a>(ネイティブ対応、4 ノード / 6 テンプレート)</li>
+    <li><a href="https://comfyui-wiki.com/en/news/2026-08-03-minimax-h3-open-weights-comfyui">ComfyUI Wiki — オープンウェイト公開ニュース(FL2VA / Ref2VA)</a></li>
+    <li><a href="https://www.atlascloud.ai/blog/tips/minimax-h3-video-length">Atlas Cloud — 15s / 362 フレーム / 17k+5</a></li>
+    <li><a href="https://www.atlascloud.ai/blog/tips/minimax-h3-gguf-local-comfyui">Atlas Cloud — GGUF ローカル構成</a></li>
+    <li><a href="https://minimaxh3.co/open-source/gguf">MiniMax H3 GGUF — 量子化レベルと低 VRAM 構成</a></li>
+    <li><a href="https://kingy.ai/ai/ai-guides/minimax-h3-comfyui-local-guide/">Kingy — ComfyUI セットアップ / VRAM / 既知の不具合</a></li>
+    <li><a href="https://explainx.ai/blog/minimax-h3-open-video-model-hailuo-july-2026">explainX — ライセンスの地域制限について</a></li>
+    <li><a href="https://note.com/creative_edge/n/ndef338606b31">note / CreativeEdge — H3 の検証と Seedance 2.0 との比較(日本語)</a></li>
+    <li><a href="https://vegcale.com/2026/08/15/minimax-h3-use-japan-pricing-guide/">文系エンジニアの日記 — 日本で使えるか・料金の落とし穴(日本語)</a></li>
+  </ul>
+
+  <div class="box">
+    <p style="margin:0">なお <code>minimaxh3.cc</code> / <code>minimax3.org</code> / <code>minimaxh3.run</code> など、H3 の名を冠した解説サイトが多数存在します。内容が正しい場合もありますが<strong>出所の裏が取れないため、この文書では数値の根拠にしていません</strong>。ワークフロー JSON をこれらのサイトから落とすのは避け、GitHub か ComfyUI Manager 経由にしてください。</p>
+  </div>
+</section>
+
+<footer>
+  <p>作成 2026-08-30 / 更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① YouTube 動画の要約(URL 受領後)、② §9 の実験結果の反映、③ 公式ドキュメント確認による <span class="c c3">要検証</span> 項目の格上げ。</p>
+</footer>
+
+</main>
+</div>
+</div>
+</body>
+</html>

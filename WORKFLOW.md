@@ -103,6 +103,28 @@ python hello.py
 
 ---
 
+### 方法 C: HTML の成果物を見る
+
+`.html` の成果物は、**GitHub のファイル一覧でクリックしてもソースが表示されるだけ**で、
+ページとしては表示されない。見る方法は 3 つある。
+
+1. **ダウンロードして開く(確実)**
+   - `git pull` してから、エクスプローラー/Finder で `.html` をダブルクリックするのが一番速い
+   - クローンしていない場合は、GitHub のファイルページ右上の **Raw** → 右クリック →
+     「名前を付けて保存」→ 保存した `.html` を開く
+2. **htmlpreview を使う(URL を貼るだけ)**
+   - `https://htmlpreview.github.io/?` の後ろに GitHub のファイル URL をつなぐ
+   - 第三者のサービスを経由するので、外に出したくない内容には使わない
+3. **GitHub Pages を有効にする(常用するなら)**
+   - Settings → Pages → Source を `main` / `/ (root)` にする
+   - 数分後に `https://okinaga-8.github.io/portable-out/docs/<ファイル名>.html` で開ける
+   - このリポジトリは公開なので、**URL を知っていれば誰でも見られる**点に注意
+
+なお Claude が **Artifact のリンク**を出した場合は、それを開くのが一番早い(claude.ai へのログインが必要)。
+リポジトリ内の `.html` は、Artifact とは別に「消えない控え」として残しておく位置づけ。
+
+---
+
 ## 4. うまくいかないとき
 
 | 症状 | 原因と対処 |
@@ -110,6 +132,7 @@ python hello.py
 | Claude が「プッシュが 403 で拒否された」と言う | GitHub App の権限切れ・未インストール。https://github.com/settings/installations の「Installed GitHub Apps」に **Claude** があるか確認。なければ https://github.com/apps/claude から Install し、対象リポジトリを選ぶ |
 | GitHub に反映されていない | Claude の報告を確認。「コミットした」だけで「プッシュした」と言っていない場合は「プッシュして」と追撃する |
 | PC の `git pull` で最新が来ない | ブラウザで GitHub 側に反映されているか先に確認。反映済みなら `git pull origin main` を試す |
+| HTML ファイルを開いてもソースが見えるだけ | GitHub は `.html` をページとして表示しない。上の「方法 C」を参照 |
 | 作業用ブランチ(`claude/...`)が残っている | GitHub の「Branches」ページ(https://github.com/Okinaga-8/portable-out/branches)でゴミ箱アイコンから削除。Claude 側からは削除できないことがある |
 
 ---
