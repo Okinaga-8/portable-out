@@ -213,7 +213,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <span>目標 1 分</span>
     <span>RTX 4080 16GB + RAM 64GB</span>
     <span>ComfyUI + 量子化</span>
-    <span>ネイティブ音声あり</span>
+    <span>台詞・人の声が主役</span>
     <span>将来 32GB 借用も検討</span>
     <span>更新 2026-08-30</span>
   </div>
@@ -231,7 +231,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s3">継ぎ目で壊れるもの</a></li>
     <li><a href="#s4">4 つの選択肢</a></li>
     <li><a href="#s5">継続系カスタムノード</a></li>
-    <li><a href="#s6">音声 — 最難関</a></li>
+    <li><a href="#s6">音声 — 台詞が主役</a></li>
     <li><a href="#s7">ffmpeg 実務レシピ</a></li>
     <li><a href="#s8">4080 16GB の現実解</a></li>
     <li><a href="#s8b">32GB を借りるとき</a></li>
@@ -259,7 +259,8 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
 
   <div class="box warn">
     <div class="box-title">この調査の限界</div>
-    <p style="margin:0">今回のセッションのネットワークから <code>docs.comfy.org</code> と <code>huggingface.co</code> に到達できませんでした。つまり <strong>ComfyUI 公式チュートリアルと Hugging Face のモデルカード(一次情報の本命)を直接読めていません</strong>。PC 側でその 2 つを開くところから始めるのが最短です。§12 にリンクを置いてあります。</p>
+    <p><strong>更新:</strong> 2 回目の調査で <code>github.com</code> は到達できることが分かり、<strong>MiniMax 公式リポジトリ(一次情報)を読めました</strong>。§2 の仕様はそれに基づいて訂正済みです。</p>
+    <p style="margin-bottom:0">一方 <code>huggingface.co</code> / <code>docs.comfy.org</code> / <code>youtube.com</code> は依然ブロックされています。とくに <strong>Hugging Face の「プロンプト指針」文書は公式リポジトリには収録されていない</strong>と明記されているので、PC 側で必ず確認してください。§12 にリンクがあります。</p>
   </div>
 
   <h3>あなたの環境(この文書の前提)</h3>
@@ -271,7 +272,9 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
         <tr><td>実行環境</td><td>ComfyUI + 量子化(GGUF / INT8)</td><td>量子化はコミュニティ製。色ドリフトの一因になり得る → §3, §8</td></tr>
         <tr><td>ハードウェア</td><td>RTX 4080 16GB + システム RAM 64GB</td><td>RAM 64GB は明確な有利。モデル一式 42.5GB が載る → §8</td></tr>
         <tr><td>目標尺</td><td><strong>1 分</strong>(将来 VRAM 32GB を借りる案あり)</td><td>クリップ数と継ぎ目の数が確定する → §2b / §8b</td></tr>
-        <tr><td>音声</td><td>H3 のネイティブ・ステレオ音声を使う</td><td><strong>ここが最難関</strong> → §6</td></tr>
+        <tr><td>音の主役</td><td><strong>台詞・人の声</strong>(リップシンクが要る)</td><td>「音を別トラックに逃がす」案が単純には使えない → §6</td></tr>
+        <tr><td>構成</td><td>連続シーンとカット割りが<strong>両方混ざる</strong></td><td><strong>朗報。連鎖を短く切れる</strong> → §2b</td></tr>
+        <tr><td>手持ち素材</td><td>生成済みクリップは無し(ゼロから)</td><td>実験は素材づくりから始める → §9</td></tr>
       </tbody>
     </table>
   </div>
@@ -353,9 +356,12 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
       <tbody>
         <tr><td>フレームレート</td><td class="num">24 fps</td><td>秒とフレームの換算基準。<span class="c c2">一致</span></td></tr>
         <tr><td>フレーム数の粒度</td><td class="num">17k + 5</td><td>17 フレーム単位のブロック + 5。要求した秒数は次の 17k+5 に切り上げられる。<span class="c c2">一致</span></td></tr>
-        <tr><td>クリップ長</td><td class="num">約 5 〜 15 秒</td><td>15 秒指定で <strong>362 フレーム</strong>(360 ではない)。<span class="c c2">一致</span></td></tr>
-        <tr><td>ローカル解像度</td><td class="num">768p 級まで</td><td>2K は API 側のみ。ローカルの上限を前提に設計する。<span class="c c2">一致</span></td></tr>
-        <tr><td>音声</td><td>ステレオ、映像と同一パスで同時生成</td><td>後付けではないので、<strong>クリップごとに独立した音世界が立ち上がる</strong>。<span class="c c2">一致</span></td></tr>
+        <tr><td>クリップ長</td><td class="num">4 〜 15 秒</td><td>公式値。初版の「約 5〜15 秒」を訂正。15 秒指定で <strong>362 フレーム</strong>。<span class="c c1">一次</span></td></tr>
+        <tr><td>解像度</td><td class="num">短辺 768 が既定</td><td>2K は再生成(regeneration)扱い。ローカルは 768p 級を前提に設計する。<span class="c c1">一次</span></td></tr>
+        <tr><td>アスペクト比</td><td class="num">21:9 / 16:9 / 4:3 / 1:1 / 3:4 / 9:16</td><td>連鎖する全クリップで揃える。<span class="c c1">一次</span></td></tr>
+        <tr><td>音声</td><td class="num">32 kHz ステレオ</td><td>映像と同一パスで同時生成。<strong>クリップごとに独立した音世界が立ち上がる</strong>。ffmpeg で音を触るときの基準値。<span class="c c1">一次</span></td></tr>
+        <tr><td>参照音声(Ref2VA)</td><td class="num">最大 3 本 / 各 2〜15 秒 / 合計 15 秒以内</td><td><strong>1 分の台詞を丸ごとは渡せない</strong>。クリップ単位でスライスする運用になる → §6。<span class="c c1">一次</span></td></tr>
+        <tr><td>精度</td><td class="num">BF16</td><td>公式の配布精度。量子化はここからの派生。<span class="c c1">一次</span></td></tr>
         <tr><td>ComfyUI 要件</td><td class="num">0.30.0 以降</td><td>継続系ノードはさらに新しいビルドを要求する(§5)。<span class="c c3">要検証</span></td></tr>
         <tr><td>ライセンス</td><td>米国 / EU / 英国 / 韓国を除く地域</td><td><strong>日本は対象地域内</strong>。年商 2,000万 USD までは商用利用も無償。<span class="c c2">一致</span></td></tr>
       </tbody>
@@ -396,6 +402,27 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
   <div class="box warn">
     <div class="box-title">尺が決まって見えてきたこと</div>
     <p style="margin:0">継ぎ目が 4 つあるということは、<strong>音声の劣化が 4 回累積する</strong>ということです。§5 の継続系ノードはいずれも README 自身で「連鎖を重ねると音がこもる」と認めています。<strong>1 分という尺は、音声を潜在継続だけで通すには微妙なライン</strong>で、§6 の第 4 段(音を別トラックにする)を最初から選択肢に入れておくべき長さです。逆に 30 秒なら継ぎ目 2 つなので、潜在継続だけで通せる可能性がかなり上がります。</p>
+  </div>
+
+  <h3>カット割りが混ざるなら、連鎖は短く切れる</h3>
+
+  <p>「連続シーンとカット割りが両方混ざる」構成とのことなので、これは<strong>朗報</strong>です。<strong>継ぎ目 4 つのすべてを「連続」にする必要はありません。</strong></p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">継ぎ目の種類</th><th style="width:34%">手法</th><th>コスト</th></tr></thead>
+      <tbody>
+        <tr><td>ブロック<strong>内</strong>(連続)</td><td>潜在継続(選択肢 C)</td><td>高い。劣化が累積する</td></tr>
+        <tr><td>ブロック<strong>間</strong>(カット)</td><td>ただの連結(選択肢 A)+ Ref2VA で人物を固定</td><td>安い。<strong>劣化は累積しない</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>たとえば 1 分を「連続 2 本 → カット → 連続 2 本 → カット → 1 本」のようにブロックへ割れば、<strong>最長の連鎖は 2 本</strong>で済みます。5 本連鎖と 2 本連鎖では、音のこもりも色ドリフトも桁が違います。</p>
+
+  <div class="box tint">
+    <div class="box-title">設計の指針</div>
+    <p style="margin:0">絵コンテを切るときに、継ぎ目ごとに<strong>「ここは連続でなければならないか?」</strong>を問うてください。連続である必然性がないなら、カットを入れたほうが技術的に有利です。<strong>カット割りは演出上の選択であると同時に、技術的な劣化リセットでもあります。</strong> これはお金も VRAM もかからない、いちばん安く効く対策です。</p>
   </div>
 
   <h3>時間予算 — ここが一番効いてくる</h3>
@@ -498,13 +525,11 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
   </div>
 
   <div class="box tint">
-    <div class="box-title">1 分と決まった上での見立て</div>
-    <p>目標が 1 分 = <strong>継ぎ目 4 つ</strong>(§2b)と確定したので、初版より踏み込めます。</p>
-    <p style="margin-bottom:0"><strong>映像は C(H3 Extender)、音は D の考え方で二段構え</strong>を推します。理由は 3 つ。<br>
-    ① 継ぎ目 4 つは、どのノードの README も警告する「音のこもり」が出る領域に入る。<br>
-    ② 16GB で速度を出す定番手段(Turbo LoRA / Spectrum)が、そろって音質を犠牲にする(§8)。<br>
-    ③ 一方で<strong>映像の連続性は C で十分に取れる</strong>見込みがあり、音だけを別レイヤーに逃がせば全体が安定する。<br>
-    ただしこれは実測前の仮説です。<strong>§9 の実験 3 で「何本目から音がこもるか」を測れば、D が要るかどうかは今夕決着します。</strong>4 本連鎖して問題なければ C 単独で通せます。</p>
+    <div class="box-title">条件が出そろった上での見立て</div>
+    <p>1 分 = 継ぎ目 4 つ、<strong>台詞が主役</strong>、<strong>カット割りが混ざる</strong>。この 3 つが揃ったので、初版より大きく踏み込めます。</p>
+    <p><strong>推すのは「ブロック分割 + ブロック内だけ C」</strong>です。カット割りで 1 分を 2〜3 ブロックに割り、ブロック内の連続部分だけ潜在継続(C)を使う。ブロック間はただの連結(A)+ Ref2VA で人物を固定。<strong>最長の連鎖が 2 本で済むので、音のこもりも色ドリフトも累積しません</strong>(§2b)。</p>
+    <p style="margin-bottom:0">D(音を別トラック)は台詞には使えませんが、<strong>BGM だけは通しで敷いてください</strong> — 継ぎ目の印象が確実に良くなります(§6)。<br>
+    そしてこの見立ては、<strong>§6 の「音声を入力できるか」の答え次第でさらに単純になります</strong>。(a) が成り立てば、台詞は先に 1 本作って確定させられるので、音の悩みはほぼ消えます。<strong>今夕の実験 2 が最大の分岐点です。</strong></p>
   </div>
 </section>
 
@@ -571,17 +596,77 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
 
 <section id="s6">
   <span class="sec-label">難所</span>
-  <h2>音声 — 最難関</h2>
+  <h2>音声 — 台詞が主役の場合</h2>
 
-  <p>H3 は音声を映像と同じパスで同時生成します。これは品質面では強みですが、結合という観点では<strong>構造的な難所</strong>になります。クリップごとに音世界が独立して立ち上がるため、環境音も BGM も残響も、継ぎ目でいったん作り直されるからです。</p>
+  <p>「音の主役は台詞・人の声」と決まったことで、初版の前提が一つ崩れました。<strong>§4 の選択肢 D(音を別トラックに逃がす)は、そのままでは使えません。</strong> リップシンクが要る以上、H3 のネイティブ音声を捨てられないからです。</p>
 
-  <h3>対策は 4 段構え。上から順に効く</h3>
+  <h3>ただし、層を分ければ D の考え方は生きる</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:24%">音の層</th><th style="width:34%">担当</th><th>継ぎ目の扱い</th></tr></thead>
+      <tbody>
+        <tr><td><strong>台詞・人の声</strong></td><td>H3 のネイティブ音声(捨てられない)</td><td>継ぎ目をまたがせない設計で回避(後述)</td></tr>
+        <tr><td>環境音・部屋鳴り</td><td>H3 が同時に生成してしまう</td><td>プロンプトで統一 + クロスフェード</td></tr>
+        <tr><td>BGM</td><td><strong>別トラックで 1 本通し</strong></td><td>継ぎ目と無関係になる</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>BGM を通しで敷くだけでも、継ぎ目の段差はかなり目立たなくなります。台詞があるからこそ、通しの BGM が「繋がっている」という印象を作ってくれる。ここは確実に効く手です。</p>
+
+  <h3 style="color:var(--risk)">最大の論点 — 音声を「入力」できるのか</h3>
+
+  <p>今回の調査で見つかった、<strong>プロジェクト全体を左右する分岐</strong>です。情報が食い違っています。</p>
+
+  <div class="box warn">
+    <p>公式リポジトリの Ref2VA の例は「<em>&lt;Audio 2&gt; の落ち着いた男性の<strong>声色</strong>を &lt;Subject 1&gt; の発話に参照する</em>」という書き方で、<strong>声色(timbre)の参照</strong>と読めます <span class="c c1">一次</span>。</p>
+    <p style="margin-bottom:0">一方、解説記事は「手持ちの音声を渡すと、その声が顔に乗って返ってくる」「音声が<strong>実際の台詞を運んでリップシンクする</strong>」と書いています <span class="c c3">要検証</span>。</p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:22%">解釈</th><th style="width:38%">何が起きるか</th><th>継ぎ目への影響</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>(a) 波形を入力し、それに口を合わせる</strong></td>
+          <td>台詞音声を<strong>先に 1 本通しで用意</strong>し、クリップごとにスライスして渡す</td>
+          <td style="color:var(--accent-ink)"><strong>音の連続性問題が根本から消える。</strong> 波形が最初から 1 本なので、こもりも累積しない</td>
+        </tr>
+        <tr>
+          <td>(b) 声色だけ参照し、台詞は毎回新規生成</td>
+          <td>声質は揃うが、波形はクリップごとに作り直される</td>
+          <td>こもりの累積は残る。§5 の潜在継続が必要になる</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box tint">
+    <p style="margin:0"><strong>(a) が成り立つなら、それが最適解です。</strong> 「音を先に確定させてから映像を作る」という順序になり、このノートの音声まわりの悩みの大半が消えます。逆に (b) だけなら、潜在継続に頼ることになります。<br>
+    <strong>今夕、この 1 点を確かめるのが最優先</strong>です(§9 実験 2)。手持ちの音声を 1 本渡して、返ってきた動画の音が<strong>「渡した音そのもの」か「似た声で喋り直したもの」か</strong>を聴けば、5 分で決着します。</p>
+  </div>
+
+  <h3>参照音声の制約(公式)</h3>
+  <p>音声クリップは<strong>最大 3 本、各 2〜15 秒、合計 15 秒以内</strong> <span class="c c1">一次</span>。1 分の台詞を丸ごと渡すことはできないので、(a) が成り立つ場合も<strong>クリップ単位でスライスして渡す</strong>運用になります。ffmpeg で切り出す前提で、台詞音声は最初から「どこで切るか」を意識して作ってください。</p>
+
+  <h3 style="color:var(--risk)">複数人が喋る場合の既知の不具合</h3>
+  <div class="box warn">
+    <p style="margin:0">公式リポジトリに <strong>Issue #17「Ref2VA: 複数被写体で声のアイデンティティが混ざる」</strong> が立っています。一方の声がもう一方に漏れる、片方の声が両者を支配してしまう、という報告です <span class="c c1">一次</span>。<br>
+    <strong>会話シーンを作るなら、1 カットに 1 人だけ喋らせる</strong>構成にしておくのが安全です。切り返し(ショット/リバースショット)で撮る、という古典的な作りが、そのまま技術的な回避策になります。</p>
+  </div>
+
+  <h3>台詞は継ぎ目をまたがせない</h3>
+  <div class="box tint">
+    <p style="margin:0">台詞が主役なら、<strong>継ぎ目の位置を「息継ぎ」に置く</strong>のが最も効く設計です。文の途中で繋ぐと、こもりや声質の変化が最も目立ちます。文と文の間、あるいはカットが変わるところに継ぎ目を置けば、多少の音質差は「カットが変わったから」として受け流されます。<br>
+    これは技術ではなく<strong>構成</strong>の問題なので、16GB でも 32GB でも同じように効きます。絵コンテの段階で決めてしまえる、いちばん安い対策です。</p>
+  </div>
+
+  <h3>それでも残る継ぎ目への 3 段の対策</h3>
 
   <div class="step">
     <div class="step-n">1</div>
     <div class="step-b">
       <h4 style="margin-top:2px">プロンプト側 — 音の設計を全クリップで共有する</h4>
-      <p>最も安く、最初にやるべきこと。同じサウンドスケープの記述を全クリップのプロンプトに入れておく。「各セグメントが独自の音を生成するので、同じサウンドスケープの行を毎回入れない限り、継ぎ目で環境音がリセットする」と指摘されています <span class="c c2">一致</span>。逆に言えば、<strong>継ぎ目で矛盾する音の指示を書かないだけで改善する</strong>。</p>
+      <p>同じサウンドスケープの記述を全クリップのプロンプトに入れる。「各セグメントが独自の音を生成するので、同じサウンドスケープの行を毎回入れない限り継ぎ目で環境音がリセットする」と指摘されています <span class="c c2">一致</span>。<strong>継ぎ目で矛盾する音の指示を書かないだけで改善します。</strong></p>
     </div>
   </div>
 
@@ -589,7 +674,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <div class="step-n">2</div>
     <div class="step-b">
       <h4 style="margin-top:2px">潜在側 — 音の尾を次のクリップに引き継ぐ</h4>
-      <p>§5 の継続系ノードの本領。ピン留めした音声窓を継ぎ目の手前まで遡らせることで、モデルに「似た音を作らせる」のではなく「続きを鳴らさせる」。<code>audio_context_length</code> は 24 フレーム = ちょうど 1 秒が推奨とされています <span class="c c1">一次</span>。</p>
+      <p>§5 の継続系ノードの本領。<code>audio_context_length</code> は 24 フレーム = ちょうど 1 秒が推奨 <span class="c c1">一次</span>。<strong>台詞主役なら Infinite Continuation Suite の「視覚のカットをまたぐ台詞を保持する音声尾引き継ぎ」がまさに刺さります</strong>が、導入難度は一段上です(§5)。</p>
     </div>
   </div>
 
@@ -597,21 +682,13 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <div class="step-n">3</div>
     <div class="step-b">
       <h4 style="margin-top:2px">編集側 — デクリックとクロスフェード</h4>
-      <p>ここまでやっても継ぎ目には微小な段差が残ります。<code>acrossfade</code> で 15〜30ms 程度のクロスフェードをかけるとプチッというクリックノイズが消えます(§7 のレシピ 4)。<strong>15ms という値は Infinite Continuation Suite の既定値と一致</strong>しており、実用的な出発点として妥当そうです。</p>
-    </div>
-  </div>
-
-  <div class="step">
-    <div class="step-n">4</div>
-    <div class="step-b">
-      <h4 style="margin-top:2px">割り切り — 音を別トラックにする</h4>
-      <p>連続する BGM や環境音が主役なら、<strong>音は 1 本通しで作って後乗せするのが最も確実</strong>です。H3 のネイティブ音声は台詞やリップシンクなど「その画に固有の音」だけに使い、通しの音は別レイヤーで敷く。映像と音で連続性の担保方法を分ける、という発想です。</p>
+      <p><code>acrossfade</code> で 15〜30ms のクロスフェード(§7 レシピ 4)。15ms は Infinite Continuation Suite の既定値と一致しており、出発点として妥当です。<strong>音声は 32 kHz ステレオ</strong>なので、ffmpeg で扱うときはそれに合わせてください。</p>
     </div>
   </div>
 
   <div class="box audio">
     <div class="box-title">記録しておきたい既知の劣化</div>
-    <p style="margin:0">継続系ノードの README 自身が「<strong>連鎖を重ねると音がこもる(duller / more muffled)</strong>」と認めています <span class="c c1">一次</span>。何クリップ目から気になるかは環境依存なので、今夕の実験ではぜひ 3〜4 本連鎖させて、どこで許容範囲を超えるかを耳で測ってください。ここが「C 単独でいくか、D と併用するか」の分岐点になります。</p>
+    <p style="margin:0">継続系ノードの README 自身が「<strong>連鎖を重ねると音がこもる</strong>」と認めています <span class="c c1">一次</span>。台詞が主役だと、これは環境音以上に致命的です。<strong>だからこそ §2b のブロック分割(連鎖を 2 本に抑える)が効きます。</strong></p>
   </div>
 </section>
 
@@ -804,32 +881,18 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <span class="sec-label">次の一手</span>
   <h2>今夕の最小実験</h2>
 
-  <p>1 分・4080 16GB・音声重視という条件が確定したので、実験を組み直しました。<strong>0 → 3 の順に意味があります</strong>。特に実験 0 を飛ばすと、以降すべての待ち時間が倍になりかねません。所要は 2〜3 時間を想定。</p>
-
-  <div class="step">
-    <div class="step-n">0</div>
-    <div class="step-b">
-      <h4 style="margin-top:2px">足回りを確認する(15 分・最優先)</h4>
-      <p>ここだけで生成時間が半分になる可能性があります。<strong>他の何より先に。</strong></p>
-      <ul class="check">
-        <li>ComfyUI に入っている PyTorch のバージョンを確認(同梱版のままなら入替を検討 → §8)</li>
-        <li>起動フラグに <code>--disable-pinned-memory --reserve-vram 1.5</code> を追加</li>
-        <li><strong>Turbo LoRA / Spectrum / easycache は一旦すべて外す</strong>(音の基準を汚さないため)</li>
-        <li>864×480 で 5 秒を 1 本生成し、<strong>所要時間を記録</strong> — これが以降すべての見積もりの基準になる</li>
-      </ul>
-    </div>
-  </div>
+  <p>手元にクリップが無いとのことなので、<strong>素材づくりから</strong>組み直しました。順番に意味があります — 特に実験 1 を飛ばすと以降の待ち時間が倍になり、<strong>実験 2 の結果次第では実験 4・5 が不要になります</strong>。所要 2〜3 時間。</p>
 
   <div class="step">
     <div class="step-n">1</div>
     <div class="step-b">
-      <h4 style="margin-top:2px">ベースラインを取る(選択肢 A)</h4>
-      <p>クリップを 3 本、そのまま §7 レシピ 2 で連結する。<strong>直すためではなく、壊れ方を記録するための実験</strong>です。</p>
+      <h4 style="margin-top:2px">足回りを確認する(15 分・最優先)</h4>
+      <p>ここだけで生成時間が半分になる可能性があります。</p>
       <ul class="check">
-        <li>レシピ 1 の出力(コーデック・fps・<code>nb_frames</code>・サンプルレート)を控える</li>
-        <li>継ぎ目の見た目 — 動きが飛ぶ / 構図が変わる / 被写体が変わる、のどれか</li>
-        <li>継ぎ目の音 — 途切れる / 環境音がリセットする / プチッと鳴る、のどれか</li>
-        <li>レシピ 6 の YAVG で継ぎ目に段差が出ているか</li>
+        <li>ComfyUI に入っている PyTorch のバージョンを確認(同梱版のままなら入替を検討 → §8)</li>
+        <li>起動フラグに <code>--disable-pinned-memory --reserve-vram 1.5</code> を追加</li>
+        <li><strong>Turbo LoRA / Spectrum / easycache は一旦すべて外す</strong>(音の基準を汚さないため)</li>
+        <li>864×480 で 5 秒を 1 本生成し、<strong>所要時間を記録</strong> — 以降すべての見積もりの基準になる</li>
       </ul>
     </div>
   </div>
@@ -837,15 +900,14 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <div class="step">
     <div class="step-n">2</div>
     <div class="step-b">
-      <h4 style="margin-top:2px">ラストフレーム連鎖(選択肢 B / 公式ノードのみ)</h4>
-      <p>カスタムノードを入れる前に、公式機能だけでどこまで行けるかを見ます。<strong>ここで十分なら C は要りません。</strong></p>
-<pre><code># 終端の少し手前を取る(末尾はフリーズしていることがある)
-ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></pre>
+      <h4 style="margin-top:2px">音声を「入力」できるか確かめる(20 分・最大の分岐)</h4>
+      <p><strong>今夕いちばん重要な実験です。</strong> ここで (a) だと分かれば、音の悩みの大半が消えます(§6)。</p>
       <ul class="check">
-        <li>取り出した <code>last_frame.png</code> が崩れていないか目視(崩れていたら <code>-sseof</code> をさらに手前へ)</li>
-        <li>その画像を I2VA / FL2VA の起点にしてクリップ 2 を生成</li>
-        <li>実験 1 と比べて<strong>映像</strong>がどれだけ繋がったか</li>
-        <li><strong>音は繋がらないはず</strong> — その通りかを確認(想定どおりなら §6 が必要という裏取りになる)</li>
+        <li>台詞の音声を 1 本用意する(自分で録音、TTS、手持ちの音声、なんでも可。5〜10 秒)</li>
+        <li>Ref2VA にその音声を参照として渡し、短いクリップを 1 本生成</li>
+        <li><strong>返ってきた音を聴く</strong> — 渡した音<em>そのもの</em>が鳴っているか(= (a))、似た声で<em>喋り直している</em>か(= (b))</li>
+        <li>口の動きが渡した音に合っているか</li>
+        <li>(a) なら → 台詞音声を先に 1 本通しで作り、クリップ単位でスライスして渡す設計に切り替える</li>
       </ul>
     </div>
   </div>
@@ -853,21 +915,50 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
   <div class="step">
     <div class="step-n">3</div>
     <div class="step-b">
-      <h4 style="margin-top:2px">継続ノードで 5 本連鎖(選択肢 C)— 今夕の本命</h4>
-      <p>3 つ同時に入れないこと。<strong>まず H3 Extender</strong>(§5 の理由)。<strong>1 分の本番と同じ 5 本</strong>を、低解像度で通してください。ここが今日いちばん重要な観察です。</p>
+      <h4 style="margin-top:2px">素材づくり + ベースライン(選択肢 A)</h4>
+      <p>短いクリップを 3 本作り、そのまま §7 レシピ 2 で連結する。<strong>直すためではなく、壊れ方を記録するための実験</strong>です。</p>
+      <ul class="check">
+        <li>レシピ 1 の出力(コーデック・fps・<code>nb_frames</code>・サンプルレート 32000)を控える</li>
+        <li>継ぎ目の見た目 — 動きが飛ぶ / 構図が変わる / 顔が変わる、のどれか</li>
+        <li>継ぎ目の音 — 台詞が途切れる / 声質が変わる / 環境音がリセットする / プチッと鳴る</li>
+        <li>レシピ 6 の YAVG で継ぎ目に段差が出ているか</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">4</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">ラストフレーム連鎖(選択肢 B / 公式ノードのみ)</h4>
+      <p>カスタムノードを入れる前に、公式機能だけでどこまで行けるかを見ます。<strong>ブロック内が 2 本で済むなら、ここで十分な可能性があります。</strong></p>
+<pre><code># 終端の少し手前を取る(末尾はフリーズしていることがある)
+ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></pre>
+      <ul class="check">
+        <li>取り出した <code>last_frame.png</code> が崩れていないか目視(崩れていたら <code>-sseof</code> をさらに手前へ)</li>
+        <li>その画像を I2VA / FL2VA の起点にしてクリップ 2 を生成</li>
+        <li>実験 3 と比べて<strong>映像</strong>がどれだけ繋がったか</li>
+        <li>Ref2VA で人物を固定した場合、<strong>カットをまたいでも同じ顔・同じ声か</strong>(ブロック間の要)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">5</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">劣化カーブを測る(選択肢 C)</h4>
+      <p>実験 2 が (b) だった場合に必要になります。<strong>まず H3 Extender</strong>(§5 の理由)。低解像度で 4〜5 本連鎖させてください。</p>
       <ul class="check">
         <li>ComfyUI のバージョンを先に確認(Motion Context を選ぶなら 0.34.0 以降が必須)</li>
-        <li><strong>5 本連鎖して、何本目から音がこもり始めるか</strong>を耳で記録 — §4 の結論がこれで決まる</li>
-        <li>同じく、何本目から色・顔がドリフトし始めるか(レシピ 6 の YAVG も併用)</li>
+        <li><strong>何本目から台詞がこもり始めるか</strong> — これが §2b のブロック長を決める</li>
+        <li>何本目から色・顔がドリフトし始めるか(レシピ 6 の YAVG も併用)</li>
         <li>のりしろのトリムをノードが自前でやるか、§7 レシピ 3 が要るか</li>
-        <li>16GB で 5 本完走できるか。落ちるなら何本目で、VRAM とシステム RAM のどちらが先に尽きたか</li>
-        <li>1 本あたりの所要時間 × 5 が、実験 0 の基準からの見積もりと合っているか</li>
+        <li>16GB で完走できるか。落ちるなら何本目で、VRAM とシステム RAM のどちらが先に尽きたか</li>
       </ul>
     </div>
   </div>
 
   <div class="box tint">
-    <p style="margin:0"><strong>報告してほしいのは 3 点だけです。</strong> ① 実験 0 の 5 秒あたりの生成時間、② <strong>実験 3 で音がこもり始めた本数</strong>、③ 5 本完走できたか。この 3 つで、C 単独でいくか D と併用するか、32GB を借りる価値があるか、が決まります。スクショやエラーログはそのままで構いません。</p>
+    <p style="margin:0"><strong>報告してほしいのは 3 点だけです。</strong> ① 実験 1 の 5 秒あたりの生成時間、② <strong>実験 2 は (a) か (b) か</strong>、③ 実験 5 で台詞がこもり始めた本数。この 3 つで、ブロックをどう割るか、32GB を借りる価値があるか、が決まります。スクショやエラーログはそのままで構いません。</p>
   </div>
 </section>
 
@@ -875,16 +966,16 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
   <span class="sec-label">論点</span>
   <h2>未解決の論点</h2>
 
-  <p>初版から 2 つ(目標尺・ハードウェア)が確定したので、残りを絞り込みました。上ほど重要です。</p>
+  <p>目標尺・ハードウェア・構成・音の主役が確定したので、残りを絞り込みました。上ほど重要です。</p>
 
   <ol>
-    <li><strong>音は潜在継続だけで 4 継ぎ目もつか。</strong> これが最大の分岐。もつなら選択肢 C 単独、もたないなら D を併用して音を別レイヤーにする。<em>→ 実験 3 で今夕決着</em></li>
-    <li><strong>量子化レベルは Q4 / Q5 / int4 のどれか。</strong> コミュニティ内で推奨が割れている(§8)。あなたの 4080 + RAM 64GB という構成は他の 16GB 環境より有利なので、他人の結論がそのまま当てはまらない可能性があります。<em>→ 短いクリップ 2〜3 本で実測</em></li>
-    <li><strong>PyTorch の入替で本当に速くなるか。</strong> 効けば以降の全実験が半分の時間で回る。<em>→ 実験 0</em></li>
-    <li><strong>Turbo LoRA の音質劣化はどの程度か。</strong> 「劣化する」とは書かれていても、程度は不明。許容できる範囲なら 16GB でも 768p が現実的になり、32GB を借りる必要性が下がります。<em>→ 実験 3 のあと、入れて聴き比べ</em></li>
-    <li><strong>のりしろは 22 か 39 か。</strong> 繋がりの良さと生成コストの釣り合い。17k+5 格子との関係(§2)も実機で確認したい。</li>
-    <li><strong>Ref2VA を連鎖に組み込むか。</strong> キャラの同一性を保つ手段だが、fl2va と ref2va のアダプタは混ぜられない。1 分 = 5 本ならドリフトは無視できない量になるので、検討の価値はあります。</li>
-    <li><strong>32GB をいつ借りるか。</strong> 論点 1 と 4 の結果次第。音が C 単独でもつなら、借りる必要はないかもしれません(§8b)。</li>
+    <li><strong>音声を「入力」できるのか — (a) か (b) か。</strong> このプロジェクト最大の分岐。(a) なら台詞を先に 1 本作って確定でき、音の悩みがほぼ消える。<em>→ 実験 2 で今夕決着</em>(§6)</li>
+    <li><strong>ブロックをどう割るか。</strong> 連鎖を何本までに抑えるか。台詞がこもり始める本数から逆算する。<em>→ 実験 5</em>(§2b)</li>
+    <li><strong>Ref2VA でカットをまたいで同じ顔・同じ声を保てるか。</strong> ブロック間の繋ぎはこれに依存する。複数人が喋る場合は Issue #17 の声の混ざりに注意。<em>→ 実験 4</em></li>
+    <li><strong>量子化レベルは Q4 / Q5 / int4 のどれか。</strong> 推奨が割れている(§8)。台詞主役なら<strong>顔と口元の破綻</strong>が判断基準になる。<em>→ 短いクリップ 2〜3 本で実測</em></li>
+    <li><strong>PyTorch の入替で本当に速くなるか。</strong> 効けば以降の全実験が半分の時間で回る。<em>→ 実験 1</em></li>
+    <li><strong>Turbo LoRA の音質劣化はどの程度か。</strong> 台詞主役だと許容範囲が狭い。<em>→ 実験 5 のあと、入れて聴き比べ</em></li>
+    <li><strong>32GB をいつ借りるか。</strong> 論点 1・2・6 の結果次第。実験 2 が (a) で、ブロックが 2 本で済むなら、借りる必要はないかもしれません(§8b)。</li>
   </ol>
 </section>
 
@@ -899,6 +990,16 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
     <p>この作業環境のネットワークが <code>youtube.com</code> / <code>youtu.be</code> をブロックしており、ページを開けませんでした。動画 ID での Web 検索でも該当が出ません(公開直後などで未インデックスの可能性)。<strong>つまり現時点で、この動画の内容は私にはまったく分かりません。</strong></p>
     <p style="margin-bottom:0">推測で書くと、このノートの他の部分の信頼性まで落ちるので、空欄のままにしてあります。</p>
   </div>
+
+  <h3>スマホからでも送れる、効きの大きい情報</h3>
+  <p>PC を起動しなくても、以下が分かるとノートの精度が上がります。<strong>とくに 1 と 2 は今夕の実験の組み立てに直結します。</strong></p>
+  <ul class="check">
+    <li><strong>台詞を喋るのは何人か</strong> — 1 人なら Issue #17(声の混ざり)を回避できる。複数なら切り返し前提で構成を組む(§6)</li>
+    <li><strong>台詞の音声を自分で用意できるか</strong> — 録音 / TTS / 手持ち音源。用意できるなら、§6 の解釈 (a) が成り立った瞬間に最短ルートが開ける</li>
+    <li>アスペクト比(16:9 横 / 9:16 縦)— 連鎖する全クリップで揃える必要がある</li>
+    <li>1 分の中身のおおよその構成(何ブロックに割れそうか)— §2b の設計に直結</li>
+    <li>公開するものか、自分用か — 品質のバーと、声・肖像の扱いの判断が変わる</li>
+  </ul>
 
   <h3>いただければ反映できるもの(どれか一つで十分)</h3>
   <ul class="check">
@@ -927,8 +1028,10 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
 
   <p>2026-08-30 時点の Web 調査に基づきます。この分野は 2026-08-03 のオープンウェイト公開から日が浅く、<strong>情報の陳腐化が速い</strong>点にご注意ください。</p>
 
-  <h3><span class="c c1">一次</span> 実際に README を読んだもの</h3>
+  <h3><span class="c c1">一次</span> 実際に読んだもの</h3>
   <ul>
+    <li><a href="https://github.com/MiniMax-AI/MiniMax-H3"><strong>MiniMax-AI / MiniMax-H3 — 公式リポジトリ</strong></a> — §2 の仕様(4〜15 秒、24fps、32kHz ステレオ、短辺 768、アスペクト比、BF16、参照音声 3 本 / 合計 15 秒以内)の出典</li>
+    <li><a href="https://github.com/MiniMax-AI/MiniMax-H3/issues/17">同 Issue #17 — Ref2VA で複数被写体の声が混ざる</a></li>
     <li><a href="https://github.com/tritant/ComfyUI_MiniMax_H3_Extender">tritant / ComfyUI_MiniMax_H3_Extender</a></li>
     <li><a href="https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context">NikoDemon80 / ComfyUI-H3-Motion-Context</a></li>
     <li><a href="https://github.com/HerrgottMargott/Herrgotts-H3-Infinite-Continuation-Suite">HerrgottMargott / Herrgotts-H3-Infinite-Continuation-Suite</a></li>
@@ -971,14 +1074,25 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
     <li><a href="https://runaihome.com/blog/minimax-h3-comfyui-gguf-workflow-tutorial-2026/">runaihome — GGUF ワークフローと RTX 3060〜5090 の実測</a></li>
   </ul>
 
+  <h3>台詞・リップシンク(3 回目の調査で追加)</h3>
+  <ul>
+    <li><a href="https://www.atlascloud.ai/blog/tips/minimax-h3-lip-sync-and-audio">Atlas Cloud — リップシンクと音声、入力音声について</a> <span class="c c3">要検証</span> — §6 の解釈 (a) の根拠</li>
+    <li><a href="https://runware.ai/docs/models/minimax-h3/guides/sound-and-voice">Runware — Sound and voice with MiniMax H3</a></li>
+    <li><a href="https://www.virse.ai/blog/minimax-h3-reference-guide">virse — FL2VA vs Ref2VA、画像 / 動画 / 音声の参照</a></li>
+    <li><a href="https://domoai.app/blog/minimax-h3-reference-to-video">domoai — Reference-to-Video 実践ガイド</a></li>
+    <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3/discussions/64">HF Discussion #64 — Subject 1 に音声参照をどう割り当てるか</a>(未取得)</li>
+    <li><a href="https://note.com/highdrama/n/n12ebd1c42c47">鈴木憂一 — 低ステップ確認方式と 480p 運用(日本語)</a></li>
+    <li><a href="https://ai-shogun.com/minimax-h3-comfyui/">AI SHOGUN — プロンプトの書き方(日本語)</a></li>
+  </ul>
+
   <div class="box">
     <p style="margin:0">なお <code>minimaxh3.cc</code> / <code>minimax3.org</code> / <code>minimaxh3.run</code> など、H3 の名を冠した解説サイトが多数存在します。内容が正しい場合もありますが<strong>出所の裏が取れないため、この文書では数値の根拠にしていません</strong>。ワークフロー JSON をこれらのサイトから落とすのは避け、GitHub か ComfyUI Manager 経由にしてください。</p>
   </div>
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 2 版 2026-08-30(目標尺 1 分・RTX 4080 16GB + RAM 64GB・32GB 借用案を反映、16GB 実測と高速化の罠を追加、量子化推奨を両論併記に訂正)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① YouTube 動画の要約(タイトルまたは字幕の受領後)、② §9 の実験 0〜3 の結果の反映、③ 公式ドキュメント確認による <span class="c c3">要検証</span> 項目の格上げ。</p>
+  <p>初版 2026-08-30 / 第 3 版 2026-08-30(台詞主役・カット割り混在・素材ゼロを反映。公式リポジトリを一次情報として取り込み、クリップ長・解像度・音声仕様を訂正。§2b にブロック分割、§6 を台詞前提に全面改稿、実験を 1〜5 に再構成)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① YouTube 動画の要約(タイトルまたは字幕の受領後)、② §9 の実験 1〜5 の結果の反映、③ Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ。</p>
 </footer>
 
 </main>
