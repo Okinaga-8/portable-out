@@ -210,10 +210,12 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
   <h1>H3 クリップの継ぎ目</h1>
   <p class="lede">MiniMax H3 でローカル生成した短尺クリップを、内容の連続性を保ったまま一本にまとめるための調査ノート。結論を出す文書ではなく、<strong>今夕 PC の前で、二人で最適解を詰めるための共通の土台</strong>です。</p>
   <div class="meta">
-    <span>ComfyUI + 量子化(GGUF/INT8)</span>
-    <span>VRAM 16GB 以下</span>
+    <span>目標 1 分</span>
+    <span>RTX 4080 16GB + RAM 64GB</span>
+    <span>ComfyUI + 量子化</span>
     <span>ネイティブ音声あり</span>
-    <span>調査時点 2026-08-30</span>
+    <span>将来 32GB 借用も検討</span>
+    <span>更新 2026-08-30</span>
   </div>
 </header>
 
@@ -225,12 +227,14 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s0">この文書の読み方</a></li>
     <li><a href="#s1">まず用語を整える</a></li>
     <li><a href="#s2">H3 側の制約</a></li>
+    <li><a href="#s2b">1 分をどう割るか</a></li>
     <li><a href="#s3">継ぎ目で壊れるもの</a></li>
     <li><a href="#s4">4 つの選択肢</a></li>
     <li><a href="#s5">継続系カスタムノード</a></li>
     <li><a href="#s6">音声 — 最難関</a></li>
     <li><a href="#s7">ffmpeg 実務レシピ</a></li>
-    <li><a href="#s8">16GB での現実解</a></li>
+    <li><a href="#s8">4080 16GB の現実解</a></li>
+    <li><a href="#s8b">32GB を借りるとき</a></li>
     <li><a href="#s9">今夕の最小実験</a></li>
     <li><a href="#s10">未解決の論点</a></li>
     <li><a href="#s11">YouTube メモ</a></li>
@@ -265,7 +269,8 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
       <tbody>
         <tr><td>モデル</td><td>MiniMax H3(オープンウェイト版)をローカル実行</td><td>クリップ長・解像度の上限が API 版と違う → §2</td></tr>
         <tr><td>実行環境</td><td>ComfyUI + 量子化(GGUF / INT8)</td><td>量子化はコミュニティ製。色ドリフトの一因になり得る → §3, §8</td></tr>
-        <tr><td>VRAM</td><td>16GB 以下</td><td>潜在(latent)を保持し続ける手法が使えるかの分かれ目 → §8</td></tr>
+        <tr><td>ハードウェア</td><td>RTX 4080 16GB + システム RAM 64GB</td><td>RAM 64GB は明確な有利。モデル一式 42.5GB が載る → §8</td></tr>
+        <tr><td>目標尺</td><td><strong>1 分</strong>(将来 VRAM 32GB を借りる案あり)</td><td>クリップ数と継ぎ目の数が確定する → §2b / §8b</td></tr>
         <tr><td>音声</td><td>H3 のネイティブ・ステレオ音声を使う</td><td><strong>ここが最難関</strong> → §6</td></tr>
       </tbody>
     </table>
@@ -363,6 +368,56 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <p style="margin-bottom:0">さらに面白いのは、継続系ノードが提示する文脈長の選択肢 <code>5 / 22 / 39 / 56</code> が、そのまま k=0,1,2,3 の 17k+5 になっていること。加えて「39 フレーム ≈ 1.625 秒」という記述も 39÷24 = 1.625 でぴったり合います。<strong>つまり継続に使う「のりしろ」も 17 フレーム格子の上に載る</strong>と考えてよさそうです。<span class="c c3">要検証(私の推論)</span> — 実機のノード UI で選択肢を見れば即座に裏が取れます。</p>
   </div>
 </section>
+<section id="s2b">
+  <span class="sec-label">設計</span>
+  <h2>1 分をどう割るか</h2>
+
+  <p>目標が 1 分に決まったので、ここから先は算数になります。24fps で 1 分は <strong>1,440 フレーム</strong>。H3 の 1 クリップ上限は 362 フレーム(15 秒)なので、必ず複数本の連鎖になります。</p>
+
+  <div class="box tint">
+    <div class="box-title">大原則</div>
+    <p style="margin:0"><strong>継ぎ目は少ないほどよい。だからクリップは上限いっぱいの 15 秒で取る。</strong> 継ぎ目が 1 つ増えるたびに、動きの飛び・色ドリフト・音のリセットのリスクが 1 回ずつ増えます。「短く作って数で稼ぐ」は逆方向です。</p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:24%">分割案</th><th style="width:14%">本数</th><th style="width:12%">継ぎ目</th><th>内訳</th></tr></thead>
+      <tbody>
+        <tr><td>15 秒 × 独立生成</td><td class="num">4 本</td><td class="num">3</td><td>4 × 362 = 1,448 フレーム(60.3 秒)。ただし連続性は期待できない</td></tr>
+        <tr><td><strong>15 秒 × 継続(のりしろ 22)</strong></td><td class="num">5 本</td><td class="num">4</td><td>実質 340 フレーム/本。362 + 4×340 = 1,722(71.8 秒)。余剰は末尾で捨てる</td></tr>
+        <tr><td>15 秒 × 継続(のりしろ 39)</td><td class="num">5 本</td><td class="num">4</td><td>実質 323 フレーム/本。362 + 4×323 = 1,654(68.9 秒)</td></tr>
+        <tr><td>10 秒 × 継続(のりしろ 22)</td><td class="num">7 本</td><td class="num">6</td><td>243 フレーム/本。<strong>継ぎ目が 1.5 倍</strong>になるので不利</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>基本形は「15 秒 × 5 本、継ぎ目 4 つ」。</strong> 生成合計が目標より 10 秒ほど余るので、構成に余裕を持たせるか、末尾を切って尺を合わせます。</p>
+
+  <div class="box warn">
+    <div class="box-title">尺が決まって見えてきたこと</div>
+    <p style="margin:0">継ぎ目が 4 つあるということは、<strong>音声の劣化が 4 回累積する</strong>ということです。§5 の継続系ノードはいずれも README 自身で「連鎖を重ねると音がこもる」と認めています。<strong>1 分という尺は、音声を潜在継続だけで通すには微妙なライン</strong>で、§6 の第 4 段(音を別トラックにする)を最初から選択肢に入れておくべき長さです。逆に 30 秒なら継ぎ目 2 つなので、潜在継続だけで通せる可能性がかなり上がります。</p>
+  </div>
+
+  <h3>時間予算 — ここが一番効いてくる</h3>
+  <p>他者の 16GB 実測からの単純外挿です <span class="c c3">要検証</span>。あくまで桁感として。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">解像度</th><th style="width:34%">実測の元データ(16GB 級)</th><th>1 分あたりの外挿</th></tr></thead>
+      <tbody>
+        <tr><td>864×480</td><td class="num">2.33 秒 が約 66 秒</td><td class="num">約 28 分</td></tr>
+        <tr><td>1344×768</td><td class="num">8 秒 が約 21 分 30 秒</td><td class="num">約 2 時間 40 分</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>これは「1 テイク」の時間です。</strong> 1 分を 768p でいきなり回すと、構図が気に入らないと分かるまでに数時間かかり、やり直すたびにまた数時間になります。</p>
+
+  <div class="box">
+    <p style="margin:0"><strong>運用の結論。</strong> 構成・プロンプト・クリップの分割・ラストフレームの選定は<strong>すべて低解像度(864×480 級)で固める</strong>。本番解像度で回すのは、全部決まってから最後の 1 回だけ。これは 32GB を借りる場合も同じで、むしろ借用時間が有限な分、より強く効きます(§8b)。</p>
+  </div>
+</section>
+
 
 <section id="s3">
   <span class="sec-label">原因</span>
@@ -443,8 +498,13 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
   </div>
 
   <div class="box tint">
-    <div class="box-title">現時点での私の見立て</div>
-    <p style="margin:0">音声を重視し、VRAM が 16GB 以下という条件だと、<strong>「映像は C、音は D の考え方で二段構え」</strong>が落としどころになる可能性が高いと見ています。ただしこれは実測前の仮説です。§9 の実験で、C だけでどこまで音が保つかを見てから決めるべきで、今夕はまさにそこを確かめたい。</p>
+    <div class="box-title">1 分と決まった上での見立て</div>
+    <p>目標が 1 分 = <strong>継ぎ目 4 つ</strong>(§2b)と確定したので、初版より踏み込めます。</p>
+    <p style="margin-bottom:0"><strong>映像は C(H3 Extender)、音は D の考え方で二段構え</strong>を推します。理由は 3 つ。<br>
+    ① 継ぎ目 4 つは、どのノードの README も警告する「音のこもり」が出る領域に入る。<br>
+    ② 16GB で速度を出す定番手段(Turbo LoRA / Spectrum)が、そろって音質を犠牲にする(§8)。<br>
+    ③ 一方で<strong>映像の連続性は C で十分に取れる</strong>見込みがあり、音だけを別レイヤーに逃がせば全体が安定する。<br>
+    ただしこれは実測前の仮説です。<strong>§9 の実験 3 で「何本目から音がこもるか」を測れば、D が要るかどうかは今夕決着します。</strong>4 本連鎖して問題なければ C 単独で通せます。</p>
   </div>
 </section>
 
@@ -620,38 +680,151 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 
 <section id="s8">
   <span class="sec-label">環境</span>
-  <h2>16GB での現実解</h2>
+  <h2>4080 16GB の現実解</h2>
 
+  <div class="box tint">
+    <div class="box-title">まず朗報 — RAM 64GB は効く</div>
+    <p style="margin:0">モデル一式は合計 <strong>42.5GB</strong>(拡散モデル 21.0GB + テキストエンコーダ 15.7GB + 映像 VAE 5.2GB + 音声 VAE 0.6GB)<span class="c c1">一次</span>。RAM 32GB の実測環境では毎ステップ重みをディスクから読み直しており、<strong>1 本の生成で 270 GiB のディスク読み込み</strong>が発生していました。RAM 64GB なら一式がページキャッシュに収まる見込みで、この不利がありません。<strong>あなたの構成は 16GB 勢の中では恵まれている側</strong>です。<span class="c c3">要検証(推論)</span></p>
+  </div>
+
+  <h3>他者の実測値(すべて他人の環境。桁感として読む)</h3>
   <div class="scroll">
     <table>
-      <thead><tr><th style="width:26%">項目</th><th>16GB 級での指針</th></tr></thead>
+      <thead><tr><th style="width:32%">環境</th><th style="width:30%">条件</th><th>生成時間</th></tr></thead>
       <tbody>
-        <tr><td>量子化</td><td><strong>Q4_K_M</strong> が 16GB の推奨。Q5_K_M は 24GB 向け、Q3 は互換性優先で品質は落ちる。<span class="c c3">要検証</span></td></tr>
-        <tr><td>システム RAM</td><td>CPU オフロード前提になるため <strong>64GB 以上が望ましい</strong>とされる。ここがボトルネックになりやすい。<span class="c c3">要検証</span></td></tr>
-        <tr><td>解像度</td><td>まずプレビュー解像度・短いクリップから。768p はローカルの上限であって常用値ではない。</td></tr>
-        <tr><td>GGUF の位置づけ</td><td><strong>公式パッケージではなくコミュニティ製</strong>。MiniMax / Comfy-Org のドキュメント化された手順の一部ではない。<span class="c c2">一致</span></td></tr>
-        <tr><td>音質への影響</td><td>Turbo LoRA や Spectrum オプティマイザは<strong>音質を劣化させる</strong>と明記あり。速度を稼ぐ設定が音を犠牲にしている可能性を疑う。<span class="c c1">一次</span></td></tr>
+        <tr><td>RTX 4060 Ti 16GB / RAM 64GB / ComfyUI 0.30.0</td><td>5 秒</td><td class="num">12分50秒 → <strong>5分55秒</strong>(PyTorch 入替後)</td></tr>
+        <tr><td>RTX 5080 / 5060 Ti 16GB</td><td>864×480 / 2.33 秒</td><td class="num">約 66 秒</td></tr>
+        <tr><td>RTX 5080 / 5060 Ti 16GB</td><td>1344×768 / 8 秒</td><td class="num">約 21 分 30 秒</td></tr>
+        <tr><td>RTX 5070 Ti(8GB に制限)/ RAM 32GB</td><td>640×384 / 226 フレーム</td><td class="num">190 秒(ディスク読み 270 GiB)</td></tr>
+        <tr><td>RTX 5060 Ti 16GB</td><td>int4 + Turbo LoRA 8 ステップ</td><td class="num">13 分 44 秒 / VRAM 10.8GB</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">226 フレーム = 17×13+5。ここでも §2 の 17k+5 格子が成り立っています。</p>
+
+  <h3>最初に確認すべき罠 — 同梱 PyTorch</h3>
+  <div class="box warn">
+    <p style="margin:0">ある 16GB 環境で、<strong>ComfyUI ポータブル版に同梱された PyTorch を入れ替えるだけで 12分50秒 → 5分55秒(2.17 倍)</strong>になったという報告があります。設定でも GPU 性能でもなく、同梱ライブラリのバージョンが原因だった、と。<span class="c c2">一致</span><br>
+    <strong>他の何をするより先に、いま入っている PyTorch のバージョンを確認する価値があります。</strong> 2 時間 40 分が 1 時間 15 分になるなら、この 1 分の作業が今日いちばん効きます。</p>
+  </div>
+
+  <h3>設定まわり</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">項目</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td>起動フラグ</td><td><code>--disable-pinned-memory --reserve-vram 1.5</code>。ComfyUI は既定で RAM の最大 90% をページロックするため、低 VRAM 構成ではスワップを食い潰す。<span class="c c1">一次</span></td></tr>
+        <tr><td>必要な拡張</td><td><code>ComfyUI-GGUF</code> と <code>Extra-Model-Patcher</code>。<span class="c c3">要検証</span></td></tr>
+        <tr><td>ストレージ</td><td>NVMe 推奨。RAM 64GB があれば依存度は下がるが、初回ロードには効く。</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="box warn">
-    <div class="box-title">仮説として持っておきたいこと</div>
-    <p style="margin:0">量子化(特に低ビット)は、単発クリップでは気づかない程度の偏りを生んでも、<strong>連鎖を重ねるとドリフトとして増幅される</strong>可能性があります。「継ぎ目が汚いのは結合手法のせい」と思っていたものが、実は量子化レベルの問題だった、という筋も潰しておく価値があります。検証は簡単で、<strong>同じ連鎖を Q4 と Q5(あるいは非量子化)で 1 回ずつ回して §7 レシピ 6 で比べる</strong>だけです。<span class="c c3">要検証(私の推論)</span></p>
+    <div class="box-title">訂正 — 量子化レベルの推奨は割れている</div>
+    <p style="margin:0">このノートの初版で「16GB は Q4_K_M」と書きましたが、<strong>撤回して両論併記にします</strong>。別の 16GB 実測記事は <strong>Q5_K_M</strong> を推し(崩れがほぼ無く速度とのバランスが最良)、9 構成を実測した記事は <strong>int4 + Turbo LoRA が最適だった</strong>としています(20 ステップ単体では int4 に顔の破綻が出たが、Turbo LoRA と組むと解消)。<span class="c c2">一致</span><br>
+    つまり<strong>コミュニティ内で決着していません</strong>。あなたの 4080 で 2〜3 構成を実測するのが唯一の答えです。幸い、この比較は短いクリップ 1 本ずつで済みます。</p>
+  </div>
+
+  <h3 style="color:var(--risk)">高速化の罠 — あなたの条件では特に重要</h3>
+  <p>16GB で定番の高速化手段は、<strong>まさにあなたが重視している「音声」と衝突します</strong>。これは今回の調査でいちばん重要な発見です。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:24%">手段</th><th style="width:36%">速度への効果</th><th>音声への影響</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Turbo LoRA</strong>(4〜8 ステップ)</td><td>830 秒 → 375 秒、2.6 倍などの報告 <span class="c c2">一致</span></td><td style="color:var(--risk)"><strong>音質を劣化させると README に明記</strong> <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>Spectrum</strong> オプティマイザ</td><td>SolAttn 併用で I2V 5 秒が 125.3 秒 → 86.9 秒 <span class="c c3">要検証</span></td><td style="color:var(--risk)"><strong>同上。README に明記</strong> <span class="c c1">一次</span></td></tr>
+        <tr><td>SageAttention</td><td>12GB 環境で約 30% <span class="c c3">要検証</span></td><td>音声への言及なし。ただし sm_120 で高トークン時にノイズが出る Issue あり <span class="c c1">一次</span></td></tr>
+        <tr><td>easycache × R2V</td><td>—</td><td style="color:var(--risk)"><strong>品質崩壊の報告</strong> <span class="c c3">要検証</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box">
+    <p style="margin:0"><strong>順序が大事です。</strong> Turbo LoRA と Spectrum は <strong>まず外した状態で基準を取り、後から入れて音を聴き比べる</strong>。速いからと最初から入れてしまうと、音がこもったときに「連鎖のせい」なのか「高速化のせい」なのか切り分けられなくなります。§9 の実験はこの順序で組んであります。</p>
   </div>
 </section>
+<section id="s8b">
+  <span class="sec-label">将来</span>
+  <h2>32GB を借りるとき</h2>
+
+  <div class="box warn">
+    <p style="margin:0">先に押さえるべき事実として、<strong>モデル一式は 42.5GB なので、VRAM 32GB でも全部は載りません。</strong> 量子化かオフロードは引き続き必要です。32GB で変わるのは「できないことができるようになる」ではなく、<strong>「余裕が生まれて、妥協を戻せる」</strong>ことです。</p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:20%">項目</th><th style="width:38%">RTX 4080 16GB</th><th>32GB 借用時</th></tr></thead>
+      <tbody>
+        <tr><td>量子化</td><td>Q4 / Q5 / int4 を実測で選ぶしかない</td><td>Q5_K_M や FP8 を常用でき、<strong>量子化由来のドリフトを疑わなくてよくなる</strong></td></tr>
+        <tr><td>解像度</td><td>低解像度で構成を固める運用が前提</td><td>768p を常用しやすい</td></tr>
+        <tr><td>継続手法</td><td>ディスクキャッシュ型(H3 Extender)が有利</td><td>潜在保持型(Motion Context / Infinite Suite)が現実的になる</td></tr>
+        <tr><td>のりしろ</td><td>22 で妥協しがち</td><td>39 / 56 を選べる = 継ぎ目がより滑らかに</td></tr>
+        <tr><td>高速化</td><td>Turbo LoRA に頼りたくなる</td><td><strong>頼らずに済む = 音声を犠牲にしなくてよい</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>いちばん大きいのは最後の行です。<strong>32GB を借りる本当の価値は「速くなること」ではなく「音を守れること」</strong>かもしれません。</p>
+
+  <h3>借用は時間課金。運用を先に決めておく</h3>
+
+  <div class="step">
+    <div class="step-n">1</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">16GB 側で終わらせておくこと</h4>
+      <p>プロンプト一式、構図、5 本への分割、各クリップの起点画像、ワークフローの動作確認。<strong>すべて低解像度で</strong>。ここに時間をかけるほど借用時間が安く済みます。</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">2</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">32GB 側でやること</h4>
+      <p>本番解像度での 5 本連鎖、量子化レベルを上げた再生成、のりしろ 39 / 56 の比較、Turbo LoRA を外した状態での音の確認。<strong>借りてから試行錯誤しない</strong>のが鉄則です。</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-n">3</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">持ち込むもの</h4>
+      <p>確定したワークフロー JSON、プロンプト一式、起点画像、そして<strong>16GB で撮った比較用の出力</strong>(良くなったかを判断する基準になる)。</p>
+    </div>
+  </div>
+
+  <div class="box">
+    <p style="margin:0"><strong>期待しすぎないこと。</strong> 音のこもりの原因が<strong>連鎖そのもの</strong>なら、VRAM を増やしても解決しません。Turbo LoRA を外せる分は改善するはずですが、それで足りるかどうかは <strong>16GB 側の実験 3 で先に見当がつきます</strong>。借りる前にそこを確かめてください。</p>
+  </div>
+</section>
+
 
 <section id="s9">
   <span class="sec-label">次の一手</span>
   <h2>今夕の最小実験</h2>
 
-  <p>この 3 つを順にやると、選択肢 A / B / C のどれで足りるかが判断できます。<strong>順番に意味があります</strong> — 前の結果がないと次の改善幅が測れないためです。所要は 1〜2 時間を想定。</p>
+  <p>1 分・4080 16GB・音声重視という条件が確定したので、実験を組み直しました。<strong>0 → 3 の順に意味があります</strong>。特に実験 0 を飛ばすと、以降すべての待ち時間が倍になりかねません。所要は 2〜3 時間を想定。</p>
+
+  <div class="step">
+    <div class="step-n">0</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">足回りを確認する(15 分・最優先)</h4>
+      <p>ここだけで生成時間が半分になる可能性があります。<strong>他の何より先に。</strong></p>
+      <ul class="check">
+        <li>ComfyUI に入っている PyTorch のバージョンを確認(同梱版のままなら入替を検討 → §8)</li>
+        <li>起動フラグに <code>--disable-pinned-memory --reserve-vram 1.5</code> を追加</li>
+        <li><strong>Turbo LoRA / Spectrum / easycache は一旦すべて外す</strong>(音の基準を汚さないため)</li>
+        <li>864×480 で 5 秒を 1 本生成し、<strong>所要時間を記録</strong> — これが以降すべての見積もりの基準になる</li>
+      </ul>
+    </div>
+  </div>
 
   <div class="step">
     <div class="step-n">1</div>
     <div class="step-b">
       <h4 style="margin-top:2px">ベースラインを取る(選択肢 A)</h4>
-      <p>いま手元にある短いクリップを 3 本、そのまま §7 レシピ 2 で連結する。<strong>直すためではなく、壊れ方を記録するための実験</strong>です。</p>
+      <p>クリップを 3 本、そのまま §7 レシピ 2 で連結する。<strong>直すためではなく、壊れ方を記録するための実験</strong>です。</p>
       <ul class="check">
         <li>レシピ 1 の出力(コーデック・fps・<code>nb_frames</code>・サンプルレート)を控える</li>
         <li>継ぎ目の見た目 — 動きが飛ぶ / 構図が変わる / 被写体が変わる、のどれか</li>
@@ -680,19 +853,21 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
   <div class="step">
     <div class="step-n">3</div>
     <div class="step-b">
-      <h4 style="margin-top:2px">継続系ノードを 1 つだけ入れる(選択肢 C)</h4>
-      <p>3 つ同時に入れないこと。ノード名が似ていて競合の切り分けが難しくなります。<strong>まず H3 Extender</strong>(§5 の理由)。</p>
+      <h4 style="margin-top:2px">継続ノードで 5 本連鎖(選択肢 C)— 今夕の本命</h4>
+      <p>3 つ同時に入れないこと。<strong>まず H3 Extender</strong>(§5 の理由)。<strong>1 分の本番と同じ 5 本</strong>を、低解像度で通してください。ここが今日いちばん重要な観察です。</p>
       <ul class="check">
         <li>ComfyUI のバージョンを先に確認(Motion Context を選ぶなら 0.34.0 以降が必須)</li>
-        <li>4 本連鎖させて、<strong>何本目から音がこもり始めるか</strong>を耳で記録 — ここが §4 の結論を決める</li>
+        <li><strong>5 本連鎖して、何本目から音がこもり始めるか</strong>を耳で記録 — §4 の結論がこれで決まる</li>
+        <li>同じく、何本目から色・顔がドリフトし始めるか(レシピ 6 の YAVG も併用)</li>
         <li>のりしろのトリムをノードが自前でやるか、§7 レシピ 3 が要るか</li>
-        <li>16GB で完走できるか、落ちるならどの段階か(VRAM / システム RAM のどちらが先に尽きるか)</li>
+        <li>16GB で 5 本完走できるか。落ちるなら何本目で、VRAM とシステム RAM のどちらが先に尽きたか</li>
+        <li>1 本あたりの所要時間 × 5 が、実験 0 の基準からの見積もりと合っているか</li>
       </ul>
     </div>
   </div>
 
   <div class="box tint">
-    <p style="margin:0"><strong>記録の残し方。</strong>上のチェック結果をそのままチャットに貼ってもらえれば、次回この文書を更新します。特に <strong>実験 3 の「何本目で音がこもったか」</strong>と <strong>16GB で完走できたか</strong>の 2 点は、最適解の分岐に直結します。スクリーンショットやエラーログはそのままで構いません。</p>
+    <p style="margin:0"><strong>報告してほしいのは 3 点だけです。</strong> ① 実験 0 の 5 秒あたりの生成時間、② <strong>実験 3 で音がこもり始めた本数</strong>、③ 5 本完走できたか。この 3 つで、C 単独でいくか D と併用するか、32GB を借りる価値があるか、が決まります。スクショやエラーログはそのままで構いません。</p>
   </div>
 </section>
 
@@ -700,15 +875,16 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
   <span class="sec-label">論点</span>
   <h2>未解決の論点</h2>
 
-  <p>次回、一緒に詰めたい問いです。実験結果が出れば答えが決まるものと、調べ直しが要るものが混ざっています。</p>
+  <p>初版から 2 つ(目標尺・ハードウェア)が確定したので、残りを絞り込みました。上ほど重要です。</p>
 
   <ol>
-    <li><strong>16GB + Q4_K_M で潜在継続が現実的に回るか。</strong> 潜在を保持し続ける手法は追加のメモリを食います。回らないなら、H3 Extender のディスクキャッシュ方式一択になります。<em>→ 実験 3 で決着</em></li>
-    <li><strong>量子化レベルと色ドリフトの関係。</strong> Q4 と Q5 で連鎖の劣化速度が変わるのか。§8 の仮説の検証。</li>
-    <li><strong>のりしろのフレーム数をいくつにするか。</strong> <code>context_length</code> 22 と 39 で、繋がりの良さと生成コストがどう釣り合うか。17k+5 格子との関係(§2)も併せて実機で確認したい。</li>
-    <li><strong>音は C で足りるか、D が要るか。</strong> 「何本目でこもるか」次第。作りたい尺が 1 分なら 4〜8 本の連鎖になるので、ここは避けて通れません。</li>
-    <li><strong>Ref2VA を連鎖に組み込むか。</strong> キャラの同一性を保つ手段ですが、fl2va と ref2va のアダプタは混ぜられません。連鎖の途中でどう切り替えるか(あるいは切り替えないか)は設計判断です。</li>
-    <li><strong>そもそも 1 本の長尺として作れないか。</strong> 15 秒を超える尺は連鎖が必須ですが、目標尺が 15 秒以内なら、この文書の大半は不要になります。<strong>作りたい動画の長さを最初に決めておくと話が早い</strong>です。</li>
+    <li><strong>音は潜在継続だけで 4 継ぎ目もつか。</strong> これが最大の分岐。もつなら選択肢 C 単独、もたないなら D を併用して音を別レイヤーにする。<em>→ 実験 3 で今夕決着</em></li>
+    <li><strong>量子化レベルは Q4 / Q5 / int4 のどれか。</strong> コミュニティ内で推奨が割れている(§8)。あなたの 4080 + RAM 64GB という構成は他の 16GB 環境より有利なので、他人の結論がそのまま当てはまらない可能性があります。<em>→ 短いクリップ 2〜3 本で実測</em></li>
+    <li><strong>PyTorch の入替で本当に速くなるか。</strong> 効けば以降の全実験が半分の時間で回る。<em>→ 実験 0</em></li>
+    <li><strong>Turbo LoRA の音質劣化はどの程度か。</strong> 「劣化する」とは書かれていても、程度は不明。許容できる範囲なら 16GB でも 768p が現実的になり、32GB を借りる必要性が下がります。<em>→ 実験 3 のあと、入れて聴き比べ</em></li>
+    <li><strong>のりしろは 22 か 39 か。</strong> 繋がりの良さと生成コストの釣り合い。17k+5 格子との関係(§2)も実機で確認したい。</li>
+    <li><strong>Ref2VA を連鎖に組み込むか。</strong> キャラの同一性を保つ手段だが、fl2va と ref2va のアダプタは混ぜられない。1 分 = 5 本ならドリフトは無視できない量になるので、検討の価値はあります。</li>
+    <li><strong>32GB をいつ借りるか。</strong> 論点 1 と 4 の結果次第。音が C 単独でもつなら、借りる必要はないかもしれません(§8b)。</li>
   </ol>
 </section>
 
@@ -716,21 +892,32 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
   <span class="sec-label">保留</span>
   <h2>YouTube メモ</h2>
 
+  <p>いただいた URL: <code>https://youtu.be/nHVnbZPAnT4</code></p>
+
   <div class="box warn">
-    <div class="box-title">URL 待ち</div>
-    <p style="margin:0">動画の URL をいただければ、この節に要約を追記してこのファイルを更新します。<strong>私は動画そのものを再生できません。</strong>タイトル・概要欄・字幕テキスト・関連記事から要約します。字幕が非公開の動画は取得できないことがあるので、その場合は字幕テキストを貼っていただければ確実です。</p>
+    <div class="box-title">取得できませんでした</div>
+    <p>この作業環境のネットワークが <code>youtube.com</code> / <code>youtu.be</code> をブロックしており、ページを開けませんでした。動画 ID での Web 検索でも該当が出ません(公開直後などで未インデックスの可能性)。<strong>つまり現時点で、この動画の内容は私にはまったく分かりません。</strong></p>
+    <p style="margin-bottom:0">推測で書くと、このノートの他の部分の信頼性まで落ちるので、空欄のままにしてあります。</p>
   </div>
 
-  <h3>動画から拾いたい観点(要約時のチェックリスト)</h3>
-  <p>どんな動画であれ、この文書と突き合わせるために以下を確認します。ご自身で先に観る場合も、この観点でメモを取っておくと合流が早くなります。</p>
+  <h3>いただければ反映できるもの(どれか一つで十分)</h3>
+  <ul class="check">
+    <li><strong>タイトルとチャンネル名</strong> — これだけでも、関連記事や同じ作者の記事から内容を追えることが多い</li>
+    <li>概要欄のテキスト(使用ノード名やワークフローの配布先が書かれていることが多く、実は本文より有用)</li>
+    <li><strong>字幕の全文</strong> — 動画下の「…」→「文字起こしを表示」→ 全選択してコピー。これがあれば確実</li>
+  </ul>
+
+  <h3>動画から拾いたい観点</h3>
+  <p>この文書と突き合わせるために以下を確認します。ご自身で先に観る場合も、この観点でメモを取っておくと合流が早くなります。</p>
   <ul class="check">
     <li>扱っているのは §1 の ① 継続 / ② 遷移 / ③ 連結 のどれか</li>
     <li>公式ノードだけの話か、カスタムノードを入れているか(入れているならどれか)</li>
     <li><strong>音声に触れているか</strong> — 触れていなければ映像だけの話として割り引いて読む</li>
-    <li>GPU / VRAM と量子化レベル(16GB の話として読めるか)</li>
+    <li>GPU / VRAM と量子化レベル(16GB の話として読めるか)、生成時間の実測が出ているか</li>
+    <li><strong>Turbo LoRA / Spectrum を使っているか</strong> — 使っていれば、その速度は音質と引き換えのもの(§8)</li>
     <li>ComfyUI のバージョン、および動画の公開日(この分野は 8 月に動いたばかりで陳腐化が速い)</li>
-    <li>のりしろのフレーム数など、具体的な数値が出ているか</li>
-    <li>この文書の §5 の 3 つ以外の手法が紹介されていないか</li>
+    <li>のりしろのフレーム数、扱っている総尺(1 分級の話かどうか)</li>
+    <li>§5 の 3 つ以外の手法が紹介されていないか</li>
   </ul>
 </section>
 
@@ -770,14 +957,28 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
     <li><a href="https://vegcale.com/2026/08/15/minimax-h3-use-japan-pricing-guide/">文系エンジニアの日記 — 日本で使えるか・料金の落とし穴(日本語)</a></li>
   </ul>
 
+  <h3>16GB 実測・高速化(2 回目の調査で追加)</h3>
+  <ul>
+    <li><a href="https://github.com/Tomiigo/minimax-h3-16gb">Tomiigo / minimax-h3-16gb</a> — 16GB 実測ノート。モデル一式 42.5GB の内訳、起動フラグ、270 GiB のディスク読み込み <span class="c c1">一次</span></li>
+    <li><a href="https://note.com/tank_ai/n/nab26edd4ab96?hl=en">たぬ — 同梱 PyTorch が原因で 2.17 倍(RTX 4060 Ti 16GB / RAM 64GB)</a></li>
+    <li><a href="https://ai-hardware-zukan.com/minimax-h3-vram-16gb-comfyui-rtx5080-5060ti-benchmark/">AIハードウェア図鑑 — VRAM 16GB 導入手順と RTX 5080 / 5060 Ti 実測</a></li>
+    <li><a href="https://note.com/gakushiai/n/nd61a4af3c2d8">ガクシ — 量子化×蒸留 LoRA を 9 構成実測(RTX 5060 Ti 16GB)</a></li>
+    <li><a href="https://note.com/mizuki_creator/n/ne7d71ac5a6dc">みずき — Turbo LoRA + SageAttention で 2.6 倍(RTX 5060 Ti 16GB)</a></li>
+    <li><a href="https://qiita.com/lumichy/items/6538f75ea72653b6e626">Qiita — Turbo LoRA で 830 秒 → 375 秒</a></li>
+    <li><a href="https://lab.main.jp/ai/posts/2026-08-05-minimax-h3-acceleration-techniques/">Lab AI — 高速化テクまとめ:効果と失敗パターン</a></li>
+    <li><a href="https://note.com/sepiablue/n/n1a7096eb9136?hl=en">かみもと — SageAttention 導入で 12GB 環境が 30% 高速化</a></li>
+    <li><a href="https://github.com/Comfy-Org/ComfyUI/issues/15263">ComfyUI Issue #15263 — SageAttention FP8 が sm_120 でノイズを出す</a> <span class="c c1">一次</span></li>
+    <li><a href="https://runaihome.com/blog/minimax-h3-comfyui-gguf-workflow-tutorial-2026/">runaihome — GGUF ワークフローと RTX 3060〜5090 の実測</a></li>
+  </ul>
+
   <div class="box">
     <p style="margin:0">なお <code>minimaxh3.cc</code> / <code>minimax3.org</code> / <code>minimaxh3.run</code> など、H3 の名を冠した解説サイトが多数存在します。内容が正しい場合もありますが<strong>出所の裏が取れないため、この文書では数値の根拠にしていません</strong>。ワークフロー JSON をこれらのサイトから落とすのは避け、GitHub か ComfyUI Manager 経由にしてください。</p>
   </div>
 </section>
 
 <footer>
-  <p>作成 2026-08-30 / 更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① YouTube 動画の要約(URL 受領後)、② §9 の実験結果の反映、③ 公式ドキュメント確認による <span class="c c3">要検証</span> 項目の格上げ。</p>
+  <p>初版 2026-08-30 / 第 2 版 2026-08-30(目標尺 1 分・RTX 4080 16GB + RAM 64GB・32GB 借用案を反映、16GB 実測と高速化の罠を追加、量子化推奨を両論併記に訂正)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① YouTube 動画の要約(タイトルまたは字幕の受領後)、② §9 の実験 0〜3 の結果の反映、③ 公式ドキュメント確認による <span class="c c3">要検証</span> 項目の格上げ。</p>
 </footer>
 
 </main>
