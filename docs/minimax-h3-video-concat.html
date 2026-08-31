@@ -237,7 +237,8 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s8b">32GB を借りるとき</a></li>
     <li><a href="#s9">今夕の最小実験</a></li>
     <li><a href="#s10">未解決の論点</a></li>
-    <li><a href="#s11">動画の要約</a></li>
+    <li><a href="#s11">動画 1 — 公式ノードで組む</a></li>
+    <li><a href="#s11b">動画 2 — 潜在で繋ぐ</a></li>
     <li><a href="#s12">出典と確度</a></li>
   </ol>
 </nav>
@@ -431,6 +432,26 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     のりしろ 72 フレームで計算し直すと、実質 362 − 72 = <strong>290 フレーム/本</strong>。362 + 4×290 = 1,522 フレーム(63.4 秒)なので、<strong>1 分はやはり 5 本</strong>で収まります。設計は変わりません。</p>
   </div>
 
+  <h3>クリップ長を短くせざるを得ない場合</h3>
+  <p>長尺特化のノードパックは <strong>16GB では 7〜10 秒</strong>を目安としています(§8)。15 秒が通らない可能性があるので、クリップ長ごとの本数を出しておきます。すべて 17k+5 グリッドに載せた実際のフレーム数です。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:16%">クリップ長</th><th style="width:16%">フレーム数</th><th style="width:12%">本数</th><th style="width:12%">継ぎ目</th><th>備考</th></tr></thead>
+      <tbody>
+        <tr><td class="num">15 秒</td><td class="num">362</td><td class="num">5</td><td class="num">4</td><td>のりしろ 72(動画 1 方式)。<strong>16GB で通らない可能性</strong></td></tr>
+        <tr><td class="num">12 秒</td><td class="num">294</td><td class="num">6</td><td class="num">5</td><td>のりしろ 24(動画 2 方式)。<strong>動画 2 の実例は 12 秒 × 4 = 48 秒</strong></td></tr>
+        <tr><td class="num">10 秒</td><td class="num">243</td><td class="num">7</td><td class="num">6</td><td>16GB 目安の上限</td></tr>
+        <tr><td class="num">8 秒</td><td class="num">192</td><td class="num">9</td><td class="num">8</td><td>確実に通したいとき。192 = 17×11+5 でぴったり</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box warn">
+    <p style="margin:0"><strong>クリップが短くなるほど継ぎ目が増え、劣化が累積します。</strong> 15 秒なら継ぎ目 4 つ、8 秒なら 8 つ — 倍です。<br>
+    <strong>だからこそ、上のブロック分割がますます重要になります。</strong> 8 秒クリップでも、カット割りで 2〜3 本ごとに切れば、最長の連鎖は 2〜3 本のまま。継ぎ目の総数ではなく、<strong>連続していなければならない継ぎ目の数</strong>だけが問題なのです。</p>
+  </div>
+
   <h3>時間予算 — ここが一番効いてくる</h3>
   <p>他者の 16GB 実測からの単純外挿です <span class="c c3">要検証</span>。あくまで桁感として。</p>
 
@@ -607,17 +628,21 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     付属ワークフロー: <code>01_Start</code> 初回生成 + Auto Handover 解析 + latent 保存 / <code>02_Continue</code> 前クリップから継続 / <code>03_3Clip_Showcase_AutoStitch</code> 3 本連続生成 + 自動結合 / <code>04_Stitch_Saved_Chain</code> 長尺向け <span class="c c1">一次</span></p>
   </div>
 
-  <h3>公式のキュレーションリストにも当たる</h3>
+  <h3>ツールの一覧 — まず公式のキュレーションリストに当たる</h3>
   <p>MiniMax 公式が <a href="https://github.com/MiniMax-AI/awesome-minimax-h3-integration">awesome-minimax-h3-integration</a> を公開しており、ComfyUI 拡張がまとまっています <span class="c c1">一次</span>。上の 3 つのうち <strong>ComfyUI-H3-Motion-Context は公式リストに掲載</strong>されています(「前ブロックの最終フレームと音声を次へ送る」と説明)。新しいツールが出ていないか、<strong>PC 側でまずここを見るのが確実</strong>です。</p>
 
   <div class="scroll">
     <table>
-      <thead><tr><th style="width:34%">同リストで見つかる関連ツール</th><th>内容</th></tr></thead>
+      <thead><tr><th style="width:32%">ツール</th><th>内容と、あなたにとっての意味</th></tr></thead>
       <tbody>
-        <tr><td><strong>ComfyUI-H3-Multishot Pack</strong>(joeygambino)</td><td>複数ショットを<strong>「カットの見えない 1 つの長回し」</strong>として描画し、10〜15 秒ブロックを任意長に連結。§2b のブロック設計と相性が良さそう <span class="c c3">要検証</span></td></tr>
+        <tr><td><strong>ComfyUI-MiniMax-H3-Extend</strong>(kat3ri / 通称 Kate)</td><td><strong>動画 2 で使われているノード</strong>(§11b)。<code>MiniMaxH3VideoExtendPatched</code> と <code>MiniMaxH3EncodeAVPatched</code> の 2 つ。後者が映像フレームと<strong>任意の音声</strong>を AV 潜在に符号化し、前者の <code>context_latent</code> に渡す。推奨値は <code>context_frames</code> 2 / <code>ref_spacing</code> 1〜2 / <code>ref_decay</code> 0.3 / <code>ref_ramp</code> 3〜4(動きが激しいクリップは 5〜6)。<code>custom_nodes/</code> に clone して再起動するだけ、コア改変なし <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>ComfyUI-MiniMax-H3-LongMedia</strong>(vizart-vj)</td><td><strong>低 VRAM + 長尺 + リップシンクを名指しで狙った唯一のもの。</strong>INT8 K/V 圧縮、チャンク化 MLP、VRAM ガード。<strong>16GB は 7〜10 秒</strong>が目安(§8)。<strong>リップシンクモードはソース音声でタイミングを合わせ、元の音声トラックをそのまま復元する</strong> → §6 の解釈 (a) にあたる <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>Minimax H3 Latent Upscaler</strong>(LBH-123-AI)</td><td>24ch 潜在を学習済みネットで 1.0〜4.0 倍にアップスケール。<strong>5B パラメータの VAE decode/encode 往復を飛ばす</strong>ので速い。2D(高速)と 3D(時間方向も整合)の 2 ノード。<strong>時間は節約するが VRAM は節約しない</strong>と作者が明記 <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>MiniMax H3 Hub</strong>(ai-models-lab)</td><td>コミュニティの知識ベース。<strong>INT8 VRAM 計算機が RTX 4080(16GB)を名指しで対象にしている</strong> — 実験前にここで当たりを付けられる。ワークフロー JSON、プロンプトスタジオも <span class="c c1">一次</span></td></tr>
+        <tr><td>ComfyUI-MiniMax-H3-Guide(ethanfel)</td><td>H3 のプロンプトを<strong>ガイド付きで組み立てるノード</strong>。§6 のテンプレートを手で書くのが辛いときに</td></tr>
+        <tr><td>ComfyUI-H3-Multishot Pack(joeygambino)</td><td>複数ショットを「カットの見えない 1 つの長回し」として描画し、10〜15 秒ブロックを任意長に連結 <span class="c c3">要検証</span></td></tr>
         <tr><td>ComfyUI_MiniMaxH3_Director(huangserva)</td><td>t2v / fl2v / r2v / v2v / rv2v の 5 テンプレート</td></tr>
-        <tr><td>comfyui-minimax-h3-audio-T8(T8mars)</td><td>音声 VAE まわりのノード</td></tr>
-        <tr><td>LanPaint v2.1.0(scraed)</td><td>学習不要の<strong>動画・音声インペイント</strong>。継ぎ目の音を後から埋める用途に使える可能性 <span class="c c3">要検証(私の着想)</span></td></tr>
+        <tr><td>LanPaint v2.1.0(scraed)</td><td>学習不要の動画・音声インペイント。継ぎ目の音を後から埋める用途に使える可能性 <span class="c c3">要検証(私の着想)</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -678,6 +703,13 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <div class="box-title">結論: (b)。ただし心配は解決する</div>
     <p>実際に動く workflow が使っているのは <strong>(b) — 声色(timbre)の参照</strong>でした。台詞そのものは毎回生成されます。公式リポジトリの読み方が正しかったことになります。</p>
     <p style="margin-bottom:0"><strong>それでも、あなたの本当の心配(継ぎ目で声が変わる)は解決します。</strong> 同じ声の参照を全ショットで共有すればよいからです。次の項がその手順です。</p>
+  </div>
+
+  <div class="box audio">
+    <div class="box-title">補足 — (a) も存在します。ただし別のノードで</div>
+    <p style="margin:0">標準の Ref2VA の音声参照は (b) ですが、<strong>LongMedia のリップシンクモードは「ソース音声を使って音と映像のタイミングを合わせ、<em>元の音声トラックをそのまま復元する</em>」</strong>と説明されています <span class="c c1">一次</span>。これは <strong>(a) そのもの</strong>です。<br>
+    つまり<strong>台詞音声を先に 1 本作り、それに口を合わせさせて、音は元のまま使う</strong>という道が実在します。台詞主役のあなたには理想形に近い。<br>
+    <strong>ただしトレードオフがあります。</strong> LongMedia は 16GB では <strong>7〜10 秒/クリップ</strong>が目安とされており、15 秒クリップは通らない可能性があります(§8)。<strong>音の完全な連続性を取るか、クリップを長くして継ぎ目を減らすか</strong>、という選択になります。</p>
   </div>
 
   <h3>声の一貫性はこう取る — 全ショットで参照を共有する</h3>
@@ -786,7 +818,7 @@ ffmpeg -i clip02.mp4 \
   -af "atrim=start=1.625,asetpts=PTS-STARTPTS" \
   -c:v libx264 -crf 16 -preset slow -pix_fmt yuv420p \
   -c:a aac -b:a 256k clip02_trim.mp4</code></pre>
-  <p class="cap">継続系ノードは前クリップの尾を「ピン留め」して重複生成するため、そのままだと同じ映像が二度出ます。捨てるフレーム数は使うノードの <code>context_length</code> に合わせてください(§2 の 17k+5 の話と直結します)。多くのノードはこのトリムを自前で持っているので、<strong>まず自動でやってくれるか確認</strong>を。</p>
+  <p class="cap"><strong>動画 2 では継続セグメントの先頭「1 秒ほど」を捨てていました</strong>(§11b)。24fps なので <code>start_frame=24</code> / <code>atrim=start=1.0</code> が出発点になります。継続系ノードは前クリップの尾を「ピン留め」して重複生成するため、そのままだと同じ映像が二度出ます。捨てるフレーム数は使うノードの設定に合わせてください(§2 の 17k+5 の話と直結します)。多くのノードはこのトリムを自前で持っているので、<strong>まず自動でやってくれるか確認</strong>を。</p>
 
   <h3>レシピ 4 — 音の継ぎ目をならす</h3>
 <pre><code>ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
@@ -858,6 +890,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>GGUF の配布幅</td><td>IQ1_S の 3.78 GiB から Q8_0 の 33.56 GiB まで。<strong>16GB に載せるならこの中間から選ぶ</strong>。<span class="c c1">一次</span></td></tr>
         <tr><td>Sol-Attn(kijai)</td><td>MLP ピーク VRAM −37% と魅力的だが <strong>Blackwell 世代向け</strong>。RTX 4080 は Ada なので<strong>対象外の可能性が高い</strong>。<span class="c c3">要検証</span></td></tr>
         <tr><td>ComfyUI 以外の選択肢</td><td>DiffSynth-Studio の NF4 経路は最小 8GB を謳う。ComfyUI で詰まったときの逃げ道。<span class="c c1">一次</span></td></tr>
+        <tr><td><strong>VRAM 計算機</strong></td><td>MiniMax H3 Hub の INT8 VRAM 計算機が <strong>RTX 4080(16GB)を名指しで対象</strong>にしている。<strong>実験を始める前にここで当たりを付けられます</strong> <span class="c c1">一次</span></td></tr>
+        <tr><td>潜在アップスケーラ</td><td>低解像度で生成 → 潜在のまま 1.0〜4.0 倍 → 仕上げ。VAE の往復を飛ばすので<strong>速い</strong>。ただし<strong>VRAM は節約しない</strong>(§11b)<span class="c c1">一次</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -866,6 +900,22 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <div class="box-title">訂正 — 量子化レベルの推奨は割れている</div>
     <p style="margin:0">このノートの初版で「16GB は Q4_K_M」と書きましたが、<strong>撤回して両論併記にします</strong>。別の 16GB 実測記事は <strong>Q5_K_M</strong> を推し(崩れがほぼ無く速度とのバランスが最良)、9 構成を実測した記事は <strong>int4 + Turbo LoRA が最適だった</strong>としています(20 ステップ単体では int4 に顔の破綻が出たが、Turbo LoRA と組むと解消)。<span class="c c2">一致</span><br>
     つまり<strong>コミュニティ内で決着していません</strong>。あなたの 4080 で 2〜3 構成を実測するのが唯一の答えです。幸い、この比較は短いクリップ 1 本ずつで済みます。</p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">16GB でのクリップ長の目安 — 設計に効きます</div>
+    <p>長尺特化の LongMedia が、VRAM 別の出発点を示しています <span class="c c1">一次</span>。</p>
+    <div class="scroll" style="margin:12px 0 0">
+      <table>
+        <thead><tr><th style="width:22%">VRAM</th><th>推奨するクリップ長</th></tr></thead>
+        <tbody>
+          <tr><td class="num">16GB</td><td><strong>7〜10 秒</strong>(バランスの取れた内容)</td></tr>
+          <tr><td class="num">12GB</td><td>5〜8 秒(参照は少なめに)</td></tr>
+          <tr><td class="num">8GB</td><td>4〜6 秒(参照は少なめに)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-bottom:0"><strong>これが本当なら、あなたの 4080 で 15 秒クリップは通らない可能性があります。</strong> §2b の「15 秒 × 5 本」は 10 秒前後 × 7 本に変わるかもしれません。あくまで 1 つのノードパックの目安なので、<strong>実験 5 で自分の環境の上限を測るのが最優先</strong>です。</p>
   </div>
 
   <h3 style="color:var(--risk)">高速化の罠 — あなたの条件では特に重要</h3>
@@ -1042,7 +1092,10 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   </div>
 
   <ol>
-    <li><strong>4080 16GB で 5 ショット完走できるか。</strong> 動画の作者は RunPod のレンタル GPU を使っており、16GB での実績は不明です。<em>→ 実験 5</em></li>
+    <li><strong>4080 16GB でクリップ長は何秒まで通るか。</strong> 15 秒が通れば継ぎ目 4 つ、8 秒しか通らなければ 8 つ。<strong>設計全体がここで決まります</strong>(§2b)。実験の前に <strong>MiniMax H3 Hub の VRAM 計算機</strong>で当たりを付けられます(§8)。<em>→ 実験 5</em></li>
+    <li><strong>音は (a) を狙うか (b) で妥協するか。</strong> LongMedia のリップシンクモードなら台詞音声をそのまま使えますが、16GB では 7〜10 秒/クリップの制約が付きます(§6)。<strong>音の完全な連続性と、継ぎ目の少なさのトレードオフ</strong>です。</li>
+    <li><strong>動画 1 方式(画像列)と動画 2 方式(潜在)のどちらを採るか。</strong> 前者は公式ノードだけで済み導入が軽い。後者は繋がりが強いがカスタムノードが要る。<strong>まず前者、足りなければ後者</strong>という順序を推します。</li>
+    <li><strong>4080 16GB で 5 ショット完走できるか。</strong> 動画 1 の作者は RunPod のレンタル GPU を使っており、16GB での実績は不明です。<em>→ 実験 5</em></li>
     <li><strong>1 分に実際どれだけかかるか。</strong> §2b の外挿(低解像度 28 分 / 768p 2 時間 40 分)が自分の環境で当たっているか。<em>→ 実験 1 と 5</em></li>
     <li><strong>量子化レベルは Q4 / Q5 / int4 のどれか。</strong> 推奨が割れている(§8)。台詞主役なので<strong>顔と口元の破綻</strong>が判断基準。</li>
     <li><strong>PyTorch の入替で速くなるか。</strong> 効けば全部が半分の時間で回る。<em>→ 実験 1</em></li>
@@ -1053,8 +1106,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <section id="s11">
-  <span class="sec-label">動画</span>
-  <h2>動画の要約</h2>
+  <span class="sec-label">動画 1</span>
+  <h2>公式ノードで組む</h2>
 
   <div class="box">
     <div class="box-title">出典</div>
@@ -1160,6 +1213,75 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li>「ボタン一発で誰でも動く」ものではなく、<strong>自分の用途に合わせて調整する前提</strong>だと明言されています</li>
   </ul>
 </section>
+<section id="s11b">
+  <span class="sec-label">動画 2</span>
+  <h2>潜在で繋ぐ</h2>
+
+  <div class="box">
+    <div class="box-title">出典</div>
+    <p style="margin:0"><code>https://youtu.be/ttz62U4XRsg</code> — 字幕全文から要約 <span class="c c1">一次</span><br>
+    作者はローカル優先の story-to-video スタジオ <a href="https://github.com/benjiyaya/Calliope"><strong>Calliope</strong></a>(FastAPI + SvelteKit + ComfyUI)の開発者。</p>
+  </div>
+
+  <p>冒頭で「既存のリポジトリの多くは、<strong>複雑すぎる</strong>か、<strong>特定の場面向けすぎる</strong>か、<strong>first/last frame しか扱えない</strong>」と切り捨てているのが印象的です。§5 で私が並べたノード群への評価としても読めます。</p>
+
+  <h3>動画 1 とは別系統です</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:18%"></th><th style="width:41%">動画 1(Furuknap)</th><th>動画 2(Calliope 作者)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>繋ぎ方</strong></td><td>デコード済みの<strong>画像列</strong>を次ショットの参照に渡す</td><td><strong>潜在(latent)コンテキスト</strong>をそのまま次に渡す</td></tr>
+        <tr><td><strong>ノード</strong></td><td>公式ノード + subgraph のみ</td><td>Kate の <a href="https://github.com/kat3ri/ComfyUI-MiniMax-H3-Extend"><code>ComfyUI-MiniMax-H3-Extend</code></a> が必要</td></tr>
+        <tr><td><strong>参照</strong></td><td>参照画像 + <code>voice0</code> / <code>voice1</code></td><td><strong>キャラクターシート 2 枚 + 音声参照</strong></td></tr>
+        <tr><td><strong>のりしろ</strong></td><td><strong>3 秒以上</strong>の画像列が必要</td><td>継続セグメントの<strong>先頭 1 秒ほどをトリム</strong>して繋ぐ</td></tr>
+        <tr><td><strong>生成モード</strong></td><td>reference to video</td><td><strong>reference to video のまま</strong>(first/last frame only ではない)</td></tr>
+        <tr><td><strong>位置づけ</strong></td><td>§4 の選択肢 <strong>B の発展形</strong></td><td>§4 の選択肢 <strong>C(潜在継続)</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>手順の要点</h3>
+  <ul>
+    <li><strong>最初のセグメントは公式の reference-to-video ノードで生成</strong>(ゼロから作るのでカスタムノードは不要)</li>
+    <li>2 本目以降は、前セグメントの<strong>潜在出力を直接</strong>次の <code>context_latent</code> に繋ぐ。<strong>ディスクに保存した latent ファイルは使わない</strong>(命名規則が揃わないため)。直接繋ぐほうが API 呼び出しにも展開しやすい</li>
+    <li>各セグメントに個別のテキストプロンプト。2 本目のプロンプトは 1 本目の続きを書く</li>
+    <li><strong>参照画像としてキャラクターシートを毎回渡す</strong> → 「first/last frame だけ」ではないので、アイデンティティが毎回アンカーされる</li>
+    <li><strong>音声参照</strong>を渡してセグメント間の音を揃える(「前半が途中で切れて、後半がまったく別の音になる」のを防ぐ)</li>
+    <li>継続セグメントは<strong>先頭 1 秒ほど(重なり分)をトリム</strong>してから繋ぐ → §7 レシピ 3 がそのまま使えます</li>
+  </ul>
+
+  <h3>実際の数字</h3>
+  <ul>
+    <li><strong>12 秒 × 4 セグメント</strong>でデモ。テストは <strong>480p</strong>、本番は <strong>0.8 メガピクセル = 1216×672</strong></li>
+    <li>解像度はメガピクセル指定(MiniMax の解像度対応表がある)</li>
+    <li>4 セグメントを通して<strong>背景・環境・テーマが保たれる</strong>ことを確認している</li>
+    <li>1 クリップ内に<strong>複数のカメラショット</strong>が入っていても成立する</li>
+  </ul>
+
+  <div class="box tint">
+    <div class="box-title">あなたの 1 分に直結します</div>
+    <p style="margin:0"><strong>12 秒 × 4 = 48 秒。</strong> 目標の 1 分にほぼ届く実例です。5 セグメントにすれば 60 秒。しかも「480p でテスト → 0.8MP で本番」という進め方は、§2b で私が推した運用とまったく同じです。</p>
+  </div>
+
+  <h3>二段構えの解像度 — ただし期待しすぎないこと</h3>
+  <p>「二段目の latent サンプラーで解像度を上げる」と述べています。<strong>低解像度で生成 → 潜在のままアップスケール → 仕上げ</strong>という流れで、専用ノードも存在します(§5)。</p>
+  <div class="box warn">
+    <p style="margin:0">潜在アップスケーラの作者自身が「<strong>これは時間を節約するのであって VRAM を節約するものではない</strong>。仕上げは目標解像度で走るので、ピークメモリは直接高解像度生成と同程度」と明記しています <span class="c c1">一次</span>。<br>
+    <strong>16GB の VRAM 問題は解決しません。軽くなるのは時間の問題だけです。</strong> それでも §2b の「768p で 2 時間 40 分」に効くなら十分価値はあります。</p>
+  </div>
+
+  <h3>ワークフローを分割して API 化する</h3>
+  <p>「最初の生成」と「延長」を別ワークフローにしておくと、API 呼び出しや ComfyUI MCP から呼べる、という設計思想です。氏は自作アプリ Calliope にこの仕組みを組み込み、「前の動画から続ける」トグルで 3 本目 → 4 本目の連続性を作っていました。</p>
+  <p>1 分を 5〜7 クリップで作るなら、<strong>手作業でノードを複製するより、同じワークフローを繰り返し呼ぶ形にしたほうが楽</strong>になる可能性があります。ただし今夕やることではありません。</p>
+
+  <div class="box tint">
+    <div class="box-title">思わぬ収穫 — プロンプトテンプレートの中身が見えました</div>
+    <p style="margin:0">Calliope のリポジトリ説明に、MiniMax H3 の full-reference 形式の<strong>セクション名</strong>が列挙されていました <span class="c c3">要検証</span>:<br>
+    <strong>subject definitions(被写体定義)/ summary(要約)/ retention analysis / detailed description(詳細記述)/ soundscape(サウンドスケープ)/ non-diegetic music(劇中人物に聞こえない音楽 = BGM)</strong><br>
+    動画 1 で「これで結果が完全に変わった」と言われていたテンプレートの構造です。<strong>soundscape と non-diegetic music が独立したセクションとして存在する</strong>のは、§6 の「環境音は全ショットで揃える」「BGM は別レイヤー」という整理と正確に対応します。<strong>H3 は最初からその区別を持っている</strong>、ということです。</p>
+  </div>
+</section>
+
 
 <section id="s12">
   <span class="sec-label">出典</span>
@@ -1224,7 +1346,19 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li><a href="https://note.com/highdrama/n/n12ebd1c42c47">鈴木憂一 — 低ステップ確認方式と 480p 運用(日本語)</a></li>
   </ul>
 
-  <h3>長尺化・連鎖の実装(4 回目の調査で追加)</h3>
+  <h3>動画 2 と、そこから辿ったツール群</h3>
+  <ul>
+    <li><strong><a href="https://youtu.be/ttz62U4XRsg">動画 2 本編(字幕全文を受領・§11b の出典)</a></strong> <span class="c c1">一次</span></li>
+    <li><a href="https://github.com/kat3ri/ComfyUI-MiniMax-H3-Extend">kat3ri / ComfyUI-MiniMax-H3-Extend</a> <span class="c c1">一次</span> — 動画 2 で使われているノード</li>
+    <li><a href="https://github.com/vizart-vj/ComfyUI-MiniMax-H3-LongMedia">vizart-vj / ComfyUI-MiniMax-H3-LongMedia</a> <span class="c c1">一次</span> — <strong>16GB は 7〜10 秒の目安、リップシンクモード</strong>の出典</li>
+    <li><a href="https://github.com/LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler">LBH-123-AI / Minimax H3 Latent Upscaler</a> <span class="c c1">一次</span>(<a href="https://github.com/Tr1dae/ComfyUI-MiniMaxH3_LatentUpscaler">別実装</a>もあり)</li>
+    <li><a href="https://github.com/ai-models-lab/minimax-h3">ai-models-lab / MiniMax H3 Hub</a> <span class="c c1">一次</span> — <strong>INT8 VRAM 計算機</strong></li>
+    <li><a href="https://github.com/ethanfel/ComfyUI-MiniMax-H3-Guide">ethanfel / ComfyUI-MiniMax-H3-Guide</a> — プロンプト組み立て支援</li>
+    <li><a href="https://github.com/benjiyaya/Calliope">benjiyaya / Calliope</a> — 動画 2 の作者のアプリ。<strong>プロンプトテンプレートのセクション名</strong>の出典</li>
+    <li><a href="https://github.com/xiaolibai-sys/ComfyUI-MiniMaxH3">xiaolibai-sys / ComfyUI-MiniMaxH3</a> — H3 の映像・音声生成ノード</li>
+  </ul>
+
+  <h3>長尺化・連鎖の実装</h3>
   <ul>
     <li><strong><a href="https://youtu.be/nHVnbZPAnT4">動画本編(字幕全文を受領・§11 の出典)</a></strong> — B Explains Everything / <a href="https://www.youtube.com/@furuknap">@furuknap</a>。<strong>説明欄から「H3 long form blueprint」をダウンロードできます</strong> <span class="c c1">一次</span></li>
     <li><a href="https://furuknap.net">furuknap.net</a>(未取得)</li>
@@ -1243,8 +1377,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 6 版 2026-08-30(<strong>動画の字幕全文を受領</strong>。§11 を推測から要約に差し替え、第 5 版の「Herrgott の Suite の解説」という推定を訂正。音声参照が声色参照であることを確定させ、声の共有・台詞の尺・無音の書き方・のりしろ 3 秒を反映。推奨を Furuknap 方式に差し替え、§5 を第 2 段に位置づけ直し。実験を「確かめる」から「設定する」中心に再構成)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① §9 の実験 1〜5 の結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ blueprint を実際に開いた上でのノード構成の確認。</p>
+  <p>初版 2026-08-30 / 第 7 版 2026-08-30(<strong>2 本目の動画の字幕を受領</strong>。§11b を新設し、潜在で繋ぐ別系統の実装を追加。そこから Kate の Extend ノード、LongMedia(16GB は 7〜10 秒 / リップシンクモード = 解釈 (a))、潜在アップスケーラ、VRAM 計算機、プロンプトテンプレートのセクション名に到達。§2b にクリップ長別の本数表、§5 にツール一覧、§8 に VRAM 目安を追加)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① §9 の実験 1〜5 の結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ VRAM 計算機の結果に基づくクリップ長の確定。</p>
 </footer>
 
 </main>
