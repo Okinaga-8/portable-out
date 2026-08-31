@@ -588,6 +588,21 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <p style="margin:0"><strong>H3 Extender</strong> が第一候補になりそうです。ディスクキャッシュ主体でメモリに優しく、中断・再開でき、しかも「最後に一度だけエンコード」なので色ドリフトの主因(往復劣化)を構造的に避けています。次点が <strong>Motion Context</strong>(ComfyUI 0.34.0 以降が必要)。<strong>Infinite Continuation Suite</strong> は最も作り込まれている一方、特定 PR 入りビルドを要求するので導入の難度が一段上です。<span class="c c3">要検証</span></p>
   </div>
 
+  <h3>公式のキュレーションリストにも当たる</h3>
+  <p>MiniMax 公式が <a href="https://github.com/MiniMax-AI/awesome-minimax-h3-integration">awesome-minimax-h3-integration</a> を公開しており、ComfyUI 拡張がまとまっています <span class="c c1">一次</span>。上の 3 つのうち <strong>ComfyUI-H3-Motion-Context は公式リストに掲載</strong>されています(「前ブロックの最終フレームと音声を次へ送る」と説明)。新しいツールが出ていないか、<strong>PC 側でまずここを見るのが確実</strong>です。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:34%">同リストで見つかる関連ツール</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td><strong>ComfyUI-H3-Multishot Pack</strong>(joeygambino)</td><td>複数ショットを<strong>「カットの見えない 1 つの長回し」</strong>として描画し、10〜15 秒ブロックを任意長に連結。§2b のブロック設計と相性が良さそう <span class="c c3">要検証</span></td></tr>
+        <tr><td>ComfyUI_MiniMaxH3_Director(huangserva)</td><td>t2v / fl2v / r2v / v2v / rv2v の 5 テンプレート</td></tr>
+        <tr><td>comfyui-minimax-h3-audio-T8(T8mars)</td><td>音声 VAE まわりのノード</td></tr>
+        <tr><td>LanPaint v2.1.0(scraed)</td><td>学習不要の<strong>動画・音声インペイント</strong>。継ぎ目の音を後から埋める用途に使える可能性 <span class="c c3">要検証(私の着想)</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <div class="box warn">
     <div class="box-title">アダプタを混ぜない</div>
     <p style="margin:0">公式テンプレートでは <strong>T2V / I2V が fl2va、R2V が ref2va</strong> の拡散モデルを使います。「FL2VA と REF2VA のアダプタを混ぜたり、一方の shift を他方に流用したりしない」と明記されています。<span class="c c2">一致</span> 連鎖の途中でモードを切り替えるときは、ここが事故ポイントです。</p>
@@ -793,6 +808,9 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>起動フラグ</td><td><code>--disable-pinned-memory --reserve-vram 1.5</code>。ComfyUI は既定で RAM の最大 90% をページロックするため、低 VRAM 構成ではスワップを食い潰す。<span class="c c1">一次</span></td></tr>
         <tr><td>必要な拡張</td><td><code>ComfyUI-GGUF</code> と <code>Extra-Model-Patcher</code>。<span class="c c3">要検証</span></td></tr>
         <tr><td>ストレージ</td><td>NVMe 推奨。RAM 64GB があれば依存度は下がるが、初回ロードには効く。</td></tr>
+        <tr><td>GGUF の配布幅</td><td>IQ1_S の 3.78 GiB から Q8_0 の 33.56 GiB まで。<strong>16GB に載せるならこの中間から選ぶ</strong>。<span class="c c1">一次</span></td></tr>
+        <tr><td>Sol-Attn(kijai)</td><td>MLP ピーク VRAM −37% と魅力的だが <strong>Blackwell 世代向け</strong>。RTX 4080 は Ada なので<strong>対象外の可能性が高い</strong>。<span class="c c3">要検証</span></td></tr>
+        <tr><td>ComfyUI 以外の選択肢</td><td>DiffSynth-Studio の NF4 経路は最小 8GB を謳う。ComfyUI で詰まったときの逃げ道。<span class="c c1">一次</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -980,46 +998,57 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
 </section>
 
 <section id="s11">
-  <span class="sec-label">保留</span>
+  <span class="sec-label">動画</span>
   <h2>YouTube メモ</h2>
 
-  <p>いただいた URL: <code>https://youtu.be/nHVnbZPAnT4</code></p>
-
-  <div class="box warn">
-    <div class="box-title">取得できませんでした</div>
-    <p>この作業環境のネットワークが <code>youtube.com</code> / <code>youtu.be</code> をブロックしており、ページを開けませんでした。動画 ID での Web 検索でも該当が出ません(公開直後などで未インデックスの可能性)。<strong>つまり現時点で、この動画の内容は私にはまったく分かりません。</strong></p>
-    <p style="margin-bottom:0">推測で書くと、このノートの他の部分の信頼性まで落ちるので、空欄のままにしてあります。</p>
+  <div class="box">
+    <div class="box-title">タイトル</div>
+    <p style="margin:0"><strong>Infinite Length Videos in Minimax H3 — Here's How, Step-by-Step, and The Disaster That Started It</strong><br>
+    <code>https://youtu.be/nHVnbZPAnT4</code></p>
   </div>
 
-  <h3>スマホからでも送れる、効きの大きい情報</h3>
-  <p>PC を起動しなくても、以下が分かるとノートの精度が上がります。<strong>とくに 1 と 2 は今夕の実験の組み立てに直結します。</strong></p>
-  <ul class="check">
-    <li><strong>台詞を喋るのは何人か</strong> — 1 人なら Issue #17(声の混ざり)を回避できる。複数なら切り返し前提で構成を組む(§6)</li>
-    <li><strong>台詞の音声を自分で用意できるか</strong> — 録音 / TTS / 手持ち音源。用意できるなら、§6 の解釈 (a) が成り立った瞬間に最短ルートが開ける</li>
-    <li>アスペクト比(16:9 横 / 9:16 縦)— 連鎖する全クリップで揃える必要がある</li>
-    <li>1 分の中身のおおよその構成(何ブロックに割れそうか)— §2b の設計に直結</li>
-    <li>公開するものか、自分用か — 品質のバーと、声・肖像の扱いの判断が変わる</li>
+  <div class="box warn">
+    <p style="margin:0"><strong>本編は依然として取得できていません。</strong> この作業環境は <code>youtube.com</code> をブロックしており、このタイトルでの検索でも動画そのものは出てきません。以下は<strong>タイトルから読み取れることと、状況証拠</strong>であって、動画の要約ではありません。<span class="c c3">要検証(私の推論)</span></p>
+  </div>
+
+  <h3>タイトルから読めること</h3>
+  <ul>
+    <li><strong>"Infinite Length"</strong> — このノートの §1 でいう <strong>① 継続</strong>の話です。③ の ffmpeg 連結ではありません。まさに今回の本丸。</li>
+    <li><strong>"Step-by-Step"</strong> — 手順の実演。使っているノード名とパラメータが画面に映るはずで、そこが最も価値のある部分です。</li>
+    <li><strong>"The Disaster That Started It"</strong> — 素朴な方法が破綻した経験談から入る構成。<strong>その「失敗」が何だったのかが、このノートの §3(継ぎ目で壊れるもの)のどれに当たるかを見てください。</strong>おそらく FL2VA の末尾フリーズか、色ドリフトの累積です。</li>
   </ul>
 
-  <h3>いただければ反映できるもの(どれか一つで十分)</h3>
-  <ul class="check">
-    <li><strong>タイトルとチャンネル名</strong> — これだけでも、関連記事や同じ作者の記事から内容を追えることが多い</li>
-    <li>概要欄のテキスト(使用ノード名やワークフローの配布先が書かれていることが多く、実は本文より有用)</li>
-    <li><strong>字幕の全文</strong> — 動画下の「…」→「文字起こしを表示」→ 全選択してコピー。これがあれば確実</li>
-  </ul>
+  <h3>状況証拠 — おそらくこの系統の手法</h3>
+  <p>同じ「Infinite Length」という言い回しで、次の手法が流通しています。</p>
+  <div class="box tint">
+    <p><strong>Civitai「H3 Infinite Video Continuation and automatic Stitching with Fl2Va Model」</strong>の説明が、タイトルの内容とよく一致します:</p>
+    <ol style="margin-bottom:8px">
+      <li>開始フレーム + プロンプト + 終了フレームで最初のクリップを作る</li>
+      <li>2 本目以降は<strong>前クリップの保存された latent を読み込み</strong>、プロンプトと(任意で)新しい終了フレームを与えて継続する</li>
+    </ol>
+    <p style="margin-bottom:0">そして「複数のキーフレームがガイドとなり、<strong>品質リセット</strong>として働いて、長尺 AI 動画で通常起きる文脈・品質の劣化を防ぐ」と説明されています。これは §5 の Herrgott's H3 Infinite Continuation Suite の説明とほぼ同じ発想で、同一系統と見てよさそうです。</p>
+  </div>
 
-  <h3>動画から拾いたい観点</h3>
-  <p>この文書と突き合わせるために以下を確認します。ご自身で先に観る場合も、この観点でメモを取っておくと合流が早くなります。</p>
+  <div class="box tint">
+    <div class="box-title">ここが噛み合っている</div>
+    <p style="margin:0">「<strong>キーフレームが品質リセットになる</strong>」という考え方は、私が §2b で提案した「<strong>カット割りは技術的な劣化リセットでもある</strong>」とまったく同じ発想です。別々の経路から同じ結論に着いているので、<strong>この方向は筋が良い</strong>と考えてよさそうです。あなたの「連続シーンとカット割りが混ざる」構成は、この手法にそのまま乗ります。</p>
+  </div>
+
+  <h3>観るときのチェックリスト(絞り込み済み)</h3>
+  <p>このノートの未解決点に直結するものだけに絞りました。<strong>この 4 つが分かれば、今夕の実験が半分に減る可能性があります。</strong></p>
   <ul class="check">
-    <li>扱っているのは §1 の ① 継続 / ② 遷移 / ③ 連結 のどれか</li>
-    <li>公式ノードだけの話か、カスタムノードを入れているか(入れているならどれか)</li>
-    <li><strong>音声に触れているか</strong> — 触れていなければ映像だけの話として割り引いて読む</li>
-    <li>GPU / VRAM と量子化レベル(16GB の話として読めるか)、生成時間の実測が出ているか</li>
-    <li><strong>Turbo LoRA / Spectrum を使っているか</strong> — 使っていれば、その速度は音質と引き換えのもの(§8)</li>
-    <li>ComfyUI のバージョン、および動画の公開日(この分野は 8 月に動いたばかりで陳腐化が速い)</li>
-    <li>のりしろのフレーム数、扱っている総尺(1 分級の話かどうか)</li>
-    <li>§5 の 3 つ以外の手法が紹介されていないか</li>
+    <li><strong>音声をどう扱っているか</strong> — 触れていなければ映像だけの話。触れているなら、§6 の (a)/(b) のどちらか(渡した音そのものか、喋り直しか)</li>
+    <li><strong>使っているノード / ワークフローの名前</strong> — §5 の 3 つのどれか、Civitai 配布のものか、それ以外か</li>
+    <li><strong>のりしろ(context)のフレーム数と、何本まで連鎖させているか</strong> — 劣化が出始める本数への言及があれば最重要</li>
+    <li><strong>GPU / VRAM と生成時間</strong> — 16GB の話として読めるか</li>
   </ul>
+  <p>あわせて、<strong>"The Disaster" の中身</strong>(何が壊れたのか)をメモしておいてください。§3 の表のどれに当たるかで、対策の優先順位が決まります。</p>
+
+  <h3>チャンネル名を教えていただけると</h3>
+  <p>同じ作者が記事や Civitai / GitHub でワークフローを配布していることが多く、<strong>チャンネル名が分かれば配布物にたどり着ける可能性があります</strong>。動画そのものより、配布されているワークフロー JSON のほうが実用価値が高いことも多いです。</p>
+
+  <h3>字幕が取れなかった件</h3>
+  <p>スマホの YouTube アプリは文字起こしのコピーができないことがあります。<strong>PC のブラウザなら</strong>、動画下の「…」→「文字起こしを表示」→ 右パネルをドラッグで全選択 → コピー、で取れます。今夕 PC を立ち上げたときに、もし余裕があれば。</p>
 </section>
 
 <section id="s12">
@@ -1032,6 +1061,7 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
   <ul>
     <li><a href="https://github.com/MiniMax-AI/MiniMax-H3"><strong>MiniMax-AI / MiniMax-H3 — 公式リポジトリ</strong></a> — §2 の仕様(4〜15 秒、24fps、32kHz ステレオ、短辺 768、アスペクト比、BF16、参照音声 3 本 / 合計 15 秒以内)の出典</li>
     <li><a href="https://github.com/MiniMax-AI/MiniMax-H3/issues/17">同 Issue #17 — Ref2VA で複数被写体の声が混ざる</a></li>
+    <li><a href="https://github.com/MiniMax-AI/awesome-minimax-h3-integration">MiniMax-AI / awesome-minimax-h3-integration — 公式のツール一覧</a>(§5 の関連ツール、§8 の GGUF 配布幅・Sol-Attn・DiffSynth の出典)</li>
     <li><a href="https://github.com/tritant/ComfyUI_MiniMax_H3_Extender">tritant / ComfyUI_MiniMax_H3_Extender</a></li>
     <li><a href="https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context">NikoDemon80 / ComfyUI-H3-Motion-Context</a></li>
     <li><a href="https://github.com/HerrgottMargott/Herrgotts-H3-Infinite-Continuation-Suite">HerrgottMargott / Herrgotts-H3-Infinite-Continuation-Suite</a></li>
@@ -1082,6 +1112,13 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
     <li><a href="https://domoai.app/blog/minimax-h3-reference-to-video">domoai — Reference-to-Video 実践ガイド</a></li>
     <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3/discussions/64">HF Discussion #64 — Subject 1 に音声参照をどう割り当てるか</a>(未取得)</li>
     <li><a href="https://note.com/highdrama/n/n12ebd1c42c47">鈴木憂一 — 低ステップ確認方式と 480p 運用(日本語)</a></li>
+  </ul>
+
+  <h3>長尺化・連鎖の実装(4 回目の調査で追加)</h3>
+  <ul>
+    <li><a href="https://civitai.com/models/2852849/h3-infinite-video-continuation-and-automatic-stitching-with-fl2va-model">Civitai — H3 Infinite Video Continuation and automatic Stitching with Fl2Va Model</a>(未取得。§11 の状況証拠)</li>
+    <li><a href="https://comfyui-wiki.com/en/news/2026-08-11-h3-infinite-continuation-suite">ComfyUI Wiki — Herrgotts H3 Infinite Continuation Suite 紹介</a>(未取得)</li>
+    <li><a href="https://huggingface.co/joeygambino/MiniMax-H3-Multishot-Workflow">joeygambino / MiniMax-H3-Multishot-Workflow</a>(未取得)</li>
     <li><a href="https://ai-shogun.com/minimax-h3-comfyui/">AI SHOGUN — プロンプトの書き方(日本語)</a></li>
   </ul>
 
@@ -1091,8 +1128,8 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 3 版 2026-08-30(台詞主役・カット割り混在・素材ゼロを反映。公式リポジトリを一次情報として取り込み、クリップ長・解像度・音声仕様を訂正。§2b にブロック分割、§6 を台詞前提に全面改稿、実験を 1〜5 に再構成)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① YouTube 動画の要約(タイトルまたは字幕の受領後)、② §9 の実験 1〜5 の結果の反映、③ Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ。</p>
+  <p>初版 2026-08-30 / 第 4 版 2026-08-30(YouTube のタイトルを受領し §11 を分析に差し替え。公式の awesome-minimax-h3-integration を取り込み、§5 に関連ツール、§8 に GGUF 配布幅・Sol-Attn・DiffSynth を追加)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① 動画のチャンネル名 / 字幕からの本編要約、② §9 の実験 1〜5 の結果の反映、③ Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ。</p>
 </footer>
 
 </main>
