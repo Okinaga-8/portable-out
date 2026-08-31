@@ -237,7 +237,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s8b">32GB を借りるとき</a></li>
     <li><a href="#s9">今夕の最小実験</a></li>
     <li><a href="#s10">未解決の論点</a></li>
-    <li><a href="#s11">YouTube メモ</a></li>
+    <li><a href="#s11">動画の要約</a></li>
     <li><a href="#s12">出典と確度</a></li>
   </ol>
 </nav>
@@ -259,8 +259,8 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
 
   <div class="box warn">
     <div class="box-title">この調査の限界</div>
-    <p><strong>更新:</strong> 2 回目の調査で <code>github.com</code> は到達できることが分かり、<strong>MiniMax 公式リポジトリ(一次情報)を読めました</strong>。§2 の仕様はそれに基づいて訂正済みです。</p>
-    <p style="margin-bottom:0">一方 <code>huggingface.co</code> / <code>docs.comfy.org</code> / <code>youtube.com</code> は依然ブロックされています。とくに <strong>Hugging Face の「プロンプト指針」文書は公式リポジトリには収録されていない</strong>と明記されているので、PC 側で必ず確認してください。§12 にリンクがあります。</p>
+    <p><strong>更新:</strong> <code>github.com</code> は到達できることが分かり、<strong>MiniMax 公式リポジトリ(一次情報)を読めました</strong>。§2 の仕様はそれに基づいて訂正済みです。さらに<strong>動画の字幕全文をいただけたので、§11 は推測ではなく要約になりました</strong>。</p>
+    <p style="margin-bottom:0">一方 <code>huggingface.co</code> / <code>docs.comfy.org</code> / <code>youtube.com</code> は依然ブロックされています。とくに <strong>Hugging Face の「プロンプト指針」文書</strong>は、§11 で判明したとおり<strong>この案件の成否を分ける最重要ドキュメント</strong>です。公式リポジトリには収録されていないと明記されているので、PC 側で必ず開いてください。§12 にリンクがあります。</p>
   </div>
 
   <h3>あなたの環境(この文書の前提)</h3>
@@ -425,6 +425,12 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <p style="margin:0">絵コンテを切るときに、継ぎ目ごとに<strong>「ここは連続でなければならないか?」</strong>を問うてください。連続である必然性がないなら、カットを入れたほうが技術的に有利です。<strong>カット割りは演出上の選択であると同時に、技術的な劣化リセットでもあります。</strong> これはお金も VRAM もかからない、いちばん安く効く対策です。</p>
   </div>
 
+  <div class="box warn">
+    <div class="box-title">のりしろは 3 秒以上(実例あり)</div>
+    <p style="margin:0">§11 の動画では、末尾 <strong>24 フレーム(1 秒)</strong>を次ショットの参照にして<strong>激しいドリフトを起こしています</strong>。H3 のドキュメントは<strong>参照に最低 3 秒の映像</strong>を求めており、24fps なら <strong>72 フレーム以上</strong>が必要です <span class="c c1">一次</span>。<br>
+    のりしろ 72 フレームで計算し直すと、実質 362 − 72 = <strong>290 フレーム/本</strong>。362 + 4×290 = 1,522 フレーム(63.4 秒)なので、<strong>1 分はやはり 5 本</strong>で収まります。設計は変わりません。</p>
+  </div>
+
   <h3>時間予算 — ここが一番効いてくる</h3>
   <p>他者の 16GB 実測からの単純外挿です <span class="c c3">要検証</span>。あくまで桁感として。</p>
 
@@ -525,11 +531,16 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
   </div>
 
   <div class="box tint">
-    <div class="box-title">条件が出そろった上での見立て</div>
-    <p>1 分 = 継ぎ目 4 つ、<strong>台詞が主役</strong>、<strong>カット割りが混ざる</strong>。この 3 つが揃ったので、初版より大きく踏み込めます。</p>
-    <p><strong>推すのは「ブロック分割 + ブロック内だけ C(Herrgott の Infinite Continuation Suite)」</strong>です。カット割りで 1 分を 2〜3 ブロックに割り、ブロック内の連続部分だけ潜在継続(C)を使う。ブロック間はただの連結(A)+ Ref2VA で人物を固定。<strong>最長の連鎖が 2 本で済むので、音のこもりも色ドリフトも累積しません</strong>(§2b)。</p>
-    <p style="margin-bottom:0">D(音を別トラック)は台詞には使えませんが、<strong>BGM だけは通しで敷いてください</strong> — 継ぎ目の印象が確実に良くなります(§6)。<br>
-    そしてこの見立ては、<strong>§6 の「音声を入力できるか」の答え次第でさらに単純になります</strong>。(a) が成り立てば、台詞は先に 1 本作って確定させられるので、音の悩みはほぼ消えます。<strong>今夕の実験 2 が最大の分岐点です。</strong></p>
+    <div class="box-title">動画を読んだ上での結論</div>
+    <p><strong>まず Furuknap 方式(選択肢 B の発展形)から入ってください。</strong> §11 の workflow は、公式の Ref2VA テンプレートと ComfyUI の subgraph 機能だけで組まれており、<strong>カスタムノードパックを一切使いません</strong>。理由は 4 つ。</p>
+    <ol>
+      <li><strong>あなたの最大の悩み(継ぎ目で声が変わる)に直接効きます</strong> — <code>voice0</code> / <code>voice1</code> を全ショットで共有する仕組み(§11)</li>
+      <li><strong>導入リスクが最も低い</strong> — 公式ノードだけなので、16GB で動くかどうかが「H3 が動くかどうか」と同じ問題に還元されます</li>
+      <li><strong>ショット単位で Bypass して再生成できる</strong> — 失敗のやり直しが安い。2 時間 40 分かかる環境ではこれが決定的</li>
+      <li><strong>あなたの「連続 + カット割り混在」構成にそのまま乗ります</strong>(§2b)</li>
+    </ol>
+    <p style="margin-bottom:0"><strong>C(潜在継続)は後回しで構いません。</strong> Furuknap 方式でも足りない「本当に動きが連続していなければならない箇所」が出てきたときに、そこだけ §5 の Herrgott の Suite を足す、という順序が合理的です。<br>
+    D(音を別トラック)は台詞には使えませんが、<strong>BGM は reference audio の 3 本目として渡すか、編集で 1 本通しで敷いてください</strong>。</p>
   </div>
 </section>
 
@@ -583,22 +594,17 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     </table>
   </div>
 
-  <div class="box tint">
-    <div class="box-title">推奨を差し替えました — まず Infinite Continuation Suite</div>
-    <p>初版では「16GB なら H3 Extender から」と書きましたが、<strong>Infinite Continuation Suite を第一候補に格上げします</strong>。理由は 4 つ。</p>
-    <ol>
-      <li><strong>あなたが見つけた動画が、まさにこれの手順解説です</strong>(§11)。Furuknap 氏が配布するワークフローは、ComfyUI Manager で「Herrgott」を検索して入れるノードパックを使います。<strong>手順書があるかどうかは実務上とても大きい。</strong></li>
-      <li><strong>「台詞の継ぎ目(dialogue seams)」を名指しで扱っている唯一のもの</strong>です。リポジトリの検証メモに「音声テール引き継ぎが台詞の継ぎ目で有効」と明記されています <span class="c c1">一次</span>。あなたの用途に正面から一致します。</li>
-      <li>導入の壁だと書いた <strong>PR #15375 は 2026-08-18 にマージ済み</strong>。ComfyUI を最新にすれば済みます。</li>
-      <li>付属ワークフロー <code>04_Stitch_Saved_Chain</code> が<strong>「保存済み AV latent を 1 本ずつデコードする」</strong>設計で、明示的にメモリ節約を狙っています <span class="c c1">一次</span>。16GB 向きの経路が用意されている。</li>
-    </ol>
-    <p style="margin-bottom:0"><strong>ただし VRAM の実測データはありません。</strong> リポジトリの検証メモはソフトウェアの回帰テスト(110 件)と機能確認が中心で、GPU・VRAM・解像度・生成時間の記載はゼロです <span class="c c1">一次</span>。<strong>16GB で回るかは自分で確かめるしかありません。</strong> 落ちたときのフォールバックが <strong>H3 Extender</strong>(ディスクキャッシュ主体)です。</p>
+  <div class="box warn">
+    <div class="box-title">位置づけ — ここは「第 2 段」です</div>
+    <p>§11 の動画で分かったとおり、<strong>あなたが最初にやるべきは、この節のカスタムノードではありません</strong>。公式の Ref2VA テンプレート + subgraph で組む Furuknap 方式(§4)が先です。あちらは<strong>デコード済みの画像列を参照として渡す</strong>方式、この節のノード群は<strong>潜在のまま渡す</strong>方式で、仕組みがそもそも違います。</p>
+    <p style="margin-bottom:0">この節が効いてくるのは、<strong>Furuknap 方式でも繋がらない「本当に動きが連続していなければならない継ぎ目」</strong>が出てきたときです。1 分の中にそういう箇所が 1〜2 個しか無いなら、そこだけこちらを使う、という併用が現実的です。</p>
   </div>
 
   <div class="box">
-    <div class="box-title">付属ワークフロー(v1.4)</div>
-    <p style="margin-bottom:0"><code>01_Start</code> 初回クリップ生成 + Auto Handover 解析 + AV latent 保存 / <code>02_Continue</code> 前クリップから継続(映像履歴を保護しつつ音声引き継ぎを制御)/ <code>03_3Clip_Showcase_AutoStitch</code> 3 クリップを連続生成して自動で 1 本に結合 / <code>04_Stitch_Saved_Chain</code> 長尺向け、保存済み latent を 1 本ずつデコード <span class="c c1">一次</span><br>
-    <strong>今夕は 03 の 3 クリップ版から入るのが素直です。</strong>1 分の本番は 04 の経路になります。</p>
+    <div class="box-title">その段になったら — Herrgott の Suite から</div>
+    <p>3 つの中では <strong>Infinite Continuation Suite</strong> が第一候補です。<strong>「台詞の継ぎ目(dialogue seams)」を名指しで扱っている唯一のもの</strong>で(検証メモに音声テール引き継ぎの記載あり <span class="c c1">一次</span>)、導入の壁だった <strong>PR #15375 は 2026-08-18 にマージ済み</strong>。ComfyUI を最新にすれば要件を満たせます。付属ワークフロー <code>04_Stitch_Saved_Chain</code> は保存済み AV latent を 1 本ずつデコードする設計で、メモリに配慮されています。</p>
+    <p style="margin-bottom:0"><strong>ただし VRAM の実測データは皆無です。</strong> リポジトリの検証メモは回帰テスト 110 件と機能確認が中心で、GPU・VRAM・解像度・生成時間の記載がありません <span class="c c1">一次</span>。落ちたときのフォールバックが <strong>H3 Extender</strong>(ディスクキャッシュ主体)。<br>
+    付属ワークフロー: <code>01_Start</code> 初回生成 + Auto Handover 解析 + latent 保存 / <code>02_Continue</code> 前クリップから継続 / <code>03_3Clip_Showcase_AutoStitch</code> 3 本連続生成 + 自動結合 / <code>04_Stitch_Saved_Chain</code> 長尺向け <span class="c c1">一次</span></p>
   </div>
 
   <h3>公式のキュレーションリストにも当たる</h3>
@@ -641,9 +647,9 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
   </div>
   <p>BGM を通しで敷くだけでも、継ぎ目の段差はかなり目立たなくなります。台詞があるからこそ、通しの BGM が「繋がっている」という印象を作ってくれる。ここは確実に効く手です。</p>
 
-  <h3 style="color:var(--risk)">最大の論点 — 音声を「入力」できるのか</h3>
+  <h3>決着済み — 音声参照は「声色」の参照だった</h3>
 
-  <p>今回の調査で見つかった、<strong>プロジェクト全体を左右する分岐</strong>です。情報が食い違っています。</p>
+  <p>ここは長らく最大の論点でしたが、<strong>§11 の動画で決着しました</strong>。以下は経緯として残します。</p>
 
   <div class="box warn">
     <p>公式リポジトリの Ref2VA の例は「<em>&lt;Audio 2&gt; の落ち着いた男性の<strong>声色</strong>を &lt;Subject 1&gt; の発話に参照する</em>」という書き方で、<strong>声色(timbre)の参照</strong>と読めます <span class="c c1">一次</span>。</p>
@@ -669,8 +675,36 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
   </div>
 
   <div class="box tint">
-    <p style="margin:0"><strong>(a) が成り立つなら、それが最適解です。</strong> 「音を先に確定させてから映像を作る」という順序になり、このノートの音声まわりの悩みの大半が消えます。逆に (b) だけなら、潜在継続に頼ることになります。<br>
-    <strong>今夕、この 1 点を確かめるのが最優先</strong>です(§9 実験 2)。手持ちの音声を 1 本渡して、返ってきた動画の音が<strong>「渡した音そのもの」か「似た声で喋り直したもの」か</strong>を聴けば、5 分で決着します。</p>
+    <div class="box-title">結論: (b)。ただし心配は解決する</div>
+    <p>実際に動く workflow が使っているのは <strong>(b) — 声色(timbre)の参照</strong>でした。台詞そのものは毎回生成されます。公式リポジトリの読み方が正しかったことになります。</p>
+    <p style="margin-bottom:0"><strong>それでも、あなたの本当の心配(継ぎ目で声が変わる)は解決します。</strong> 同じ声の参照を全ショットで共有すればよいからです。次の項がその手順です。</p>
+  </div>
+
+  <h3>声の一貫性はこう取る — 全ショットで参照を共有する</h3>
+  <ol>
+    <li><strong>声を 1 本用意する</strong> — 録音でも TTS でも、H3 に一度喋らせて音声 VAE だけデコードして保存したものでも可(§11 に手順)</li>
+    <li>ComfyUI の <strong>Set ノード</strong>で <code>voice0</code>(話者 A)、<code>voice1</code>(話者 B)として登録する</li>
+    <li>各ショットの中で <strong>Get</strong> して、<strong>Ref2VA の <code>reference_audio_0</code> / <code>reference_audio_1</code> に接続</strong></li>
+    <li>3 つ目の枠は <strong>BGM / サウンドスケープの参照</strong>に使える(公式仕様の「参照音声 最大 3 本」と一致)</li>
+  </ol>
+  <p><strong>これで継ぎ目をまたいでも声質が保たれます。</strong> §9 の実験 2 は「確かめる」ではなく「そう設定する」に変わりました。</p>
+
+  <div class="box warn">
+    <div class="box-title">ただし、声と人物の紐づけはプロンプト次第</div>
+    <p style="margin:0">参照を 2 本渡しただけでは、H3 はどちらが誰の声かを知りません。<strong>MiniMax が公開している推奨プロンプトテンプレート</strong>に「被写体定義」のセクションがあり、そこで「これは被写体 N 番の声色参照である」と明示します。動画の作者はこれで<strong>「結果が完全に変わった」</strong>と述べています(§11)。<br>
+    <strong>これが §12 の「未取得」に置いてある Hugging Face のプロンプト指針です。PC で最初に開いてください。</strong>ここを外すと、他を全部正しくやっても §11 の "disaster"(キャラがシーン説明文を読み上げる、声が入れ替わる)が再現します。</p>
+  </div>
+
+  <h3 style="color:var(--risk)">台詞の尺を合わせる — 見落としやすい罠</h3>
+  <div class="box warn">
+    <p style="margin:0">クリップ長に対して台詞が短いと、<strong>H3 は余った時間をガーガーという雑音で埋め、しかもキャラがその雑音にリップシンクします</strong> <span class="c c1">一次</span>。編集で音を消しても口は動いたままなので、後から救えません。<br>
+    <strong>クリップ長は台詞の長さから決めてください。</strong> §2 の 17k+5 グリッドで切り上がることも踏まえて、「4 秒ぶんの台詞なら 4 秒のクリップ」と対応させる。無音の余白を作らない。</p>
+  </div>
+
+  <h3>無音は「作らせる」</h3>
+  <div class="box audio">
+    <p style="margin:0">H3 は音を出したがり、しかも<strong>否定プロンプトをうまく扱えません</strong>。「no sound」「no spoken dialogue」と書いても効きません <span class="c c1">一次</span>。<br>
+    代わりに<strong>肯定形で状態を描写</strong>します — 「登場人物は静かに黙考しており、クリップの間ずっと口は閉じている」。こう書けば H3 は指示に従うことができ、音を出したがる性質を上書きできます。<strong>静かなカットを挟みたいときは必ずこの形で。</strong></p>
   </div>
 
   <h3>参照音声の制約(公式)</h3>
@@ -876,6 +910,11 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 
   <p>いちばん大きいのは最後の行です。<strong>32GB を借りる本当の価値は「速くなること」ではなく「音を守れること」</strong>かもしれません。</p>
 
+  <div class="box">
+    <div class="box-title">参考 — 動画の作者もレンタル運用です</div>
+    <p style="margin:0">§11 の Furuknap 氏は <strong>RunPod で「比較的安い GPU」を借りて</strong>この workflow を回しています。ローカル 16GB での実績は動画からは分かりません。<strong>あなたの計画(必要なときだけ借りる)は、この分野では標準的な運用</strong>だということです。</p>
+  </div>
+
   <h3>借用は時間課金。運用を先に決めておく</h3>
 
   <div class="step">
@@ -912,7 +951,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <span class="sec-label">次の一手</span>
   <h2>今夕の最小実験</h2>
 
-  <p>手元にクリップが無いとのことなので、<strong>素材づくりから</strong>組み直しました。順番に意味があります — 特に実験 1 を飛ばすと以降の待ち時間が倍になり、<strong>実験 2 の結果次第では実験 4・5 が不要になります</strong>。所要 2〜3 時間。</p>
+  <p>動画の内容が分かったので、<strong>「確かめる」実験の多くが「設定する」作業に変わりました</strong>。残る本当の未知は <strong>「あなたの 4080 16GB で回るか」と「1 分にどれだけ時間がかかるか」</strong>の 2 つだけです。所要 2〜3 時間。</p>
 
   <div class="step">
     <div class="step-n">1</div>
@@ -922,7 +961,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
       <ul class="check">
         <li>ComfyUI に入っている PyTorch のバージョンを確認(同梱版のままなら入替を検討 → §8)</li>
         <li>起動フラグに <code>--disable-pinned-memory --reserve-vram 1.5</code> を追加</li>
-        <li><strong>Turbo LoRA / Spectrum / easycache は一旦すべて外す</strong>(音の基準を汚さないため)</li>
+        <li><strong>Turbo LoRA / Spectrum / easycache は一旦すべて外す</strong>(音質を犠牲にする → §8)</li>
         <li>864×480 で 5 秒を 1 本生成し、<strong>所要時間を記録</strong> — 以降すべての見積もりの基準になる</li>
       </ul>
     </div>
@@ -931,14 +970,14 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <div class="step">
     <div class="step-n">2</div>
     <div class="step-b">
-      <h4 style="margin-top:2px">音声を「入力」できるか確かめる(20 分・最大の分岐)</h4>
-      <p><strong>今夕いちばん重要な実験です。</strong> ここで (a) だと分かれば、音の悩みの大半が消えます(§6)。</p>
+      <h4 style="margin-top:2px">材料を揃える(生成しない・30 分)</h4>
+      <p>ここが今夕いちばん価値のある作業かもしれません。<strong>全部ダウンロードと準備で、GPU を回しません。</strong></p>
       <ul class="check">
-        <li>台詞の音声を 1 本用意する(自分で録音、TTS、手持ちの音声、なんでも可。5〜10 秒)</li>
-        <li>Ref2VA にその音声を参照として渡し、短いクリップを 1 本生成</li>
-        <li><strong>返ってきた音を聴く</strong> — 渡した音<em>そのもの</em>が鳴っているか(= (a))、似た声で<em>喋り直している</em>か(= (b))</li>
-        <li>口の動きが渡した音に合っているか</li>
-        <li>(a) なら → 台詞音声を先に 1 本通しで作り、クリップ単位でスライスして渡す設計に切り替える</li>
+        <li><strong>動画の説明欄から「H3 long form blueprint」をダウンロード</strong>し、ComfyUI にドラッグ(§11)</li>
+        <li><strong>MiniMax 推奨のプロンプトテンプレートを入手</strong> — blueprint の左下に本文と参照元 URL が同梱されています。Hugging Face のプロンプト指針も併せて開く(§12)</li>
+        <li><strong>声を 2 本用意</strong>(話者が 1 人なら 1 本)— 録音 / TTS / H3 に一度喋らせて音声だけ保存、のいずれでも</li>
+        <li><strong>参照画像を用意</strong> — 各キャラの立ち絵と、舞台の全景。ドリフト対策の主力です(§11)</li>
+        <li>台詞を書き出し、<strong>1 ショットあたり何秒かを決める</strong>(尺と台詞を一致させる → §6)</li>
       </ul>
     </div>
   </div>
@@ -946,13 +985,13 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <div class="step">
     <div class="step-n">3</div>
     <div class="step-b">
-      <h4 style="margin-top:2px">素材づくり + ベースライン(選択肢 A)</h4>
-      <p>短いクリップを 3 本作り、そのまま §7 レシピ 2 で連結する。<strong>直すためではなく、壊れ方を記録するための実験</strong>です。</p>
+      <h4 style="margin-top:2px">1 ショットだけ通す</h4>
+      <p>連鎖の前に、<strong>1 ショットが狙いどおりに出るか</strong>を確認します。低解像度・低ステップで。</p>
       <ul class="check">
-        <li>レシピ 1 の出力(コーデック・fps・<code>nb_frames</code>・サンプルレート 32000)を控える</li>
-        <li>継ぎ目の見た目 — 動きが飛ぶ / 構図が変わる / 顔が変わる、のどれか</li>
-        <li>継ぎ目の音 — 台詞が途切れる / 声質が変わる / 環境音がリセットする / プチッと鳴る</li>
-        <li>レシピ 6 の YAVG で継ぎ目に段差が出ているか</li>
+        <li>テンプレートに沿ったプロンプト(被写体定義 + 声色参照の紐づけ)で 1 本生成</li>
+        <li><strong>声が用意した参照に似ているか</strong></li>
+        <li><strong>台詞が終わったあとにガーガー音が入っていないか</strong>(入っていたら尺が長すぎる → §6)</li>
+        <li>キャラがシーン説明文を読み上げていないか(読み上げていたらプロンプト書式の問題)</li>
       </ul>
     </div>
   </div>
@@ -960,15 +999,13 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <div class="step">
     <div class="step-n">4</div>
     <div class="step-b">
-      <h4 style="margin-top:2px">ラストフレーム連鎖(選択肢 B / 公式ノードのみ)</h4>
-      <p>カスタムノードを入れる前に、公式機能だけでどこまで行けるかを見ます。<strong>ブロック内が 2 本で済むなら、ここで十分な可能性があります。</strong></p>
-<pre><code># 終端の少し手前を取る(末尾はフリーズしていることがある)
-ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></pre>
+      <h4 style="margin-top:2px">2 ショット繋ぐ</h4>
+      <p><strong>のりしろは 72 フレーム(3 秒)以上</strong>。1 秒では足りないことが実例で分かっています(§11)。</p>
       <ul class="check">
-        <li>取り出した <code>last_frame.png</code> が崩れていないか目視(崩れていたら <code>-sseof</code> をさらに手前へ)</li>
-        <li>その画像を I2VA / FL2VA の起点にしてクリップ 2 を生成</li>
-        <li>実験 3 と比べて<strong>映像</strong>がどれだけ繋がったか</li>
-        <li>Ref2VA で人物を固定した場合、<strong>カットをまたいでも同じ顔・同じ声か</strong>(ブロック間の要)</li>
+        <li>ショット 1 の継続参照をショット 2 に接続して生成</li>
+        <li><strong>継ぎ目で声が変わらないか</strong>(voice0 / voice1 の共有が効いているか)</li>
+        <li>継ぎ目で顔・画風がずれていないか。ずれるなら参照画像を足す</li>
+        <li>のりしろを 24 フレームにして比べてみると、動画の "disaster" が再現できるはずです(理解が深まります)</li>
       </ul>
     </div>
   </div>
@@ -976,21 +1013,20 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
   <div class="step">
     <div class="step-n">5</div>
     <div class="step-b">
-      <h4 style="margin-top:2px">劣化カーブを測る(選択肢 C)</h4>
-      <p>実験 2 が (b) だった場合に必要になります。<strong>まず Herrgott の Infinite Continuation Suite</strong> — 例ワークフロー <code>03_3Clip_Showcase_AutoStitch</code> がそのまま使えます(§5)。低解像度で 4〜5 本連鎖させてください。落ちたら <strong>H3 Extender</strong> にフォールバック。</p>
+      <h4 style="margin-top:2px">5 ショットで 1 分相当を通す — 今夕の本命</h4>
+      <p>低解像度で構いません。<strong>ここで測るのは品質ではなく「完走するか」と「時間」</strong>です。</p>
       <ul class="check">
-        <li><strong>ComfyUI を最新に更新してから</strong>(PR #15375 が 8/18 マージ、これが無いと Suite は起動を拒否する)。ComfyUI Manager で「Herrgott」を検索して導入</li>
-        <li><strong>Auto handover が末尾のフリーズをきちんと避けているか</strong>(実験 4 の手作業トリムと比べる)</li>
-        <li><strong>何本目から台詞がこもり始めるか</strong> — これが §2b のブロック長を決める</li>
-        <li>何本目から色・顔がドリフトし始めるか(レシピ 6 の YAVG も併用)</li>
-        <li>のりしろのトリムをノードが自前でやるか、§7 レシピ 3 が要るか</li>
-        <li>16GB で完走できるか。落ちるなら何本目で、VRAM とシステム RAM のどちらが先に尽きたか</li>
+        <li><strong>16GB で 5 ショット完走できるか。</strong>落ちるなら何ショット目で、VRAM とシステム RAM のどちらが先に尽きたか</li>
+        <li><strong>合計所要時間</strong> — これが分かると本番解像度での見積もりが立つ(§2b の外挿と突き合わせる)</li>
+        <li>何ショット目から声・顔・色がずれ始めるか → §2b のブロック長を決める</li>
+        <li>出力が右下の <strong>assets</strong> パネルに 5 本溜まっているか</li>
+        <li>気に入らないショットを <strong>Bypass</strong> して部分再生成できるか(運用上ここが効きます)</li>
       </ul>
     </div>
   </div>
 
   <div class="box tint">
-    <p style="margin:0"><strong>報告してほしいのは 3 点だけです。</strong> ① 実験 1 の 5 秒あたりの生成時間、② <strong>実験 2 は (a) か (b) か</strong>、③ 実験 5 で台詞がこもり始めた本数。この 3 つで、ブロックをどう割るか、32GB を借りる価値があるか、が決まります。スクショやエラーログはそのままで構いません。</p>
+    <p style="margin:0"><strong>報告してほしいのは 3 点です。</strong> ① 実験 1 の 5 秒あたりの生成時間、② <strong>実験 5 で 5 ショット完走できたか(と合計時間)</strong>、③ 何ショット目からずれ始めたか。この 3 つで、本番解像度をどうするか、ブロックをどう割るか、32GB を借りる価値があるかが決まります。スクショやエラーログはそのままで構いません。</p>
   </div>
 </section>
 
@@ -998,86 +1034,131 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
   <span class="sec-label">論点</span>
   <h2>未解決の論点</h2>
 
-  <p>目標尺・ハードウェア・構成・音の主役が確定したので、残りを絞り込みました。上ほど重要です。</p>
+  <p>動画の内容が分かったことで、いくつかは決着しました。<strong>残っているのはほぼ「あなたの環境で回るか」だけ</strong>です。</p>
+
+  <div class="box">
+    <div class="box-title">決着したもの</div>
+    <p style="margin:0"><strong>音声参照は声色(timbre)の参照</strong>だった(§6)。ただし全ショットで参照を共有すれば声の一貫性は取れる。<strong>のりしろは 3 秒 = 72 フレーム以上</strong>(§11)。<strong>手法は Furuknap 方式(公式ノード + subgraph)から始める</strong>(§4)。<strong>1 分は射程内</strong> — 動画の作者は以前 2 分を達成している。</p>
+  </div>
 
   <ol>
-    <li><strong>音声を「入力」できるのか — (a) か (b) か。</strong> このプロジェクト最大の分岐。(a) なら台詞を先に 1 本作って確定でき、音の悩みがほぼ消える。<em>→ 実験 2 で今夕決着</em>(§6)</li>
-    <li><strong>Infinite Continuation Suite が 16GB で回るか。</strong> リポジトリに VRAM の実測データが一切ないため、完全に未知です。回らなければ H3 Extender にフォールバック。<em>→ 実験 5</em>(§5)</li>
-    <li><strong>ブロックをどう割るか。</strong> 連鎖を何本までに抑えるか。台詞がこもり始める本数から逆算する。<em>→ 実験 5</em>(§2b)</li>
-    <li><strong>Ref2VA でカットをまたいで同じ顔・同じ声を保てるか。</strong> ブロック間の繋ぎはこれに依存する。複数人が喋る場合は Issue #17 の声の混ざりに注意。<em>→ 実験 4</em></li>
-    <li><strong>量子化レベルは Q4 / Q5 / int4 のどれか。</strong> 推奨が割れている(§8)。台詞主役なら<strong>顔と口元の破綻</strong>が判断基準になる。<em>→ 短いクリップ 2〜3 本で実測</em></li>
-    <li><strong>PyTorch の入替で本当に速くなるか。</strong> 効けば以降の全実験が半分の時間で回る。<em>→ 実験 1</em></li>
-    <li><strong>Turbo LoRA の音質劣化はどの程度か。</strong> 台詞主役だと許容範囲が狭い。<em>→ 実験 5 のあと、入れて聴き比べ</em></li>
-    <li><strong>32GB をいつ借りるか。</strong> 論点 1・2・6 の結果次第。実験 2 が (a) で、ブロックが 2 本で済むなら、借りる必要はないかもしれません(§8b)。</li>
+    <li><strong>4080 16GB で 5 ショット完走できるか。</strong> 動画の作者は RunPod のレンタル GPU を使っており、16GB での実績は不明です。<em>→ 実験 5</em></li>
+    <li><strong>1 分に実際どれだけかかるか。</strong> §2b の外挿(低解像度 28 分 / 768p 2 時間 40 分)が自分の環境で当たっているか。<em>→ 実験 1 と 5</em></li>
+    <li><strong>量子化レベルは Q4 / Q5 / int4 のどれか。</strong> 推奨が割れている(§8)。台詞主役なので<strong>顔と口元の破綻</strong>が判断基準。</li>
+    <li><strong>PyTorch の入替で速くなるか。</strong> 効けば全部が半分の時間で回る。<em>→ 実験 1</em></li>
+    <li><strong>ブロックをどう割るか。</strong> 何ショット目からずれ始めるかで決まる(§2b)。</li>
+    <li><strong>潜在継続(§5)が要る箇所はあるか。</strong> Furuknap 方式で足りない継ぎ目が出て初めて検討する。</li>
+    <li><strong>32GB をいつ借りるか。</strong> 論点 1・2 の結果次第。実験 5 が完走して時間も許容できるなら、借りずに済むかもしれません(§8b)。</li>
   </ol>
 </section>
 
 <section id="s11">
   <span class="sec-label">動画</span>
-  <h2>YouTube メモ</h2>
+  <h2>動画の要約</h2>
 
   <div class="box">
-    <div class="box-title">タイトル</div>
+    <div class="box-title">出典</div>
     <p style="margin:0"><strong>Infinite Length Videos in Minimax H3 — Here's How, Step-by-Step, and The Disaster That Started It</strong><br>
-    <code>https://youtu.be/nHVnbZPAnT4</code></p>
+    チャンネル: B Explains Everything(<a href="https://www.youtube.com/@furuknap">Bjørn Furuknap / @furuknap</a>)<br>
+    <code>https://youtu.be/nHVnbZPAnT4</code> — 字幕全文から要約 <span class="c c1">一次</span></p>
   </div>
 
   <div class="box warn">
-    <p style="margin:0"><strong>本編は依然として取得できていません。</strong> この作業環境は <code>youtube.com</code> をブロックしており、このタイトルでの検索でも動画そのものは出てきません。以下は<strong>タイトルから読み取れることと、状況証拠</strong>であって、動画の要約ではありません。<span class="c c3">要検証(私の推論)</span></p>
+    <div class="box-title">訂正 — 前版の推定は外れでした</div>
+    <p style="margin:0">前版で「Herrgott の Infinite Continuation Suite の解説だろう」と推定しましたが、<strong>違いました</strong>。実際は Furuknap 氏が自作したワークフローで、<strong>ComfyUI の標準 Ref2VA テンプレートと subgraph 機能だけ</strong>で組まれています。カスタムノードパックは使っていません。<br>
+    <strong>これは推奨の変更を意味します</strong> — §4 と §5 を差し替えました。</p>
   </div>
 
-  <h3>タイトルから読めること</h3>
+  <h3>"The Disaster" の中身</h3>
+  <p>キッチンで 2 キャラが会話する 90 秒の動画。壊れ方は次のとおりです。</p>
   <ul>
-    <li><strong>"Infinite Length"</strong> — このノートの §1 でいう <strong>① 継続</strong>の話です。③ の ffmpeg 連結ではありません。まさに今回の本丸。</li>
-    <li><strong>"Step-by-Step"</strong> — 手順の実演。使っているノード名とパラメータが画面に映るはずで、そこが最も価値のある部分です。</li>
-    <li><strong>"The Disaster That Started It"</strong> — 素朴な方法が破綻した経験談から入る構成。<strong>その「失敗」が何だったのかが、このノートの §3(継ぎ目で壊れるもの)のどれに当たるかを見てください。</strong>おそらく FL2VA の末尾フリーズか、色ドリフトの累積です。</li>
+    <li>映像ドリフトで<strong>終盤はキャラを判別できない</strong></li>
+    <li>音声が不安定で、<strong>キャラがシーン説明文を読み上げてしまう</strong>(そんな指示はしていないのに)</li>
+    <li><strong>声が途中で変わる</strong>。単語が切れる、濁る、別の語に化ける</li>
   </ul>
+  <p>§3 の表でいうと「顔・画風が変わる」+「音が途切れる」の複合ですが、<strong>「キャラが指示文を読み上げる」は私の表に無かった破綻</strong>です。これはプロンプト設計の失敗で、後述のテンプレートで解決します。</p>
 
-  <h3>特定できました — Herrgott の Infinite Continuation Suite の解説です</h3>
+  <h3>中核の仕組み — subgraph でショットを量産する</h3>
+  <ol>
+    <li>公式テンプレート「MiniMax H3 reference to video」を開く</li>
+    <li>設定 〜 Ref2VA 〜 サンプリング 〜 デコード 〜 動画化までを選択し、<strong>右クリック → subgraph に変換</strong>。複雑なノード群が 1 個のノードになる</li>
+    <li>その subgraph を<strong>ショット数だけクローン</strong>し、前ショットの出力を次ショットの入力へ繋ぐ</li>
+    <li>ステップ数・解像度セレクタ・アスペクト比・モデル・CLIP・デコーダは<strong>メインキャンバスの Set ノードに集約</strong>し、subgraph 内の Get ノードで受ける → 全ショットに一括反映。特定のショットだけ変えたいときは Get の線を外して直接値を入れる</li>
+    <li>ショット単位の <strong>Bypass</strong>(右クリック)で、気に入らないショットだけ再生成できる</li>
+  </ol>
+  <p class="cap">出力は右下の <strong>assets</strong> パネルに溜まります。メインのプレビューには 1 本しか出ないので、最初は「他のクリップが消えた」と勘違いしがちだと注意されています。</p>
 
-  <p>チャンネルは <strong>Bjørn Furuknap</strong>(<a href="https://www.youtube.com/@furuknap">@furuknap</a> / <a href="https://furuknap.net">furuknap.net</a>)。同氏の「無限長」ワークフローについて、次のことが分かりました <span class="c c2">一致</span>。</p>
+  <h3 style="color:var(--risk)">失敗の技術的な原因 — のりしろが短すぎた</h3>
+  <div class="box warn">
+    <p style="margin:0">最初の版では、デコード済みの<strong>末尾 24 フレーム(= 1 秒)</strong>を次ショットの画像参照にしていました。ところが <strong>H3 のドキュメントは「参照には最低 3 秒の映像が必要」</strong>としています。<strong>1 秒では全然足りない</strong> — これがドリフトの主因でした。<br>
+    24fps なので <strong>3 秒 = 72 フレーム以上</strong>。これは推論ではなく、失敗と修正の実例です。<br>
+    <strong>混同注意:</strong> これは Ref2VA に渡す<strong>画像列</strong>の長さの話で、§5 の潜在コンテキスト(5 / 22 / 39 / 56 フレーム)とは別の仕組み・別の数字です。</p>
+  </div>
 
-  <ul>
-    <li>MiniMax H3 の <strong>FL2VA(first/last frame)モデル</strong>を使って、事実上無制限の長さの動画を作る</li>
-    <li>ノードパックは <strong>ComfyUI Manager で「Herrgott」を検索して導入</strong>する — つまり §5 の <strong>Herrgott's H3 Infinite Continuation Suite</strong> です</li>
-    <li>特徴として挙げられているもの:
-      <ul>
-        <li>複数キーフレームが<strong>「品質リセット」</strong>として働き、長尺で起きる文脈・品質の劣化を防ぐ</li>
-        <li><strong>decode/re-encode を挟まない映像・音声の潜在継続</strong> — 劣化を防ぎ、滑らかな連続運動を保つ</li>
-        <li><strong>Auto handover が「凍った FL2VA の末尾」を検出</strong>する(固定トリムではなく)ため、フリーズフレームが出ない</li>
-        <li>ワークフローは意図的に単純な構造で、ノードの並べ替えや追加がしやすい</li>
-      </ul>
-    </li>
-  </ul>
+  <h3>音声の解決策 — あなたの条件に直撃します</h3>
+  <ol>
+    <li><strong>声を作って保存する</strong> — subgraph を複製し、映像生成部分を全部無効化して<strong>音声 VAE のデコーダだけ</strong>残す。出力を "audio clip" として subgraph の外に出し、<strong>Save Audio</strong> でファイル保存</li>
+    <li><strong>または既存の音声を読む</strong> — <strong>Load Audio</strong> で手持ちの声を読み込む(録音でも TTS でも可)</li>
+    <li><strong>Set ノードで <code>voice0</code> / <code>voice1</code> として登録</strong>する</li>
+    <li>各ショットの subgraph 内で Get して、<strong>Ref2VA の <code>reference_audio_0</code> / <code>reference_audio_1</code> に接続</strong></li>
+  </ol>
+  <p>これで<strong>全ショットに同じ声の参照が効きます</strong>。さらに 3 つ目の音源として <strong>BGM やサウンドスケープを reference audio として渡せる</strong> — §2 の「参照音声は最大 3 本」という公式仕様とちょうど一致します。</p>
 
   <div class="box tint">
-    <div class="box-title">"The Disaster" の正体はおそらくこれ</div>
-    <p style="margin:0">3 つ目の特徴に注目してください。<strong>FL2VA は末尾で「早く終端に着いてしまい、残りを凍って過ごす」</strong>という癖があります(§3 の「末尾が固まる / 崩れる」)。その凍ったフレームを次の起点にすると、破綻が連鎖全体に伝播します。<br>
-    タイトルの <em>"The Disaster That Started It"</em> は、まずこれでしょう。<strong>そして §9 実験 4 で私が「終端の 0.35 秒手前を取れ」と書いたのは、同じ問題への手作業の対処です。</strong>Auto handover はそれを自動化したもの、という関係になります。</p>
+    <div class="box-title">§6 の最大の論点が決着しました</div>
+    <p style="margin:0">「音声を入力できるのか — (a) 波形にリップシンク / (b) 声色だけ参照」という論点は、<strong>この workflow の範囲では (b)</strong> です。渡すのは<strong>声色(timbre)の参照</strong>で、台詞そのものは毎回生成されます。公式リポジトリの読み方が正しかったことになります。<br>
+    <strong>ただし、あなたの本当の心配は (b) でも解決します。</strong> <code>voice0</code> / <code>voice1</code> を全ショットで共有すれば、継ぎ目で声質が変わる問題は消えます。<strong>実験 2 は「確かめる」から「そう設定する」に変わりました。</strong></p>
   </div>
 
-  <div class="box tint">
-    <div class="box-title">ここが噛み合っている</div>
-    <p style="margin:0">「<strong>キーフレームが品質リセットになる</strong>」という考え方は、私が §2b で提案した「<strong>カット割りは技術的な劣化リセットでもある</strong>」とまったく同じ発想です。別々の経路から同じ結論に着いているので、この方向は筋が良いと考えてよさそうです。<strong>あなたの「連続とカット割りが混ざる」構成は、この手法にそのまま乗ります。</strong></p>
+  <h3 style="color:var(--risk)">声とキャラの対応づけ — プロンプトテンプレートが決定的</h3>
+  <div class="box warn">
+    <p style="margin:0">「H3 はどの声が誰のものかをどう知るのか?」への答えは、<strong>プロンプトの書き方</strong>でした。H3 にはシーン内の要素を定義するための specific な書式があり、<strong>MiniMax が推奨テンプレートを公開しています</strong>。氏はそれをワークフローに同梱し(参照元 URL つき)、これで<strong>「結果が完全に変わった」</strong>と述べています。<br>
+    テンプレートには「被写体定義」のセクションがあり、「これは被写体 3 番の声色参照である」といった形で参照と被写体を結び付けます。<br>
+    <strong>これが、私がずっと「未取得」と書いてきた Hugging Face のプロンプト指針です。PC で最初に開くべきものが確定しました。</strong></p>
   </div>
 
-  <h3>観るときのチェックリスト(絞り込み済み)</h3>
-  <p>手法は特定できたので、残るのは<strong>「あなたの環境で回るか」と「音がどこまで保つか」</strong>です。観るときはここだけ拾えば十分です。</p>
-  <ul class="check">
-    <li><strong>音声をどう扱っているか</strong> — 触れていなければ映像だけの話。触れているなら、§6 の (a)/(b) のどちらか(渡した音そのものか、喋り直しか)</li>
-    <li><strong>どのワークフロー(01〜04)を使っているか</strong> — §5 の付属ワークフロー一覧と突き合わせる</li>
-    <li><strong>のりしろ(context)のフレーム数と、何本まで連鎖させているか</strong> — 劣化が出始める本数への言及があれば最重要</li>
-    <li><strong>GPU / VRAM と生成時間</strong> — 16GB の話として読めるか</li>
+  <h3>ドリフト対策 — 生成物を食わせ続けない</h3>
+  <p>連鎖は自分の出力を次の入力に使うため、品質が漸進的にずれます。対策として氏は<strong>明示的な参照画像</strong>を用意しています — 各キャラの立ち絵と、舞台(キッチン)の全景。プロンプトをきちんと書けば追加参照なしでも成立するものの、<strong>生成物より明示的な参照のほうが強い</strong>というのが結論です。§2b の「キーフレーム = 品質リセット」と目的は同じで、手段が違います。</p>
+
+  <h3>終盤の Tips — 3 つとも実務的です</h3>
+  <div class="step">
+    <div class="step-n">1</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">台詞の尺を合わせる</h4>
+      <p>喋り終わって時間が余ると、<strong>H3 は余りをガーガーという雑音で埋め、しかもキャラがその雑音にリップシンクします</strong>。編集で音だけ消しても口は動いたまま。<strong>クリップ長は台詞の長さに合わせて決める</strong>のが必須です(§2 の 17k+5 グリッドと併せて設計する)。動画内でも「これは 3 秒ぶん」「これは 4 秒ぶん」と台詞に合わせて尺を指定していました。</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-n">2</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">無音は「作らせる」</h4>
+      <p>H3 は音を出したがります。しかも<strong>否定プロンプトをうまく扱えない</strong>ため、「no sound」「no spoken dialogue」のような書き方は効きません。代わりに<strong>肯定形で書く</strong> — 「登場人物は静かに黙考しており、クリップの間ずっと口は閉じている」。そうすれば H3 は指示に従うことができ、音を出したがる性質を上書きできます。</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-n">3</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">連続参照は使いどころを選ぶ</h4>
+      <p>ひと続きの会話を繋ぐなら前シーン参照が有効。ただし<strong>技術的にうまくいっても、口だけ動く 2 人がずっと映っている動画は退屈になる</strong>、と釘を刺しています。§2b のブロック分割は、技術的な理由だけでなく<strong>演出上の理由でも正しい</strong>ということです。</p>
+    </div>
+  </div>
+
+  <h3>運用面 — あなたの計画と重なる部分</h3>
+  <ul>
+    <li>氏は <strong>RunPod でレンタル GPU</strong> を使っています(「比較的安い GPU」)。あなたの 32GB 借用案と同じ発想です(§8b)</li>
+    <li><strong>30 秒のクリップが約 15 分</strong>で生成できたと述べています(GPU・解像度・ステップ数は不明なので、あなたの 4080 での参考値にはなりません)</li>
+    <li>自動結合の「merged video」ノードも試しているが<strong>順序が狂うなど不完全</strong>で、<strong>クリップは個別に保存して編集で繋ぐことを推奨</strong>しています → §7 の ffmpeg 連結という位置づけが正しかったことになります</li>
+    <li>部分的にやり直せることを重視 — ダメなショットだけ Bypass を解除して再生成し、良いテイクを選んで組む</li>
+    <li>以前の動画で <strong>2 分の動画</strong>まで作った実績があるとのこと。<strong>1 分は十分に射程内</strong>です</li>
   </ul>
-  <p>あわせて、<strong>"The Disaster" の中身</strong>(何が壊れたのか)をメモしておいてください。§3 の表のどれに当たるかで、対策の優先順位が決まります。</p>
 
-  <div class="box">
-    <div class="box-title">動画より先に手に入るもの</div>
-    <p style="margin:0">ノードパックは <strong>ComfyUI Manager で「Herrgott」を検索</strong>すれば入ります。付属の例ワークフロー(§5 の 01〜04)も同梱されるので、<strong>動画を観る前に手を動かし始められます</strong>。動画は「なぜそうするのか」と「ハマりどころ」を埋める用途に回すのが効率的です。</p>
-  </div>
-
-  <h3>字幕が取れなかった件</h3>
-  <p>スマホの YouTube アプリは文字起こしのコピーができないことがあります。<strong>PC のブラウザなら</strong>、動画下の「…」→「文字起こしを表示」→ 右パネルをドラッグで全選択 → コピー、で取れます。今夕 PC を立ち上げたときに、もし余裕があれば。</p>
+  <h3>配布物 — これを入手するのが最優先</h3>
+  <p><strong>「H3 long form blueprint」</strong>が動画の説明欄からダウンロードできます。ComfyUI にドラッグするだけで開きます。本人が挙げている既知の弱点:</p>
+  <ul>
+    <li>最初のショット用と 2 本目以降用で <strong>subgraph が 2 種類</strong>ある。ComfyUI の仕様上、reference video 入力に何も繋がないとワークフローが失敗するため。<strong>継続に使うのは reference video 入りのほう</strong></li>
+    <li>merged video ノードは不完全(デバッグ用と割り切る)</li>
+    <li>「ボタン一発で誰でも動く」ものではなく、<strong>自分の用途に合わせて調整する前提</strong>だと明言されています</li>
+  </ul>
 </section>
 
 <section id="s12">
@@ -1101,7 +1182,7 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
   <p>このセッションのネットワークから到達できませんでした。<strong>ここが本命です。</strong></p>
   <ul>
     <li><a href="https://docs.comfy.org/tutorials/video/minimax/minimax-h3">ComfyUI 公式チュートリアル — MiniMax H3(T2V / I2V / R2V)</a></li>
-    <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3">Hugging Face — MiniMaxAI/MiniMax-H3(モデルカード)</a></li>
+    <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3"><strong>Hugging Face — MiniMaxAI/MiniMax-H3(モデルカードとプロンプト指針)</strong></a> — <strong>最優先。§11 で「結果が完全に変わった」とされる推奨プロンプトテンプレートの出典。同じものが blueprint の左下にも同梱されています</strong></li>
     <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3/raw/main/LICENSE">同 — COMMUNITY LICENSE AGREEMENT 全文</a></li>
     <li><a href="https://comfyui-wiki.com/en/tutorial/advanced/video/minimax/minimax-h3">ComfyUI Wiki — MiniMax H3 ガイド</a></li>
   </ul>
@@ -1145,7 +1226,8 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
 
   <h3>長尺化・連鎖の実装(4 回目の調査で追加)</h3>
   <ul>
-    <li><a href="https://www.youtube.com/@furuknap">YouTube — Bjørn Furuknap(@furuknap)</a> / <a href="https://furuknap.net">furuknap.net</a>(いずれも未取得)</li>
+    <li><strong><a href="https://youtu.be/nHVnbZPAnT4">動画本編(字幕全文を受領・§11 の出典)</a></strong> — B Explains Everything / <a href="https://www.youtube.com/@furuknap">@furuknap</a>。<strong>説明欄から「H3 long form blueprint」をダウンロードできます</strong> <span class="c c1">一次</span></li>
+    <li><a href="https://furuknap.net">furuknap.net</a>(未取得)</li>
     <li><a href="https://civitai.com/models/2852849/h3-infinite-video-continuation-and-automatic-stitching-with-fl2va-model">Civitai — H3 Infinite Video Continuation and automatic Stitching with Fl2Va Model</a>(未取得)</li>
     <li><a href="https://github.com/comfyanonymous/ComfyUI/pull/15375">ComfyUI PR #15375 — MiniMax-H3 のストリーム別 denoise マスク(2026-08-18 マージ)</a> <span class="c c1">一次</span></li>
     <li><a href="https://github.com/HerrgottMargott/Herrgotts-H3-Infinite-Continuation-Suite/blob/main/VALIDATION.md">同 Suite の VALIDATION.md</a> <span class="c c1">一次</span> — 回帰テスト 110 件、台詞の継ぎ目での音声テール引き継ぎ。<strong>ハードウェアの実測は無し</strong></li>
@@ -1161,8 +1243,8 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 5 版 2026-08-30(チャンネル判明により動画の手法を特定。§5 の推奨を Herrgott の Infinite Continuation Suite に差し替え、付属ワークフロー 01〜04 と PR #15375 のマージ状況を追記。§11 を「特定できた」内容に更新)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① 動画本編 / 字幕からの補足、② §9 の実験 1〜5 の結果の反映、③ Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ。</p>
+  <p>初版 2026-08-30 / 第 6 版 2026-08-30(<strong>動画の字幕全文を受領</strong>。§11 を推測から要約に差し替え、第 5 版の「Herrgott の Suite の解説」という推定を訂正。音声参照が声色参照であることを確定させ、声の共有・台詞の尺・無音の書き方・のりしろ 3 秒を反映。推奨を Furuknap 方式に差し替え、§5 を第 2 段に位置づけ直し。実験を「確かめる」から「設定する」中心に再構成)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① §9 の実験 1〜5 の結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ blueprint を実際に開いた上でのノード構成の確認。</p>
 </footer>
 
 </main>
