@@ -240,6 +240,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s10">未解決の論点</a></li>
     <li><a href="#s11">動画 1 — 公式ノードで組む</a></li>
     <li><a href="#s11b">動画 2 — 潜在で繋ぐ</a></li>
+    <li><a href="#s11c">動画 3 — 速度と VRAM</a></li>
     <li><a href="#s12">出典と確度</a></li>
   </ol>
 </nav>
@@ -571,8 +572,13 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
       <li><strong>ショット単位で Bypass して再生成できる</strong> — 失敗のやり直しが安い。2 時間 40 分かかる環境ではこれが決定的</li>
       <li><strong>あなたの「連続 + カット割り混在」構成にそのまま乗ります</strong>(§2b)</li>
     </ol>
-    <p style="margin-bottom:0"><strong>C(潜在継続)は後回しで構いません。</strong> Furuknap 方式でも足りない「本当に動きが連続していなければならない箇所」が出てきたときに、そこだけ §5 の Herrgott の Suite を足す、という順序が合理的です。<br>
-    D(音を別トラック)は台詞には使えませんが、<strong>BGM は reference audio の 3 本目として渡すか、編集で 1 本通しで敷いてください</strong>。</p>
+    <p><strong>C(潜在継続)は後回しで構いません。</strong> 動画 1 方式でも足りない「本当に動きが連続していなければならない箇所」が出てきたときに、そこだけ §5 のノード群を足す、という順序が合理的です。</p>
+    <div class="box tint" style="margin-bottom:0">
+      <div class="box-title">動画 3 で、これに 1 段重ねられるようになりました</div>
+      <p style="margin:0"><strong>D(音を別トラック)は、台詞主役でも使えます。</strong> リップシンクは映像側で取り、<strong>最終出力の音声は元音声に差し替える</strong>(§6 / §11c)。前版で「D は台詞には使えない」と書いたのは誤りでした。<br>
+      これが成立すると連鎖的に:<strong>音の継ぎ目問題が消え</strong> → <strong>Turbo LoRA の音質劣化も無関係になり</strong> → <strong>4〜8 ステップで回せるので時間予算も改善する</strong>。<br>
+      <strong>今夕まずこの経路を試す価値があります。</strong> ここが通れば、このノートの心配事の大半が一度に片付きます。</p>
+    </div>
   </div>
 </section>
 
@@ -647,6 +653,8 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
       <thead><tr><th style="width:32%">ツール</th><th>内容と、あなたにとっての意味</th></tr></thead>
       <tbody>
         <tr><td><strong>ComfyUI-MiniMax-H3-Extend</strong>(kat3ri / 通称 Kate)</td><td><strong>動画 2 で使われているノード</strong>(§11b)。<code>MiniMaxH3VideoExtendPatched</code> と <code>MiniMaxH3EncodeAVPatched</code> の 2 つ。後者が映像フレームと<strong>任意の音声</strong>を AV 潜在に符号化し、前者の <code>context_latent</code> に渡す。推奨値は <code>context_frames</code> 2 / <code>ref_spacing</code> 1〜2 / <code>ref_decay</code> 0.3 / <code>ref_ramp</code> 3〜4(動きが激しいクリップは 5〜6)。<code>custom_nodes/</code> に clone して再起動するだけ、コア改変なし <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>ComfyUI-H3-Motion-Context-MultiRef</strong>(seitanism)</td><td><strong>動画 3 で使われているパック</strong>(§11c)。NikoDemon80 版のフォークで、<strong>任意位置の複数キーフレーム</strong>、既存動画の差し込み、V2V モーション転写、<strong>H3 の 40Hz オーディオグリッドを正確に扱う音声処理</strong>。<strong>2026-08-30 に Update 8</strong> と非常に活発 <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>ComfyUI-sol-attn</strong>(Saganaki22)</td><td><strong>RTX 40 系(SM89)対応・4080 SUPER で確認済み</strong>。SageAttention 比 1.38〜2.33 倍、attention で 1.3〜2.7 GiB 削減、<code>MiniMax H3 Chunk FeedForward</code> で <strong>MLP ピーク VRAM −37%</strong>。Windows 可、Triton 3.6.0 <span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-MiniMax-H3-LongMedia</strong>(vizart-vj)</td><td><strong>低 VRAM + 長尺 + リップシンクを名指しで狙った唯一のもの。</strong>INT8 K/V 圧縮、チャンク化 MLP、VRAM ガード。<strong>16GB は 7〜10 秒</strong>が目安(§8)。<strong>リップシンクモードはソース音声でタイミングを合わせ、元の音声トラックをそのまま復元する</strong> → §6 の解釈 (a) にあたる <span class="c c1">一次</span></td></tr>
         <tr><td><strong>Minimax H3 Latent Upscaler</strong>(LBH-123-AI)</td><td>24ch 潜在を学習済みネットで 1.0〜4.0 倍にアップスケール。<strong>5B パラメータの VAE decode/encode 往復を飛ばす</strong>ので速い。2D(高速)と 3D(時間方向も整合)の 2 ノード。<strong>時間は節約するが VRAM は節約しない</strong>と作者が明記 <span class="c c1">一次</span></td></tr>
         <tr><td><strong>MiniMax H3 Hub</strong>(ai-models-lab)</td><td>コミュニティの知識ベース。<strong>INT8 VRAM 計算機が RTX 4080(16GB)を名指しで対象にしている</strong> — 実験前にここで当たりを付けられる。ワークフロー JSON、プロンプトスタジオも <span class="c c1">一次</span></td></tr>
@@ -721,6 +729,18 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
     <p style="margin:0">標準の Ref2VA の音声参照は (b) ですが、<strong>LongMedia のリップシンクモードは「ソース音声を使って音と映像のタイミングを合わせ、<em>元の音声トラックをそのまま復元する</em>」</strong>と説明されています <span class="c c1">一次</span>。これは <strong>(a) そのもの</strong>です。<br>
     つまり<strong>台詞音声を先に 1 本作り、それに口を合わせさせて、音は元のまま使う</strong>という道が実在します。台詞主役のあなたには理想形に近い。<br>
     <strong>ただしトレードオフがあります。</strong> LongMedia は 16GB では <strong>7〜10 秒/クリップ</strong>が目安とされており、15 秒クリップは通らない可能性があります(§8)。<strong>音の完全な連続性を取るか、クリップを長くして継ぎ目を減らすか</strong>、という選択になります。</p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">さらに上がある — 音声トラックを差し替える</div>
+    <p>動画 3 で、もっと単純で確実な手が出てきました(§11c)。</p>
+    <ol style="margin-bottom:8px">
+      <li>自前の台詞音声を用意する(録音 / TTS)</li>
+      <li>reference モデルで<strong>それにリップシンクさせて映像を作る</strong></li>
+      <li><strong>最終出力の音声トラックを、元の音声に差し替える</strong>(VHS Combine に元音声を流す、または ffmpeg で差し替え)</li>
+    </ol>
+    <p style="margin-bottom:0"><strong>音は最初から最後まで元のまま。継ぎ目のこもりも、声の変化も、原理的に起きません。</strong> 下の「参照の共有」は生成音をそのまま使う場合の手です。<strong>台詞主役なら、まずこの差し替え方式を狙ってください。</strong><br>
+    <strong>おまけに Turbo LoRA の音質問題も消えます</strong> — 生成された音を使わないので(§8)。速度の制約まで一緒に外れます。</p>
   </div>
 
   <h3>声の一貫性はこう取る — 全ショットで参照を共有する</h3>
@@ -899,7 +919,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>必要な拡張</td><td><code>ComfyUI-GGUF</code> と <code>Extra-Model-Patcher</code>。<span class="c c3">要検証</span></td></tr>
         <tr><td>ストレージ</td><td>NVMe 推奨。RAM 64GB があれば依存度は下がるが、初回ロードには効く。</td></tr>
         <tr><td>GGUF の配布幅</td><td>IQ1_S の 3.78 GiB から Q8_0 の 33.56 GiB まで。<strong>16GB に載せるならこの中間から選ぶ</strong>。<span class="c c1">一次</span></td></tr>
-        <tr><td>Sol-Attn(kijai)</td><td>MLP ピーク VRAM −37% と魅力的だが <strong>Blackwell 世代向け</strong>。RTX 4080 は Ada なので<strong>対象外の可能性が高い</strong>。<span class="c c3">要検証</span></td></tr>
+        <tr><td><strong>Sol-Attn</strong></td><td><strong>訂正:</strong> 前版で「Blackwell 向けで 4080 は対象外」と書きましたが<strong>誤りでした</strong>。<strong>SM86(RTX 30 系)/ SM89(RTX 40 系)/ SM120(50 系)</strong>に対応し、<strong>RTX 4080 SUPER で動作確認済み</strong>と明記されています。Windows ネイティブ対応、Triton 3.6.0 が必要 <span class="c c1">一次</span>。詳細は下の表へ</td></tr>
         <tr><td>ComfyUI 以外の選択肢</td><td>DiffSynth-Studio の NF4 経路は最小 8GB を謳う。ComfyUI で詰まったときの逃げ道。<span class="c c1">一次</span></td></tr>
         <tr><td><strong>VRAM 計算機</strong></td><td>MiniMax H3 Hub の INT8 VRAM 計算機が <strong>RTX 4080(16GB)を名指しで対象</strong>にしている。<strong>実験を始める前にここで当たりを付けられます</strong> <span class="c c1">一次</span></td></tr>
         <tr><td>潜在アップスケーラ</td><td>低解像度で生成 → 潜在のまま 1.0〜4.0 倍 → 仕上げ。VAE の往復を飛ばすので<strong>速い</strong>。ただし<strong>VRAM は節約しない</strong>(§11b)<span class="c c1">一次</span></td></tr>
@@ -929,23 +949,50 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <p style="margin-bottom:0"><strong>これが本当なら、あなたの 4080 で 15 秒クリップは通らない可能性があります。</strong> §2b の「15 秒 × 5 本」は 10 秒前後 × 7 本に変わるかもしれません。あくまで 1 つのノードパックの目安なので、<strong>実験 5 で自分の環境の上限を測るのが最優先</strong>です。</p>
   </div>
 
-  <h3 style="color:var(--risk)">高速化の罠 — あなたの条件では特に重要</h3>
-  <p>16GB で定番の高速化手段は、<strong>まさにあなたが重視している「音声」と衝突します</strong>。これは今回の調査でいちばん重要な発見です。</p>
+  <h3>低 VRAM・高速化の手段(動画 3 で追加)</h3>
+  <p>16GB で使える手段が想像以上に揃っていました。<strong>attention 系は組み合わせに規則があるので、そこだけ注意</strong>してください。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:28%">手段</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td><strong>comfy kitchen attention</strong></td><td><code>Model Attention Backend</code> ノードで選ぶだけ。<strong>ComfyUI v0.32.0 以降にネイティブ同梱</strong>で、追加インストール不要。int8 量子化 Q/K。<strong>MiniMax H3 では SageAttention Auto と同等の性能</strong>。<strong>Sage を入れていない人、Windows の人はまずこれ</strong> <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>Sol-Attn</strong>(Saganaki22)</td><td>RTX 5090 実測で SageAttention 比 <strong>BF16 1.38〜1.65 倍</strong>、int8_qk で 1.73〜1.97 倍、int8_qk+pv で 1.98〜2.33 倍。VRAM は attention で <strong>1.3〜2.7 GiB 削減</strong>。<strong>RTX 40 系(SM89)対応・4080 SUPER で確認済み</strong> <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>MiniMax H3 Chunk FeedForward</strong></td><td>Sol-Attn 同梱。<strong>MLP ピーク VRAM −37%</strong>。<strong>長尺・高解像度で OOM が出るならこれ</strong> <span class="c c1">一次</span></td></tr>
+        <tr><td>Low VRAM Attention(KJNodes)</td><td>OOM 対策。ただし<strong>ブロック forward 全体を置き換えるため <code>Model Attention Backend</code> とはスタックしない</strong> <span class="c c1">一次</span></td></tr>
+        <tr><td>Sage Attention</td><td>旧 <code>Patch Sage Attention (KJNodes)</code> と、新しい <code>MiniMax H3 Memory Efficient Sage Attention Patch</code> の 2 通り</td></tr>
+        <tr><td>Model Sampling MiniMax H3</td><td>VRAM も速度も改善しないが、<strong>shift 値を制御できる</strong>(画像生成の shift と同じ感覚)</td></tr>
+        <tr><td>MiniMax H3 Cache</td><td>INT8 attention と相性が良いとされる <span class="c c3">要検証</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">併用の規則 — ここを間違えると壊れます</div>
+    <p style="margin:0"><strong>H3 の attention ノードは択一です。両方入れてはいけません</strong>(Sol-Attn のリポジトリが明記)<span class="c c1">一次</span>。<br>
+    KJNodes のパッチと重ねる場合の順序も決まっています:<br>
+    <code>Patch Sage Attention (KJNodes)</code> → <code>MiniMax H3 Memory Efficient Sage Attention Patch (KJNodes)</code> → <code>MiniMax H3 Sol patch</code><br>
+    また <strong>KJNodes の Low VRAM Attention は <code>Model Attention Backend</code> とスタックしません</strong>(ブロック forward ごと置換するため)。<strong>まず 1 つだけ入れて効果を測り、それから足す</strong>のが安全です。</p>
+  </div>
+
+  <h3>Turbo LoRA — 罠ではなくなりました</h3>
+  <div class="box tint">
+    <div class="box-title">前版からの変更</div>
+    <p>前版では「Turbo LoRA と Spectrum は音質を落とすので外せ」と書きました。<strong>自前の音声を使わない場合はそのとおり</strong>ですが、動画 3 で前提が変わりました。</p>
+    <p style="margin-bottom:0"><strong>自分の音声を入力する場合、Turbo LoRA の音質劣化は問題になりません</strong>(§11c)。さらに最終出力の音声トラックを元音声に差し替えれば、生成された音は使わないので<strong>影響はゼロ</strong>です。<br>
+    <strong>台詞音声を自前で用意するなら、Turbo LoRA(4〜8 ステップ)を最初から使ってください。</strong>速度が数倍変わります。</p>
+  </div>
 
   <div class="scroll">
     <table>
       <thead><tr><th style="width:24%">手段</th><th style="width:36%">速度への効果</th><th>音声への影響</th></tr></thead>
       <tbody>
-        <tr><td><strong>Turbo LoRA</strong>(4〜8 ステップ)</td><td>830 秒 → 375 秒、2.6 倍などの報告 <span class="c c2">一致</span></td><td style="color:var(--risk)"><strong>音質を劣化させると README に明記</strong> <span class="c c1">一次</span></td></tr>
-        <tr><td><strong>Spectrum</strong> オプティマイザ</td><td>SolAttn 併用で I2V 5 秒が 125.3 秒 → 86.9 秒 <span class="c c3">要検証</span></td><td style="color:var(--risk)"><strong>同上。README に明記</strong> <span class="c c1">一次</span></td></tr>
-        <tr><td>SageAttention</td><td>12GB 環境で約 30% <span class="c c3">要検証</span></td><td>音声への言及なし。ただし sm_120 で高トークン時にノイズが出る Issue あり <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>Turbo LoRA</strong>(4〜8 ステップ)</td><td>830 秒 → 375 秒、2.6 倍などの報告 <span class="c c2">一致</span></td><td>音質劣化の報告あり。<strong>ただし自前音声を使うなら無関係</strong> <span class="c c1">一次</span></td></tr>
+        <tr><td>Spectrum オプティマイザ</td><td>SolAttn 併用で I2V 5 秒が 125.3 秒 → 86.9 秒 <span class="c c3">要検証</span></td><td>同上(README に音質劣化の記載)</td></tr>
+        <tr><td><code>er_sde</code> サンプラー</td><td>—</td><td><strong>音声生成にやや良い</strong>(LoRA の有無を問わず)<span class="c c3">要検証</span></td></tr>
         <tr><td>easycache × R2V</td><td>—</td><td style="color:var(--risk)"><strong>品質崩壊の報告</strong> <span class="c c3">要検証</span></td></tr>
       </tbody>
     </table>
-  </div>
-
-  <div class="box">
-    <p style="margin:0"><strong>順序が大事です。</strong> Turbo LoRA と Spectrum は <strong>まず外した状態で基準を取り、後から入れて音を聴き比べる</strong>。速いからと最初から入れてしまうと、音がこもったときに「連鎖のせい」なのか「高速化のせい」なのか切り分けられなくなります。§9 の実験はこの順序で組んであります。</p>
   </div>
 </section>
 <section id="s8b">
@@ -1044,7 +1091,11 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>Turbo LoRA と Spectrum は音質を落とす。</strong>音の基準を取るまでは外しておく</td><td>§8</td></tr>
         <tr><td>台詞は<strong>継ぎ目をまたがせない</strong>。継ぎ目は文と文の間、または息継ぎに置く</td><td>§6</td></tr>
         <tr><td>複数人の会話は <strong>1 カット 1 人</strong>にする(Ref2VA で声が混ざる既知の不具合)</td><td>§6</td></tr>
+        <tr><td><strong>最終出力の音声トラックを元音声に差し替える。</strong>リップシンクは映像側で取り、音は生成物を使わない。<strong>これが台詞主役の本命</strong></td><td>§6 / §11c</td></tr>
         <tr><td>台詞音声を<strong>そのまま使いたい</strong>なら、LongMedia のリップシンクモード(ソース音声のトラックを復元)。ただし 16GB では 7〜10 秒/クリップ</td><td>§6 / §5</td></tr>
+        <tr><td><strong>自前音声を使うなら Turbo LoRA の音質劣化は無関係。</strong>速度制約が外れる</td><td>§8 / §11c</td></tr>
+        <tr><td><code>er_sde</code> サンプラーが音声生成にやや良い(LoRA の有無を問わず)<span class="c c3">要検証</span></td><td>§11c</td></tr>
+        <tr><td>プロンプト内で画像・音声を参照するときは<strong>三角括弧</strong>を使う</td><td>§11c</td></tr>
       </tbody>
     </table>
   </div>
@@ -1077,6 +1128,10 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>ショット単位で Bypass</strong> して、悪いショットだけ再生成する</td><td>§11</td></tr>
         <tr><td>複数出力は右下の <strong>assets パネル</strong>に溜まる(メインのプレビューには 1 本しか出ない)</td><td>§11</td></tr>
         <tr><td>最初のセグメントは<strong>公式ノードで生成</strong>すればよい(ゼロから作るので継続用ノードは不要)</td><td>§11b</td></tr>
+        <tr><td><strong>キーフレームは first/last だけでなく任意の位置に任意個</strong>置ける。position 値を編集するだけ</td><td>§11c</td></tr>
+        <tr><td>Multi-Ref パックの <code>Video Masked Motion Context</code> は <strong>context length 39 がたいていベスト</strong><span class="c c3">要検証</span></td><td>§11c</td></tr>
+        <tr><td>KJ nodes の <code>Image Batch Extend with Overlap</code> がシーン間のブレンドに効く</td><td>§11c</td></tr>
+        <tr><td><strong>自分が生成したものでない既存動画も延長できる</strong></td><td>§11c</td></tr>
       </tbody>
     </table>
   </div>
@@ -1094,6 +1149,22 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>潜在アップスケーラは<strong>時間を節約するが VRAM は節約しない</strong></td><td>§11b</td></tr>
         <tr><td>Sol-Attn は <strong>Blackwell 世代向け</strong>。Ada の 4080 は対象外の可能性が高い</td><td>§8</td></tr>
         <tr><td>実験の前に <strong>INT8 VRAM 計算機</strong>で当たりを付けられる(RTX 4080 を名指しで対象)</td><td>§8 / §5</td></tr>
+        <tr><td><strong>comfy kitchen attention は ComfyUI v0.32.0 以降にネイティブ同梱。</strong>追加インストール不要で Sage 相当</td><td>§8</td></tr>
+        <tr><td><strong>Sol-Attn は RTX 40 系(SM89)に対応。</strong>4080 SUPER で確認済み。Windows ネイティブ可、Triton 3.6.0 が必要</td><td>§8</td></tr>
+        <tr><td><strong>OOM が出るなら Chunk FeedForward</strong>(MLP ピーク VRAM −37%)</td><td>§8</td></tr>
+        <tr><td><strong>attention 系ノードは択一。</strong>H3 の attention ノードを 2 つ入れない。KJNodes と重ねるときは順序が決まっている</td><td>§8</td></tr>
+        <tr><td>K サンプラーが複数になったら<strong>グローバルなステップ数</strong>を使う(turbo / 非 turbo の切り替えが一箇所で済む)</td><td>§11c</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>入力画像の扱い</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:64%">ルール</th><th>出典</th></tr></thead>
+      <tbody>
+        <tr><td><strong>要らないものは送らない。</strong>入力画像にマスクをかけて不要部分を除く。プロンプトで「入れるな」と書くより確実(例: 頭の一部に見える雲を H3 が取り込んでしまう)</td><td>§11c</td></tr>
+        <tr><td>服・背景・前景のセグメント分けにも同じ手が使える</td><td>§11c</td></tr>
       </tbody>
     </table>
   </div>
@@ -1129,7 +1200,9 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
       <ul class="check">
         <li>ComfyUI に入っている PyTorch のバージョンを確認(同梱版のままなら入替を検討 → §8)</li>
         <li>起動フラグに <code>--disable-pinned-memory --reserve-vram 1.5</code> を追加</li>
-        <li><strong>Turbo LoRA / Spectrum / easycache は一旦すべて外す</strong>(音質を犠牲にする → §8)</li>
+        <li><strong>自前の台詞音声を使うなら Turbo LoRA(4〜8 ステップ)は最初から入れてよい</strong> — 音質劣化は無関係になる(§8)。生成音をそのまま使うつもりなら外して基準を取る</li>
+        <li><code>Model Attention Backend</code> で <strong>comfy kitchen attention</strong> を選ぶ(ComfyUI v0.32.0 以降なら追加インストール不要)</li>
+        <li>OOM が出るなら <strong>Chunk FeedForward</strong> を追加。attention 系ノードは<strong>択一・順序あり</strong>なので、1 つずつ入れて測る(§8)</li>
         <li>864×480 で 5 秒を 1 本生成し、<strong>所要時間を記録</strong> — 以降すべての見積もりの基準になる</li>
       </ul>
     </div>
@@ -1399,6 +1472,81 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     動画 1 で「これで結果が完全に変わった」と言われていたテンプレートの構造です。<strong>soundscape と non-diegetic music が独立したセクションとして存在する</strong>のは、§6 の「環境音は全ショットで揃える」「BGM は別レイヤー」という整理と正確に対応します。<strong>H3 は最初からその区別を持っている</strong>、ということです。</p>
   </div>
 </section>
+<section id="s11c">
+  <span class="sec-label">動画 3</span>
+  <h2>速度・VRAM とキーフレーム</h2>
+
+  <div class="box">
+    <div class="box-title">出典</div>
+    <p style="margin:0">Nerdy Rodent の H3 更新回 — 字幕全文から要約 <span class="c c1">一次</span>。前回動画の続編で、既出の部分は省略されています。</p>
+  </div>
+
+  <div class="box tint">
+    <p style="margin:0"><strong>3 本の中でいちばん実務的です。</strong> 私が「トレードオフ」と書いた 2 点に、そのまま解決策が出ていました。</p>
+  </div>
+
+  <h3 style="color:var(--accent-ink)">決定打 — 音声トラックを差し替える</h3>
+  <p>生成された音が気に入らなければ、<strong>元の音声を VHS Combine ノードに流し込めばよい</strong>、というだけの話です。Get ノードとスイッチで切り替えられるようにしておく。実演では、H3 が生成した音と元音声はほぼ同じ出来で、元音声のほうがわずかにクリアでした。</p>
+
+  <div class="box tint">
+    <div class="box-title">これで §6 の論点が実務的に決着します</div>
+    <ol style="margin-bottom:8px">
+      <li>自前の台詞音声を用意する(録音 / TTS)</li>
+      <li>reference モデルで<strong>それにリップシンクさせて映像を作る</strong></li>
+      <li><strong>最終出力の音声トラックは、元の音声に差し替える</strong></li>
+    </ol>
+    <p style="margin-bottom:0"><strong>音は最初から最後まで元のまま。継ぎ目のこもりも、声の変化も、原理的に起きません。</strong><br>
+    これは §4 の選択肢 D(音を別トラックに逃がす)が、<strong>台詞主役でも使える</strong>ということです。「リップシンクは映像側で取り、音は差し替える」。私が「D は台詞には使えない」と書いたのは、この手を見落としていました。</p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">連鎖する 3 つ目の帰結 — 速度の制約も外れます</div>
+    <p style="margin:0">氏は「Turbo LoRA は音質に影響が出ることがあるが、<strong>自分の音声を入力する場合は問題にならない。だからそういう場合には理想的</strong>」と明言しています。<br>
+    <strong>つまり「速度 vs 音質」のトレードオフが消えます。</strong> §8 で「Turbo LoRA は外せ」と書いた前提は、<strong>自前音声を使うなら当てはまりません</strong>。1 テイク 2 時間 40 分という時間予算(§2b)が、これで大きく改善する可能性があります。</p>
+  </div>
+
+  <h3>Turbo LoRA の実際</h3>
+  <ul>
+    <li>first/last 用と reference 用の両方に多数存在。<strong>4 ステップ版と 8 ステップ版</strong>がある</li>
+    <li>Kijai が良いものを収集している。他に変換版のコレクションもある</li>
+    <li>氏の好みは <strong>Light X2V</strong> のもの</li>
+    <li>画質は総じて良好。<strong>プロトタイプの高速確認にも向く</strong></li>
+    <li><strong><code>er_sde</code> サンプラーが音声生成にやや良い</strong>(Turbo LoRA の有無を問わず)<span class="c c3">要検証</span></li>
+  </ul>
+
+  <h3>任意位置のキーフレーム</h3>
+  <p><code>H3 Motion Context Multi-Ref</code> パックの custom keyframes ノードで、<strong>first/last だけでなく任意の位置に任意個のキーフレーム</strong>を置けます。position 値を編集するだけ。実演では 3 枚(冒頭・中間・終端)を置き、それらを繋ぐ動きをプロンプトで書いていました。</p>
+  <div class="box tint">
+    <p style="margin:0">§2b の<strong>「キーフレーム = 品質リセット」を、好きな場所に打てる</strong>ということです。1 分の中に「ここは絶対にこの絵」という点を複数置けるので、ドリフト対策としても構成の制御としても効きます。</p>
+  </div>
+
+  <h3>延長の実演</h3>
+  <ul>
+    <li>first/last モデルで <strong>15 秒 + 5 秒 + 7 秒</strong>。複数の 15 秒セットも可能で、尺の選び方は自由</li>
+    <li>最後に補間(interpolate)をかけている</li>
+    <li><strong>継ぎ目はかなり滑らか</strong>。「30〜40 秒のクリップには理想的」との評</li>
+    <li><strong>自分が生成した動画でなくても、既存の動画クリップを延長できる</strong>(実演あり)</li>
+  </ul>
+
+  <h3>ワークフロー構築の要点</h3>
+  <ul>
+    <li>K サンプラーが複数になったら<strong>グローバルなサンプラー選択とステップ数</strong>を使う。turbo(6〜8 ステップ)と非 turbo(20 ステップ)の切り替えが一箇所で済む</li>
+    <li><strong>入力画像にマスクをかける。</strong> 例として、雲が頭の一部のように見えるせいで H3 が雲を取り込んでしまうケースを挙げ、<strong>「要らないなら送らなければよい」</strong>と。プロンプトで直そうとするより確実で、服・背景・前景のセグメントにも使える</li>
+    <li><code>Video Masked Motion Context</code> を K サンプラーの前に置き、<strong>context length は 39</strong>。「他の値も使えるが、たいていの場合 39 がベスト」<span class="c c3">要検証</span></li>
+    <li>context frames は各クリップの先頭に入るので、<strong>最終動画では <code>H3 Motion Context Trim</code> で切る</strong>(その分わずかに短くなる)</li>
+    <li><strong>KJ nodes の <code>Image Batch Extend with Overlap</code></strong> がシーン間の滑らかなブレンドに便利</li>
+    <li><code>H3 Assemble Existing Video Extension</code> が連結された音声を扱う</li>
+    <li>プロンプト内で画像・音声を参照するときは<strong>三角括弧を使う</strong>(§6 のテンプレートの書式と一致)</li>
+  </ul>
+
+  <div class="box">
+    <div class="box-title">リポジトリの実体</div>
+    <p><a href="https://github.com/seitanism/ComfyUI-H3-Motion-Context-MultiRef"><code>seitanism/ComfyUI-H3-Motion-Context-MultiRef</code></a>(§5 の NikoDemon80 版のフォーク)。<strong>2026-08-30 に Update 8</strong> が出ており、非常に活発です <span class="c c1">一次</span>。ノードは <code>H3 Custom Keyframes (Masked)</code>、<code>H3 Existing Video Masked Context</code>、<code>H3 V2V Granular Fractional Denoise</code>、<code>H3 Set/Clear AV Noise Mask</code>、<code>H3 Stream AV Extensions to VHS</code> など。</p>
+    <p style="margin-bottom:0"><strong>音声の扱いが技術的に丁寧です。</strong> <strong>H3 の 40 Hz オーディオグリッド</strong>を正確に扱い、PCM を H3 の音声潜在セル数ちょうどに構築することで、<strong>VAE の center-crop / endpoint ドリフトを避け、継ぎ目のタイミングをフレーム由来に保つ</strong>と説明されています <span class="c c1">一次</span>。§7 でクロスフェードに頼っていた部分が、ノード側で正確に処理される可能性があります。<br>
+    依存: VideoHelperSuite / KJNodes / rgthree-comfy / MAINodes / SolAttn_triton / Minimax H3 Latent Upscaler</p>
+  </div>
+</section>
+
 
 
 <section id="s12">
@@ -1476,6 +1624,16 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li><a href="https://github.com/xiaolibai-sys/ComfyUI-MiniMaxH3">xiaolibai-sys / ComfyUI-MiniMaxH3</a> — H3 の映像・音声生成ノード</li>
   </ul>
 
+  <h3>動画 3 と、そこから辿ったもの</h3>
+  <ul>
+    <li><strong>動画 3 本編(字幕全文を受領・§11c の出典)</strong> — Nerdy Rodent の H3 更新回 <span class="c c1">一次</span></li>
+    <li><a href="https://github.com/seitanism/ComfyUI-H3-Motion-Context-MultiRef">seitanism / ComfyUI-H3-Motion-Context-MultiRef</a> <span class="c c1">一次</span> — 動画 3 のノードパック。Update 8(2026-08-30)</li>
+    <li><a href="https://github.com/Saganaki22/ComfyUI-sol-attn">Saganaki22 / ComfyUI-sol-attn</a> <span class="c c1">一次</span> — <strong>Sol-Attn の対応 GPU(SM86/89/120)と実測値、併用規則</strong>の出典。前版の「Blackwell 専用」という記述を訂正した根拠</li>
+    <li><a href="https://docs.comfy.org/built-in-nodes/ModelAttentionBackend">ComfyUI 公式 — ModelAttentionBackend ノード</a>(未取得)</li>
+    <li><a href="https://comfyui-wiki.com/en/news/2026-08-11-comfyui-v0-32-0">ComfyUI v0.32.0 — comfy kitchen attention</a>(未取得。H3 で SageAttention Auto と同等)</li>
+    <li><a href="https://comfyui-wiki.com/en/news/2026-08-17-h3-motion-context-multiref-update-6">ComfyUI Wiki — MultiRef Update 6</a>(未取得)</li>
+  </ul>
+
   <h3>長尺化・連鎖の実装</h3>
   <ul>
     <li><strong><a href="https://youtu.be/nHVnbZPAnT4">動画本編(字幕全文を受領・§11 の出典)</a></strong> — B Explains Everything / <a href="https://www.youtube.com/@furuknap">@furuknap</a>。<strong>説明欄から「H3 long form blueprint」をダウンロードできます</strong> <span class="c c1">一次</span></li>
@@ -1495,8 +1653,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 7 版 2026-08-30(<strong>2 本目の動画の字幕を受領</strong>。§11b を新設し、潜在で繋ぐ別系統の実装を追加。そこから Kate の Extend ノード、LongMedia(16GB は 7〜10 秒 / リップシンクモード = 解釈 (a))、潜在アップスケーラ、VRAM 計算機、プロンプトテンプレートのセクション名に到達。§2b にクリップ長別の本数表、§5 にツール一覧、§8 に VRAM 目安を追加)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① §9 の実験 1〜5 の結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ VRAM 計算機の結果に基づくクリップ長の確定。</p>
+  <p>初版 2026-08-30 / 第 8 版 2026-08-30(<strong>3 本目の動画の字幕を受領</strong>。§11c を新設。<strong>音声トラックを元音声に差し替える</strong>という決定打により、§4 の「D は台詞に使えない」と §8 の「Turbo LoRA は外せ」を撤回。<strong>Sol-Attn が RTX 40 系に対応している</strong>ことが判明し、前版の「Blackwell 専用」記述を訂正。低 VRAM 手段の一覧と併用規則、任意位置キーフレーム、入力画像のマスクを追加。ノウハウ台帳も更新)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① §9 の実験 1〜5 の結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ 音声差し替え方式が実際に通ったかの確認。</p>
 </footer>
 
 </main>
