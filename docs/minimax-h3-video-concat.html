@@ -527,7 +527,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
   <div class="box tint">
     <div class="box-title">条件が出そろった上での見立て</div>
     <p>1 分 = 継ぎ目 4 つ、<strong>台詞が主役</strong>、<strong>カット割りが混ざる</strong>。この 3 つが揃ったので、初版より大きく踏み込めます。</p>
-    <p><strong>推すのは「ブロック分割 + ブロック内だけ C」</strong>です。カット割りで 1 分を 2〜3 ブロックに割り、ブロック内の連続部分だけ潜在継続(C)を使う。ブロック間はただの連結(A)+ Ref2VA で人物を固定。<strong>最長の連鎖が 2 本で済むので、音のこもりも色ドリフトも累積しません</strong>(§2b)。</p>
+    <p><strong>推すのは「ブロック分割 + ブロック内だけ C(Herrgott の Infinite Continuation Suite)」</strong>です。カット割りで 1 分を 2〜3 ブロックに割り、ブロック内の連続部分だけ潜在継続(C)を使う。ブロック間はただの連結(A)+ Ref2VA で人物を固定。<strong>最長の連鎖が 2 本で済むので、音のこもりも色ドリフトも累積しません</strong>(§2b)。</p>
     <p style="margin-bottom:0">D(音を別トラック)は台詞には使えませんが、<strong>BGM だけは通しで敷いてください</strong> — 継ぎ目の印象が確実に良くなります(§6)。<br>
     そしてこの見立ては、<strong>§6 の「音声を入力できるか」の答え次第でさらに単純になります</strong>。(a) が成り立てば、台詞は先に 1 本作って確定させられるので、音の悩みはほぼ消えます。<strong>今夕の実験 2 が最大の分岐点です。</strong></p>
   </div>
@@ -565,7 +565,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
           <td><strong>要件</strong></td>
           <td>ComfyUI Manager から導入可。24fps 以外の参照は自動リサンプル</td>
           <td>ComfyUI <strong>0.34.0 以降</strong>、全クリップ同一解像度</td>
-          <td><strong>PR #15375 を含むビルド</strong>必須(未対応だと起動を拒否)</td>
+          <td><strong>PR #15375 を含むビルド</strong>必須(未対応だと起動を拒否)。<strong>この PR は 2026-08-18 にマージ済み</strong>なので、ComfyUI を最新にすれば要件を満たせます <span class="c c1">一次</span></td>
         </tr>
         <tr>
           <td><strong>メモリ特性</strong></td>
@@ -583,9 +583,22 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     </table>
   </div>
 
+  <div class="box tint">
+    <div class="box-title">推奨を差し替えました — まず Infinite Continuation Suite</div>
+    <p>初版では「16GB なら H3 Extender から」と書きましたが、<strong>Infinite Continuation Suite を第一候補に格上げします</strong>。理由は 4 つ。</p>
+    <ol>
+      <li><strong>あなたが見つけた動画が、まさにこれの手順解説です</strong>(§11)。Furuknap 氏が配布するワークフローは、ComfyUI Manager で「Herrgott」を検索して入れるノードパックを使います。<strong>手順書があるかどうかは実務上とても大きい。</strong></li>
+      <li><strong>「台詞の継ぎ目(dialogue seams)」を名指しで扱っている唯一のもの</strong>です。リポジトリの検証メモに「音声テール引き継ぎが台詞の継ぎ目で有効」と明記されています <span class="c c1">一次</span>。あなたの用途に正面から一致します。</li>
+      <li>導入の壁だと書いた <strong>PR #15375 は 2026-08-18 にマージ済み</strong>。ComfyUI を最新にすれば済みます。</li>
+      <li>付属ワークフロー <code>04_Stitch_Saved_Chain</code> が<strong>「保存済み AV latent を 1 本ずつデコードする」</strong>設計で、明示的にメモリ節約を狙っています <span class="c c1">一次</span>。16GB 向きの経路が用意されている。</li>
+    </ol>
+    <p style="margin-bottom:0"><strong>ただし VRAM の実測データはありません。</strong> リポジトリの検証メモはソフトウェアの回帰テスト(110 件)と機能確認が中心で、GPU・VRAM・解像度・生成時間の記載はゼロです <span class="c c1">一次</span>。<strong>16GB で回るかは自分で確かめるしかありません。</strong> 落ちたときのフォールバックが <strong>H3 Extender</strong>(ディスクキャッシュ主体)です。</p>
+  </div>
+
   <div class="box">
-    <div class="box-title">16GB から試すなら</div>
-    <p style="margin:0"><strong>H3 Extender</strong> が第一候補になりそうです。ディスクキャッシュ主体でメモリに優しく、中断・再開でき、しかも「最後に一度だけエンコード」なので色ドリフトの主因(往復劣化)を構造的に避けています。次点が <strong>Motion Context</strong>(ComfyUI 0.34.0 以降が必要)。<strong>Infinite Continuation Suite</strong> は最も作り込まれている一方、特定 PR 入りビルドを要求するので導入の難度が一段上です。<span class="c c3">要検証</span></p>
+    <div class="box-title">付属ワークフロー(v1.4)</div>
+    <p style="margin-bottom:0"><code>01_Start</code> 初回クリップ生成 + Auto Handover 解析 + AV latent 保存 / <code>02_Continue</code> 前クリップから継続(映像履歴を保護しつつ音声引き継ぎを制御)/ <code>03_3Clip_Showcase_AutoStitch</code> 3 クリップを連続生成して自動で 1 本に結合 / <code>04_Stitch_Saved_Chain</code> 長尺向け、保存済み latent を 1 本ずつデコード <span class="c c1">一次</span><br>
+    <strong>今夕は 03 の 3 クリップ版から入るのが素直です。</strong>1 分の本番は 04 の経路になります。</p>
   </div>
 
   <h3>公式のキュレーションリストにも当たる</h3>
@@ -964,9 +977,10 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
     <div class="step-n">5</div>
     <div class="step-b">
       <h4 style="margin-top:2px">劣化カーブを測る(選択肢 C)</h4>
-      <p>実験 2 が (b) だった場合に必要になります。<strong>まず H3 Extender</strong>(§5 の理由)。低解像度で 4〜5 本連鎖させてください。</p>
+      <p>実験 2 が (b) だった場合に必要になります。<strong>まず Herrgott の Infinite Continuation Suite</strong> — 例ワークフロー <code>03_3Clip_Showcase_AutoStitch</code> がそのまま使えます(§5)。低解像度で 4〜5 本連鎖させてください。落ちたら <strong>H3 Extender</strong> にフォールバック。</p>
       <ul class="check">
-        <li>ComfyUI のバージョンを先に確認(Motion Context を選ぶなら 0.34.0 以降が必須)</li>
+        <li><strong>ComfyUI を最新に更新してから</strong>(PR #15375 が 8/18 マージ、これが無いと Suite は起動を拒否する)。ComfyUI Manager で「Herrgott」を検索して導入</li>
+        <li><strong>Auto handover が末尾のフリーズをきちんと避けているか</strong>(実験 4 の手作業トリムと比べる)</li>
         <li><strong>何本目から台詞がこもり始めるか</strong> — これが §2b のブロック長を決める</li>
         <li>何本目から色・顔がドリフトし始めるか(レシピ 6 の YAVG も併用)</li>
         <li>のりしろのトリムをノードが自前でやるか、§7 レシピ 3 が要るか</li>
@@ -988,6 +1002,7 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
 
   <ol>
     <li><strong>音声を「入力」できるのか — (a) か (b) か。</strong> このプロジェクト最大の分岐。(a) なら台詞を先に 1 本作って確定でき、音の悩みがほぼ消える。<em>→ 実験 2 で今夕決着</em>(§6)</li>
+    <li><strong>Infinite Continuation Suite が 16GB で回るか。</strong> リポジトリに VRAM の実測データが一切ないため、完全に未知です。回らなければ H3 Extender にフォールバック。<em>→ 実験 5</em>(§5)</li>
     <li><strong>ブロックをどう割るか。</strong> 連鎖を何本までに抑えるか。台詞がこもり始める本数から逆算する。<em>→ 実験 5</em>(§2b)</li>
     <li><strong>Ref2VA でカットをまたいで同じ顔・同じ声を保てるか。</strong> ブロック間の繋ぎはこれに依存する。複数人が喋る場合は Issue #17 の声の混ざりに注意。<em>→ 実験 4</em></li>
     <li><strong>量子化レベルは Q4 / Q5 / int4 のどれか。</strong> 推奨が割れている(§8)。台詞主役なら<strong>顔と口元の破綻</strong>が判断基準になる。<em>→ 短いクリップ 2〜3 本で実測</em></li>
@@ -1018,34 +1033,48 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
     <li><strong>"The Disaster That Started It"</strong> — 素朴な方法が破綻した経験談から入る構成。<strong>その「失敗」が何だったのかが、このノートの §3(継ぎ目で壊れるもの)のどれに当たるかを見てください。</strong>おそらく FL2VA の末尾フリーズか、色ドリフトの累積です。</li>
   </ul>
 
-  <h3>状況証拠 — おそらくこの系統の手法</h3>
-  <p>同じ「Infinite Length」という言い回しで、次の手法が流通しています。</p>
+  <h3>特定できました — Herrgott の Infinite Continuation Suite の解説です</h3>
+
+  <p>チャンネルは <strong>Bjørn Furuknap</strong>(<a href="https://www.youtube.com/@furuknap">@furuknap</a> / <a href="https://furuknap.net">furuknap.net</a>)。同氏の「無限長」ワークフローについて、次のことが分かりました <span class="c c2">一致</span>。</p>
+
+  <ul>
+    <li>MiniMax H3 の <strong>FL2VA(first/last frame)モデル</strong>を使って、事実上無制限の長さの動画を作る</li>
+    <li>ノードパックは <strong>ComfyUI Manager で「Herrgott」を検索して導入</strong>する — つまり §5 の <strong>Herrgott's H3 Infinite Continuation Suite</strong> です</li>
+    <li>特徴として挙げられているもの:
+      <ul>
+        <li>複数キーフレームが<strong>「品質リセット」</strong>として働き、長尺で起きる文脈・品質の劣化を防ぐ</li>
+        <li><strong>decode/re-encode を挟まない映像・音声の潜在継続</strong> — 劣化を防ぎ、滑らかな連続運動を保つ</li>
+        <li><strong>Auto handover が「凍った FL2VA の末尾」を検出</strong>する(固定トリムではなく)ため、フリーズフレームが出ない</li>
+        <li>ワークフローは意図的に単純な構造で、ノードの並べ替えや追加がしやすい</li>
+      </ul>
+    </li>
+  </ul>
+
   <div class="box tint">
-    <p><strong>Civitai「H3 Infinite Video Continuation and automatic Stitching with Fl2Va Model」</strong>の説明が、タイトルの内容とよく一致します:</p>
-    <ol style="margin-bottom:8px">
-      <li>開始フレーム + プロンプト + 終了フレームで最初のクリップを作る</li>
-      <li>2 本目以降は<strong>前クリップの保存された latent を読み込み</strong>、プロンプトと(任意で)新しい終了フレームを与えて継続する</li>
-    </ol>
-    <p style="margin-bottom:0">そして「複数のキーフレームがガイドとなり、<strong>品質リセット</strong>として働いて、長尺 AI 動画で通常起きる文脈・品質の劣化を防ぐ」と説明されています。これは §5 の Herrgott's H3 Infinite Continuation Suite の説明とほぼ同じ発想で、同一系統と見てよさそうです。</p>
+    <div class="box-title">"The Disaster" の正体はおそらくこれ</div>
+    <p style="margin:0">3 つ目の特徴に注目してください。<strong>FL2VA は末尾で「早く終端に着いてしまい、残りを凍って過ごす」</strong>という癖があります(§3 の「末尾が固まる / 崩れる」)。その凍ったフレームを次の起点にすると、破綻が連鎖全体に伝播します。<br>
+    タイトルの <em>"The Disaster That Started It"</em> は、まずこれでしょう。<strong>そして §9 実験 4 で私が「終端の 0.35 秒手前を取れ」と書いたのは、同じ問題への手作業の対処です。</strong>Auto handover はそれを自動化したもの、という関係になります。</p>
   </div>
 
   <div class="box tint">
     <div class="box-title">ここが噛み合っている</div>
-    <p style="margin:0">「<strong>キーフレームが品質リセットになる</strong>」という考え方は、私が §2b で提案した「<strong>カット割りは技術的な劣化リセットでもある</strong>」とまったく同じ発想です。別々の経路から同じ結論に着いているので、<strong>この方向は筋が良い</strong>と考えてよさそうです。あなたの「連続シーンとカット割りが混ざる」構成は、この手法にそのまま乗ります。</p>
+    <p style="margin:0">「<strong>キーフレームが品質リセットになる</strong>」という考え方は、私が §2b で提案した「<strong>カット割りは技術的な劣化リセットでもある</strong>」とまったく同じ発想です。別々の経路から同じ結論に着いているので、この方向は筋が良いと考えてよさそうです。<strong>あなたの「連続とカット割りが混ざる」構成は、この手法にそのまま乗ります。</strong></p>
   </div>
 
   <h3>観るときのチェックリスト(絞り込み済み)</h3>
-  <p>このノートの未解決点に直結するものだけに絞りました。<strong>この 4 つが分かれば、今夕の実験が半分に減る可能性があります。</strong></p>
+  <p>手法は特定できたので、残るのは<strong>「あなたの環境で回るか」と「音がどこまで保つか」</strong>です。観るときはここだけ拾えば十分です。</p>
   <ul class="check">
     <li><strong>音声をどう扱っているか</strong> — 触れていなければ映像だけの話。触れているなら、§6 の (a)/(b) のどちらか(渡した音そのものか、喋り直しか)</li>
-    <li><strong>使っているノード / ワークフローの名前</strong> — §5 の 3 つのどれか、Civitai 配布のものか、それ以外か</li>
+    <li><strong>どのワークフロー(01〜04)を使っているか</strong> — §5 の付属ワークフロー一覧と突き合わせる</li>
     <li><strong>のりしろ(context)のフレーム数と、何本まで連鎖させているか</strong> — 劣化が出始める本数への言及があれば最重要</li>
     <li><strong>GPU / VRAM と生成時間</strong> — 16GB の話として読めるか</li>
   </ul>
   <p>あわせて、<strong>"The Disaster" の中身</strong>(何が壊れたのか)をメモしておいてください。§3 の表のどれに当たるかで、対策の優先順位が決まります。</p>
 
-  <h3>チャンネル名を教えていただけると</h3>
-  <p>同じ作者が記事や Civitai / GitHub でワークフローを配布していることが多く、<strong>チャンネル名が分かれば配布物にたどり着ける可能性があります</strong>。動画そのものより、配布されているワークフロー JSON のほうが実用価値が高いことも多いです。</p>
+  <div class="box">
+    <div class="box-title">動画より先に手に入るもの</div>
+    <p style="margin:0">ノードパックは <strong>ComfyUI Manager で「Herrgott」を検索</strong>すれば入ります。付属の例ワークフロー(§5 の 01〜04)も同梱されるので、<strong>動画を観る前に手を動かし始められます</strong>。動画は「なぜそうするのか」と「ハマりどころ」を埋める用途に回すのが効率的です。</p>
+  </div>
 
   <h3>字幕が取れなかった件</h3>
   <p>スマホの YouTube アプリは文字起こしのコピーができないことがあります。<strong>PC のブラウザなら</strong>、動画下の「…」→「文字起こしを表示」→ 右パネルをドラッグで全選択 → コピー、で取れます。今夕 PC を立ち上げたときに、もし余裕があれば。</p>
@@ -1116,7 +1145,11 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
 
   <h3>長尺化・連鎖の実装(4 回目の調査で追加)</h3>
   <ul>
-    <li><a href="https://civitai.com/models/2852849/h3-infinite-video-continuation-and-automatic-stitching-with-fl2va-model">Civitai — H3 Infinite Video Continuation and automatic Stitching with Fl2Va Model</a>(未取得。§11 の状況証拠)</li>
+    <li><a href="https://www.youtube.com/@furuknap">YouTube — Bjørn Furuknap(@furuknap)</a> / <a href="https://furuknap.net">furuknap.net</a>(いずれも未取得)</li>
+    <li><a href="https://civitai.com/models/2852849/h3-infinite-video-continuation-and-automatic-stitching-with-fl2va-model">Civitai — H3 Infinite Video Continuation and automatic Stitching with Fl2Va Model</a>(未取得)</li>
+    <li><a href="https://github.com/comfyanonymous/ComfyUI/pull/15375">ComfyUI PR #15375 — MiniMax-H3 のストリーム別 denoise マスク(2026-08-18 マージ)</a> <span class="c c1">一次</span></li>
+    <li><a href="https://github.com/HerrgottMargott/Herrgotts-H3-Infinite-Continuation-Suite/blob/main/VALIDATION.md">同 Suite の VALIDATION.md</a> <span class="c c1">一次</span> — 回帰テスト 110 件、台詞の継ぎ目での音声テール引き継ぎ。<strong>ハードウェアの実測は無し</strong></li>
+    <li><a href="https://github.com/HerrgottMargott/Herrgotts-H3-Infinite-Continuation-Suite/tree/main/examples">同 Suite の例ワークフロー(01〜04)</a> <span class="c c1">一次</span></li>
     <li><a href="https://comfyui-wiki.com/en/news/2026-08-11-h3-infinite-continuation-suite">ComfyUI Wiki — Herrgotts H3 Infinite Continuation Suite 紹介</a>(未取得)</li>
     <li><a href="https://huggingface.co/joeygambino/MiniMax-H3-Multishot-Workflow">joeygambino / MiniMax-H3-Multishot-Workflow</a>(未取得)</li>
     <li><a href="https://ai-shogun.com/minimax-h3-comfyui/">AI SHOGUN — プロンプトの書き方(日本語)</a></li>
@@ -1128,8 +1161,8 @@ ffmpeg -sseof -0.35 -i clip01.mp4 -update 1 -frames:v 1 last_frame.png</code></p
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 4 版 2026-08-30(YouTube のタイトルを受領し §11 を分析に差し替え。公式の awesome-minimax-h3-integration を取り込み、§5 に関連ツール、§8 に GGUF 配布幅・Sol-Attn・DiffSynth を追加)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① 動画のチャンネル名 / 字幕からの本編要約、② §9 の実験 1〜5 の結果の反映、③ Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ。</p>
+  <p>初版 2026-08-30 / 第 5 版 2026-08-30(チャンネル判明により動画の手法を特定。§5 の推奨を Herrgott の Infinite Continuation Suite に差し替え、付属ワークフロー 01〜04 と PR #15375 のマージ状況を追記。§11 を「特定できた」内容に更新)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① 動画本編 / 字幕からの補足、② §9 の実験 1〜5 の結果の反映、③ Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ。</p>
 </footer>
 
 </main>
