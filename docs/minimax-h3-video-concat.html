@@ -235,6 +235,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s7">ffmpeg 実務レシピ</a></li>
     <li><a href="#s8">4080 16GB の現実解</a></li>
     <li><a href="#s8b">32GB を借りるとき</a></li>
+    <li><a href="#s8c">ノウハウ台帳</a></li>
     <li><a href="#s9">今夕の最小実験</a></li>
     <li><a href="#s10">未解決の論点</a></li>
     <li><a href="#s11">動画 1 — 公式ノードで組む</a></li>
@@ -1005,6 +1006,113 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <p style="margin:0"><strong>期待しすぎないこと。</strong> 音のこもりの原因が<strong>連鎖そのもの</strong>なら、VRAM を増やしても解決しません。Turbo LoRA を外せる分は改善するはずですが、それで足りるかどうかは <strong>16GB 側の実験 3 で先に見当がつきます</strong>。借りる前にそこを確かめてください。</p>
   </div>
 </section>
+<section id="s8c">
+  <span class="sec-label">台帳</span>
+  <h2>ノウハウ台帳</h2>
+
+  <p>ここまでに集まった<strong>実務ルールだけ</strong>を 1 枚に集めました。本文の各節に散らばっているものの索引でもあります。<strong>新しい情報源が増えたらここに追記していきます。</strong></p>
+
+  <div class="box tint">
+    <p style="margin:0"><strong>使い方。</strong> 作業中に手元で開いておく用です。迷ったらここを見て、根拠が必要なら「出典」欄の節に飛んでください。<strong>太字のものは、外すと確実に失敗するもの</strong>です。</p>
+  </div>
+
+  <h3>プロンプト</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:64%">ルール</th><th>出典</th></tr></thead>
+      <tbody>
+        <tr><td><strong>MiniMax 推奨のプロンプトテンプレートを使う。</strong>被写体定義 / 要約 / retention 分析 / 詳細記述 / サウンドスケープ / 非ダイエジェティック音楽 の各セクションを埋める。これを外すと<strong>キャラがシーン説明文を読み上げる</strong></td><td>§11 / §11b</td></tr>
+        <tr><td><strong>否定形は効かない。</strong>無音がほしいときは「口を閉じて静かに黙考している」と<strong>肯定形で状態を描写</strong>する</td><td>§6 / §11</td></tr>
+        <tr><td>参照は<strong>番号で明示的に紐づける</strong>(「〈画像 1〉から人物・服・環境を保つ」「〈音声 2〉は被写体 3 番の声色参照」など)</td><td>§5 / §11</td></tr>
+        <tr><td>同じサウンドスケープの記述を<strong>全クリップのプロンプトに入れる</strong>。入れないと継ぎ目で環境音がリセットする</td><td>§6</td></tr>
+        <tr><td>継ぎ目で<strong>矛盾する音の指示を書かない</strong></td><td>§6</td></tr>
+        <tr><td>FL2VA と Ref2VA の<strong>アダプタを混ぜない</strong>。一方の shift を他方に流用しない</td><td>§5</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>音声</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:64%">ルール</th><th>出典</th></tr></thead>
+      <tbody>
+        <tr><td><strong>声の一貫性は「参照の共有」で取る。</strong><code>voice0</code> / <code>voice1</code> を Set ノードで登録し、全ショットの <code>reference_audio_*</code> に繋ぐ</td><td>§6 / §11</td></tr>
+        <tr><td><strong>クリップ長は台詞の長さから決める。</strong>余った時間は雑音で埋まり、<strong>キャラがその雑音にリップシンクする</strong>。音だけ消しても口は動いたまま</td><td>§6 / §11</td></tr>
+        <tr><td>参照音声は<strong>最大 3 本 / 各 2〜15 秒 / 合計 15 秒以内</strong>。3 本目を BGM・環境音の参照に使える</td><td>§2</td></tr>
+        <tr><td>音声は <strong>32 kHz ステレオ</strong>。ffmpeg で触るときの基準値</td><td>§2</td></tr>
+        <tr><td><strong>連鎖を重ねると音がこもる</strong>(各ノードの README が自認)。台詞主役では致命的になりやすい</td><td>§5 / §6</td></tr>
+        <tr><td><strong>Turbo LoRA と Spectrum は音質を落とす。</strong>音の基準を取るまでは外しておく</td><td>§8</td></tr>
+        <tr><td>台詞は<strong>継ぎ目をまたがせない</strong>。継ぎ目は文と文の間、または息継ぎに置く</td><td>§6</td></tr>
+        <tr><td>複数人の会話は <strong>1 カット 1 人</strong>にする(Ref2VA で声が混ざる既知の不具合)</td><td>§6</td></tr>
+        <tr><td>台詞音声を<strong>そのまま使いたい</strong>なら、LongMedia のリップシンクモード(ソース音声のトラックを復元)。ただし 16GB では 7〜10 秒/クリップ</td><td>§6 / §5</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>クリップ設計</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:64%">ルール</th><th>出典</th></tr></thead>
+      <tbody>
+        <tr><td>24fps・<strong>17k+5 フレームの格子</strong>・4〜15 秒。指定した秒数は次の格子点に切り上がる</td><td>§2</td></tr>
+        <tr><td><strong>16GB の目安は 7〜10 秒/クリップ。</strong>15 秒は通らない可能性がある</td><td>§8</td></tr>
+        <tr><td><strong>クリップは可能な限り長く取る</strong>(継ぎ目を減らすため)。ただし上の VRAM 制約と台詞の尺が上限を決める</td><td>§2b</td></tr>
+        <tr><td>連鎖する全クリップで<strong>アスペクト比・解像度を揃える</strong></td><td>§2 / §5</td></tr>
+        <tr><td><strong>カット割りは技術的な劣化リセットでもある。</strong>「ここは連続でなければならないか?」を継ぎ目ごとに問う</td><td>§2b</td></tr>
+        <tr><td>口だけ動く 2 人が映り続ける動画は<strong>技術的に成功しても退屈</strong>になる</td><td>§11</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>連鎖のさせ方</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:64%">ルール</th><th>出典</th></tr></thead>
+      <tbody>
+        <tr><td><strong>画像列で渡すなら 3 秒(72 フレーム)以上。</strong>1 秒(24 フレーム)は実際に破綻した</td><td>§11</td></tr>
+        <tr><td>潜在で渡すなら、継続セグメントの<strong>先頭 1 秒ほどをトリム</strong>してから繋ぐ</td><td>§11b / §7</td></tr>
+        <tr><td>潜在は<strong>ディスク保存ファイルではなく直接繋ぐ</strong>(命名規則が揃わない。API 化にも有利)</td><td>§11b</td></tr>
+        <tr><td><strong>キャラクターシートを毎回渡す。</strong>生成物だけを次の入力にし続けるとドリフトが累積する</td><td>§11 / §11b</td></tr>
+        <tr><td>FL2VA は<strong>末尾が凍る</strong>ことがある。終端そのものではなく<strong>少し手前</strong>を次の起点にする</td><td>§3 / §5</td></tr>
+        <tr><td><strong>ショット単位で Bypass</strong> して、悪いショットだけ再生成する</td><td>§11</td></tr>
+        <tr><td>複数出力は右下の <strong>assets パネル</strong>に溜まる(メインのプレビューには 1 本しか出ない)</td><td>§11</td></tr>
+        <tr><td>最初のセグメントは<strong>公式ノードで生成</strong>すればよい(ゼロから作るので継続用ノードは不要)</td><td>§11b</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>環境・速度</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:64%">ルール</th><th>出典</th></tr></thead>
+      <tbody>
+        <tr><td><strong>ComfyUI 同梱の PyTorch を疑う。</strong>入れ替えだけで 2.17 倍になった実例(16GB 環境)</td><td>§8</td></tr>
+        <tr><td>起動フラグ <code>--disable-pinned-memory --reserve-vram 1.5</code>(既定で RAM の 90% をページロックしてしまう)</td><td>§8</td></tr>
+        <tr><td>モデル一式は <strong>42.5GB</strong>。RAM 64GB なら毎ステップのディスク読み直しを避けられる見込み</td><td>§8</td></tr>
+        <tr><td>量子化の推奨は<strong>コミュニティ内で割れている</strong>(Q4_K_M / Q5_K_M / int4)。自分の環境で実測するしかない</td><td>§8</td></tr>
+        <tr><td><strong>低解像度で構成を固め、本番だけ高解像度。</strong>1 テイクが数時間かかるので、これを守らないと 1 日が溶ける</td><td>§2b / §11b</td></tr>
+        <tr><td>潜在アップスケーラは<strong>時間を節約するが VRAM は節約しない</strong></td><td>§11b</td></tr>
+        <tr><td>Sol-Attn は <strong>Blackwell 世代向け</strong>。Ada の 4080 は対象外の可能性が高い</td><td>§8</td></tr>
+        <tr><td>実験の前に <strong>INT8 VRAM 計算機</strong>で当たりを付けられる(RTX 4080 を名指しで対象)</td><td>§8 / §5</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>編集・書き出し</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:64%">ルール</th><th>出典</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1 本の長尺として書き出さない。</strong>クリップは個別に保存し、編集で繋ぐ。部分的なやり直しが効く</td><td>§11 / §11b</td></tr>
+        <tr><td>パラメータが揃っていれば <code>concat</code> demuxer + <code>-c copy</code> で<strong>無劣化連結</strong></td><td>§7</td></tr>
+        <tr><td>作業中の中間ファイルは <strong>ProRes などの準可逆</strong>で持つ(継ぎ目ごとの再エンコードが色ドリフトを作る)</td><td>§7</td></tr>
+        <tr><td>継ぎ目のクリックノイズは <code>acrossfade</code> <strong>15〜30ms</strong> で消える</td><td>§7 / §6</td></tr>
+        <tr><td>色ドリフトは <code>signalstats</code> の YAVG で<strong>数値として見られる</strong></td><td>§7</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
 
 
 <section id="s9">
