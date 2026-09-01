@@ -246,6 +246,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s11d">動画 4 — 8GB と参照音声</a></li>
     <li><a href="#s11e">動画 5 — 1 クリップに 6 ショット</a></li>
     <li><a href="#s11f">動画 6 — 参照は 1 枚に</a></li>
+    <li><a href="#s11g">動画 7 — 1 分を作りきった記録</a></li>
     <li><a href="#s12">出典と確度</a></li>
   </ol>
 </nav>
@@ -570,6 +571,18 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
 
   <p><strong>これは「1 テイク」の時間です。</strong> 1 分を 768p でいきなり回すと、構図が気に入らないと分かるまでに数時間かかり、やり直すたびにまた数時間になります。</p>
 
+  <div class="box warn">
+    <div class="box-title">そして本当の予算は、テイク数を掛けた値です</div>
+    <p>実際に 1 分の短編をローカルで作りきった記録(§11g)によると:</p>
+    <ul style="margin-bottom:8px">
+      <li><strong>約 60 本生成して、採用したのは 15〜19 本</strong>(採用率およそ 1/3)</li>
+      <li><strong>1 分の完成尺に対して、約 30 時間</strong></li>
+      <li>著者自身が「<strong>60 は少ないほう</strong>。プロジェクトによっては<strong>使える 1 分に 100 本以上</strong>」と注記</li>
+    </ul>
+    <p style="margin-bottom:0"><strong>1 テイクの時間だけを見ていると、桁を間違えます。</strong> 上の外挿値に <strong>60〜100 を掛けた</strong>のが実際の作業量です。<br>
+    逆に言えば、<strong>1 テイクを半分にできれば、丸一日が半日になります</strong>。§1b の「速度は品質の手段」は、比喩ではなく算術です。</p>
+  </div>
+
   <div class="box">
     <p style="margin:0"><strong>運用の結論。</strong> 構成・プロンプト・クリップの分割・ラストフレームの選定は<strong>すべて低解像度(864×480 級)で固める</strong>。本番解像度で回すのは、全部決まってから最後の 1 回だけ。これは 32GB を借りる場合も同じで、むしろ借用時間が有限な分、より強く効きます(§8b)。</p>
   </div>
@@ -857,6 +870,32 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
     <p style="margin:0"><strong>① 被写体の定義 → ② 要約(読み順・アクションの連鎖)→ ③ retention(参照をどれだけ厳密に保つか)→ ④ 詳細記述 → ⑤ 制約と音声要件</strong>(§11e)。<br>
     §11b で別経路から拾ったセクション名(subject definitions / summary / retention analysis / detailed description / soundscape / non-diegetic music)と対応します。<strong>これが H3 の期待する形</strong>と考えてよさそうです。<br>
     もう一つのコツ: <strong>すべての参照に「役割」を名前で与える</strong> — 画像は外見や構図、動画は動きやカメラ、音声は声や音。そのうえで H3 が何を <strong>retain / transfer / change / 緩い参照として扱う</strong> かを書き分けます <span class="c c2">一致</span>。</p>
+  </div>
+
+  <h3 style="color:var(--accent-ink)">公式プロンプトの実際のフィールド名</h3>
+  <p>ここまで「テンプレートが決定的」と繰り返してきましたが、<strong>実際のフィールド名まで辿り着きました</strong> <span class="c c2">一致</span>。</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:34%">フィールド</th><th>中身と書式</th></tr></thead>
+      <tbody>
+        <tr><td><code>integrated_multimodal_description</code></td><td>被写体・設定・見えるアクション・カメラ・台詞、およびその瞬間の音。<strong>順次イベントは <code>[Shot 2] at 00:03.000</code> のようなタイミングマーカー</strong>で書く</td></tr>
+        <tr><td><code>overall_soundscape</code></td><td>クリップ全体の環境音、物理的な効果音、非言語の人間の音(呼吸・笑い)。<strong>1〜4 文の連続した段落</strong>。完全な無音を求めるときだけ N/A</td></tr>
+        <tr><td><code>non_diegetic_music</code></td><td>観客だけに聞こえる音楽(= BGM)。<strong>気分・テンポ・楽器編成</strong>に焦点、<strong>1〜2 文</strong>。<strong>不要なら <code>None</code> または N/A</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>加えて、<strong>公式のプロンプトは「各参照に役割を割り当てる行」から始まります</strong>。そして<strong>音は明示的に指示すること</strong> — H3 は映像と音を同じパスで作るので、欲しい音を名指ししないとミックスは運任せになります。</p>
+
+  <div class="box tint">
+    <div class="box-title">タイミングマーカーは大きいです</div>
+    <p style="margin:0"><code>[Shot 2] at 00:03.000</code> という書き方ができるということは、<strong>1 クリップの中の複数ショットを、秒単位で指定できる</strong>ということです。§11e の絵コンテ方式や §11c の Director の <code>[Shot N]</code> 記法と、これで完全に繋がりました。<br>
+    <strong>台詞のあるショットは長く、動きだけのショットは短く</strong> — そういう配分をプロンプトで直接書けます。</p>
+  </div>
+
+  <div class="box audio">
+    <div class="box-title">BGM を切る具体的な方法</div>
+    <p style="margin:0"><strong><code>non_diegetic_music</code> を <code>None</code> にすれば、クリップは BGM を生成しません</strong>(§11g)。<br>
+    実際に 1 分の短編を作った人が、<strong>「編集は完全に順次にはならないので、モデルに BGM を生成させると継ぎ目で音楽が合わない」</strong>という理由でこうしています。<strong>§6 で「BGM は 1 本通しで別トラック」と書いた方針の、実装方法がこれです。</strong></p>
   </div>
 
   <h3 style="color:var(--risk)">台詞の尺を合わせる — 見落としやすい罠</h3>
@@ -1175,6 +1214,22 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <p style="margin:0">§11 の Furuknap 氏は <strong>RunPod で「比較的安い GPU」を借りて</strong>この workflow を回しています。ローカル 16GB での実績は動画からは分かりません。<strong>あなたの計画(必要なときだけ借りる)は、この分野では標準的な運用</strong>だということです。</p>
   </div>
 
+  <div class="box tint">
+    <div class="box-title">費用の実測値(§11g)</div>
+    <div class="scroll" style="margin:10px 0 8px">
+      <table>
+        <thead><tr><th style="width:40%">やり方</th><th>1 分あたり</th></tr></thead>
+        <tbody>
+          <tr><td><strong>4090 / 5090 をレンタル</strong></td><td class="num"><strong>20〜30 ドル</strong>(30 時間ぶん。しかもこれは<strong>上限</strong> — 実際はもっと速く、高解像度で終わる)</td></tr>
+          <tr><td>API で回す</td><td class="num">14〜86 ドル(モデルと解像度による)</td></tr>
+          <tr><td>参考: 10 分尺</td><td class="num">250〜1,600 ドル</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-bottom:0"><strong>「捨てる試行も、採用する試行と同じだけ費用がかかる」</strong> — 上の記録では 2/3 が捨てられています。<br>
+    そして<strong>レンタルの落とし穴: 考えている間もメーターは回り、コールドマシンにウェイトをダウンロードしている間も回ります。</strong> 下の運用設計が正しい理由がこれです。</p>
+  </div>
+
   <h3>借用は時間課金。運用を先に決めておく</h3>
 
   <div class="step">
@@ -1326,6 +1381,12 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     </ol>
   </div>
 
+  <div class="box warn">
+    <div class="box-title">低解像度なら、寄りで撮る</div>
+    <p style="margin:0">1 分の短編を作った人が、<strong>「低解像度だと引きの絵は顔がはっきりせず、アニメーションも不明瞭になる」</strong>として、<strong>主要人物がクローズアップのクリップだけを使い、引きのクリップは除外した</strong>と述べています(§11g)。<br>
+    <strong>台詞主役で 16GB のあなたは、最初から寄りのカットで構成を組んでください。</strong> 引きは解像度に余裕ができてから足す。<strong>絵コンテの段階で決められるので、コストはゼロです。</strong></p>
+  </div>
+
   <h3>ドリフトを止める — いちばん安い品質改善</h3>
   <p>以下はすべて<strong>生成時間を増やしません</strong>。品質改善はここから始めるのが正解です。</p>
   <ul>
@@ -1372,7 +1433,11 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>MiniMax 推奨のプロンプトテンプレートを使う。</strong>被写体定義 / 要約 / retention 分析 / 詳細記述 / サウンドスケープ / 非ダイエジェティック音楽 の各セクションを埋める。これを外すと<strong>キャラがシーン説明文を読み上げる</strong></td><td>§11 / §11b</td></tr>
         <tr><td><strong>否定形は効かない。</strong>無音がほしいときは「口を閉じて静かに黙考している」と<strong>肯定形で状態を描写</strong>する</td><td>§6 / §11</td></tr>
         <tr><td>参照は<strong>番号で明示的に紐づける</strong>(「〈画像 1〉から人物・服・環境を保つ」「〈音声 2〉は被写体 3 番の声色参照」など)</td><td>§5 / §11</td></tr>
-        <tr><td><strong>プロンプトは 5 層で書く:</strong> 被写体定義 → 要約(読み順・アクション連鎖)→ retention → 詳細記述 → 制約と音声。2 つの独立した情報源が一致</td><td>§6 / §11e</td></tr>
+        <tr><td><strong>プロンプトは 5 層で書く:</strong> 被写体定義 → 要約(読み順・アクション連鎖)→ retention → 詳細記述 → 制約と音声。3 つの独立した情報源が一致</td><td>§6 / §11e / §11g</td></tr>
+        <tr><td><strong>実フィールド名:</strong> <code>integrated_multimodal_description</code> / <code>overall_soundscape</code>(1〜4 文)/ <code>non_diegetic_music</code>(1〜2 文、不要なら <code>None</code>)</td><td>§6</td></tr>
+        <tr><td><strong>1 クリップ内の複数ショットは <code>[Shot 2] at 00:03.000</code> のタイミングマーカーで指定できる</strong></td><td>§6 / §11e</td></tr>
+        <tr><td><strong>音は明示的に名指しする。</strong>指定しないとミックスは運任せになる</td><td>§6</td></tr>
+        <tr><td><strong>BGM を切るなら <code>non_diegetic_music: None</code>。</strong>編集は順次にならないので、モデルに BGM を作らせると継ぎ目で合わない</td><td>§6 / §11g</td></tr>
         <tr><td><strong>すべての参照に「役割」を名前で与える。</strong>画像=外見/構図、動画=動き/カメラ、音声=声/音。何を retain / transfer / change するかを書き分ける</td><td>§6</td></tr>
         <tr><td>同じサウンドスケープの記述を<strong>全クリップのプロンプトに入れる</strong>。入れないと継ぎ目で環境音がリセットする</td><td>§6</td></tr>
         <tr><td>継ぎ目で<strong>矛盾する音の指示を書かない</strong></td><td>§6</td></tr>
@@ -1495,6 +1560,23 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>二段階アップスケール方式は VRAM 効率が良く、16GB でも 15 秒が視野に入る可能性がある</strong>(§8 の「7〜10 秒」は別方式の目安)<span class="c c3">要検証</span></td><td>§11f</td></tr>
         <tr><td>滑らかさが欲しければ <strong>RIFE などの補間</strong>。生成後の後処理なので安い</td><td>§8d</td></tr>
         <tr><td><strong>1 回に 1 つだけ変えて、3 軸すべて記録する</strong>(所要時間 / 継ぎ目 / 破綻)</td><td>§1b / §9</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>準備と計画</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:64%">ルール</th><th>出典</th></tr></thead>
+      <tbody>
+        <tr><td><strong>絵コンテを先に作って、必要なアセットを洗い出してから生成に入る</strong></td><td>§11g</td></tr>
+        <tr><td><strong>キャラごとにターンアラウンドシート</strong>(複数のポーズ・角度・表情を 1 枚に)。衣装違いは元シートを参照にして別途生成</td><td>§11g</td></tr>
+        <tr><td><strong>場所は「3D 建築レイアウト」を 1 枚作る。</strong>内外の view とアングル違いが一貫する</td><td>§11g</td></tr>
+        <tr><td><strong>座席配置など「入れ替わると困るもの」は専用の 1 枚を用意する</strong></td><td>§11g</td></tr>
+        <tr><td><strong>本当の時間予算は「1 テイクの時間 × 60〜100」。</strong>採用率はおよそ 1/3。1 分の完成尺に約 30 時間という実績</td><td>§2b / §11g</td></tr>
+        <tr><td><strong>低解像度なら寄りで撮る。</strong>引きの絵は顔が不明瞭で使えない</td><td>§8d / §11g</td></tr>
+        <tr><td>ワークフローを <strong>JSON API 形式でエクスポート</strong>すれば、LLM に一括生成を任せられる。<strong>ただし「参照画像を渡したのにプロンプトで名指ししていない」事故が起きるのでガードレールが要る</strong></td><td>§11g</td></tr>
+        <tr><td>レンタルは<strong>考えている間もダウンロード中もメーターが回る</strong>。借りる前に全部固める</td><td>§8b</td></tr>
       </tbody>
     </table>
   </div>
@@ -2153,6 +2235,105 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li>作者はクラウドの ComfyUI(RunningHub)で実演しており、費用を「15 秒で 1 セント強」と主張しています <span class="c c3">要検証</span>。§8b の「借りる」選択肢の一つとして頭の隅に</li>
   </ul>
 </section>
+<section id="s11g">
+  <span class="sec-label">動画 7</span>
+  <h2>1 分を作りきった記録</h2>
+
+  <div class="box">
+    <div class="box-title">出典</div>
+    <p style="margin:0"><strong>MiniMax H3 reference to video: a short film</strong> — <code>https://youtu.be/fQ8HZC_dTXs</code> 字幕全文から要約 <span class="c c1">一次</span>。<strong>ローカルで、複数クリップにまたがって人物・声・環境を一貫させた 1 分の短編を実際に完成させた記録</strong>です。アセットとプロンプト、編集プロジェクトまで全部公開されています。</p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">いちばん重要な数字 — 私の時間見積もりは足りていませんでした</div>
+    <p>§2b で「1 分あたり 28 分〜2 時間 40 分」と書きましたが、あれは<strong>「1 テイク」の時間</strong>でした。<strong>現実にはテイクを何十本も重ねます。</strong></p>
+    <div class="scroll" style="margin:12px 0">
+      <table>
+        <thead><tr><th style="width:34%">項目</th><th>実績</th></tr></thead>
+        <tbody>
+          <tr><td>生成した本数</td><td class="num"><strong>約 60 本</strong>(21 本が形になり、うち <strong>15〜19 本を採用</strong>)</td></tr>
+          <tr><td><strong>採用率</strong></td><td class="num"><strong>約 1/3。2/3 は捨てた</strong></td></tr>
+          <tr><td><strong>1 分の完成尺にかかった時間</strong></td><td class="num"><strong>自分のカードで約 30 時間</strong></td></tr>
+          <tr><td>著者自身の評</td><td>「<strong>60 は少ないほう</strong>。ショットプランに沿って作業し、出たものをほぼ採用したから。プロジェクトによっては<strong>使える 1 分に 100 本以上</strong>生成することもありうる」</td></tr>
+          <tr><td>参考(商業例)</td><td>5 分未満のプロジェクトが 4,000 アセット超 = <strong>1 分あたり約 800</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-bottom:0"><strong>これが §1b の「速度は品質の手段」の実証です。</strong> 2/3 を捨てるなら、<strong>生成が 3 倍速くなることは、実質的に品質が 3 倍作り込めることを意味します</strong>。速度改善を後回しにしてはいけない理由が、数字で出ました。</p>
+  </div>
+
+  <h3>クリップ長の現実 — 8 秒で OOM</h3>
+  <p>「H3 は 15 秒まで生成できるが、<strong>自分の環境では 8 秒を超えるとすぐメモリ不足になった</strong>」と述べています。§8 の「16GB は 7〜10 秒」という目安を裏付ける実例です(GPU の型は不明)。<strong>動画 6 の「二段階なら 15 秒が余裕」とは食い違う</strong>ので、これは<strong>ワークフロー次第</strong>と考えるべきです — 実験 5 で自分の環境の上限を測るのが唯一の答えです。</p>
+
+  <h3 style="color:var(--accent-ink)">アセットの作り方 — ここが本体です</h3>
+  <p>この動画のいちばんの価値は、<strong>生成の前にどれだけ準備するか</strong>という話です。<strong>絵コンテを先に作って、必要なアセットを洗い出す</strong>ところから始めています。</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">アセット</th><th>作り方と狙い</th></tr></thead>
+      <tbody>
+        <tr><td><strong>ターンアラウンドシート</strong></td><td>キャラごとに、<strong>いろいろなポーズ・角度・表情</strong>を並べた 1 枚。これで人物が一貫する。<strong>衣装違い(コートあり)は、最初のシートを参照にして別途生成</strong></td></tr>
+        <tr><td><strong>3D 建築レイアウト</strong></td><td>店内の画像を数枚生成 → 気に入った 1 枚を選ぶ → <strong>その画像から 3D の間取り図を生成</strong>。これで<strong>内外の view が一貫し、違うアングルでも整合</strong>する</td></tr>
+        <tr><td><strong>座席配置の画像</strong></td><td>二人が食卓につくシーンが複数あるので、<strong>左右が入れ替わったり、テーブルの位置や様式が変わったりしないよう</strong>に専用の 1 枚を用意</td></tr>
+        <tr><td>屋外の街路</td><td>店の外観画像を参照にして生成 → <strong>街の様式を揃える</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">参照画像自体はオンラインサービスで生成しています。<strong>ローカルで完結させたいなら Flux Context や Qwen-Edit でできる</strong>とのこと。</p>
+
+  <div class="box tint">
+    <p style="margin:0"><strong>この「アセットを先に固める」姿勢が、§8d の『ドリフトを止める安い手』の実践例です。</strong> 生成時間はまったく増えませんが、一貫性への効き目がいちばん大きい。<strong>あなたの優先順位(破綻・一貫性)に真正面から効きます。</strong></p>
+  </div>
+
+  <h3>自動化 — ComfyUI を API として叩く</h3>
+  <ul>
+    <li>ComfyUI の公式 Ref2V テンプレートを <strong>JSON API フォーマットでエクスポート</strong></li>
+    <li>その API と、<strong>公式の MiniMax H3 リファレンスガイド</strong>、アセットの場所、ストーリーの順序、欲しいショットの種類を LLM に渡す</li>
+    <li>LLM がプランと自動化を組み立て、<strong>推奨のプロンプト構造と参照入力で全ショットを一括生成</strong></li>
+  </ul>
+  <div class="box warn">
+    <div class="box-title">ただしガードレールが要ります</div>
+    <p style="margin:0">実際に事故が起きています。<strong>コート付きのターンアラウンドシートを渡していたのに、コートなしで生成されるシーンがあった</strong>。原因は <strong>LLM が書いたプロンプトから、その画像への参照が抜け落ちていた</strong>こと。<br>
+    <strong>「AI にプロンプトを書かせるなら、各プロンプトが誤った前提を置いていないか検査する仕組みが要る」</strong>と結論づけています。<strong>参照画像を渡したなら、プロンプト内でその画像を必ず名指ししているか</strong> — これは機械的にチェックできます。</p>
+  </div>
+
+  <h3>失敗と回避策</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:30%">起きたこと</th><th>対処</th></tr></thead>
+      <tbody>
+        <tr><td><strong>BGM が繋がらない</strong></td><td>編集は完全に順次にはならないので、<strong>モデルに BGM を生成させると継ぎ目で音楽が合わない</strong>。<strong><code>non_diegetic_music</code> を <code>None</code>(または N/A)にして BGM を生成させず、編集で 1 本通しで敷く</strong></td></tr>
+        <tr><td><strong>声が一貫しない</strong></td><td>音声参照を渡していなかったため。<strong>気に入ったクリップから、その人物が喋っている部分だけを音声として抽出し、参照入力として渡す</strong>ようにした(台詞の少ない相手役は放置)</td></tr>
+        <tr><td style="color:var(--risk)"><strong>引きの絵が使えない</strong></td><td>低解像度だと<strong>寄りでないと顔がはっきりせず、アニメーションも不明瞭</strong>。<strong>主要キャラがクローズアップのクリップだけを使い、引きのクリップは除外した</strong></td></tr>
+        <tr><td>余分な尺が付く</td><td>モデルが指定より長く生成した部分を、編集でトリム</td></tr>
+        <tr><td>繋ぎのクリップが足りない</td><td>編集段階で気づいて、追加生成を依頼した</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">「低解像度なら寄りで撮る」は、あなたの設計に直結します</div>
+    <p style="margin:0">台詞が主役で、しかも 16GB で低解像度から始めるなら、<strong>最初から寄りのカットで構成を組む</strong>のが正解です。引きの絵は、解像度に余裕ができてから足す。<strong>これは絵コンテの段階で決められることなので、コストはゼロ</strong>です。</p>
+  </div>
+
+  <h3>費用の実測 — 32GB 借用の判断材料</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:34%">やり方</th><th>1 分あたりの費用</th></tr></thead>
+      <tbody>
+        <tr><td>ローカル(著者の環境)</td><td class="num">約 30 時間の電気代と時間</td></tr>
+        <tr><td>API で回した場合</td><td class="num"><strong>14〜86 ドル</strong>(モデルと解像度による)</td></tr>
+        <tr><td><strong>4090 / 5090 をレンタル</strong></td><td class="num"><strong>この 30 時間ぶんで 20〜30 ドル</strong>。しかもこれは<strong>上限</strong> — それらのカードならもっと速く、より高解像度で終わる</td></tr>
+        <tr><td>参考: 10 分尺(1 分 100 生成)</td><td class="num">250〜1,600 ドル</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="box warn">
+    <p style="margin:0"><strong>「捨てる試行も、採用する試行と同じだけ費用がかかる」</strong>と指摘しています。著者は 2/3 を捨てました。<br>
+    そして<strong>レンタルの落とし穴: 考えている間もメーターは回る。コールドマシンにウェイトをダウンロードしている間も回る。</strong><br>
+    <strong>これは §8b の方針(16GB で全部固めてから、本番だけ借りる)が正しいことの裏付けです。</strong> 借りている間に試行錯誤してはいけません。</p>
+  </div>
+</section>
+
 
 
 
@@ -2234,6 +2415,16 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li><a href="https://github.com/xiaolibai-sys/ComfyUI-MiniMaxH3">xiaolibai-sys / ComfyUI-MiniMaxH3</a> — H3 の映像・音声生成ノード</li>
   </ul>
 
+  <h3>動画 7 と、プロンプト書式</h3>
+  <ul>
+    <li><strong><a href="https://youtu.be/fQ8HZC_dTXs">動画 7 本編(字幕全文を受領・§11g の出典)</a></strong> — MiniMax H3 reference to video: a short film <span class="c c1">一次</span>。<strong>アセット・プロンプト・編集プロジェクトが公開されています</strong></li>
+    <li><a href="https://www.atlascloud.ai/blog/tips/minimax-h3-prompt-guide">Atlas Cloud — 公式プロンプト 45 本を読み解いたガイド</a>(未取得)</li>
+    <li><a href="https://www.rundiffusion.com/minimax-h3-prompt-guide">RunDiffusion — 参照画像・声・絵コンテのプロンプトガイド</a>(未取得)</li>
+    <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3/discussions/47">HF Discussion #47 — IT2V の正しいシステムプロンプト</a>(未取得)</li>
+    <li><a href="https://pixo.video/blog/minimax-h3-prompt-guide">Pixo — 公式フォーミュラとモード</a>(未取得)</li>
+    <li><a href="https://www.weshop.ai/solutions/models/mini-max-h3-prompt-guide-formula-storyboards-templates-and-common-mistakes">weshop — フォーミュラ・絵コンテ・よくある間違い</a>(未取得)</li>
+  </ul>
+
   <h3>動画 6 と、そこから辿ったもの</h3>
   <ul>
     <li><strong><a href="https://youtu.be/rOB7rLu3Y9w">動画 6 本編(字幕全文を受領・§11f の出典)</a></strong> — All-in-One MiniMax H3 Workflow <span class="c c1">一次</span></li>
@@ -2311,8 +2502,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 13 版 2026-08-30(<strong>6 本目の動画</strong>を §11f に追加。<strong>参照画像は枚数を増やすほど品質が落ちるので 1 枚に集約する</strong>という指摘を反映し、動画 5 の絵コンテ方式と同じ思想であることを整理。<strong>FL2VA のほうが素の品質が高い</strong>こと、de-oil LoRA の使い分け、映像と音声で shift を分ける対処、二段階の 3 つ目のレシピ(0.2MP → 1MP / 総 12 ステップ)を追加。<strong>16GB でも 15 秒が視野に入る可能性</strong>を §8 の目安への反証候補として記載。FaceRefine と HybridLoader も §5 に収録)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① §9 の実験結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ 二段階方式で 16GB のクリップ長上限を確定する。</p>
+  <p>初版 2026-08-30 / 第 14 版 2026-08-30(<strong>7 本目の動画</strong>を §11g に追加。<strong>本当の時間予算は「1 テイク × 60〜100 本」で、1 分の完成尺に約 30 時間・採用率 1/3</strong>という実績を §2b に反映。<strong>公式プロンプトの実フィールド名</strong>(<code>integrated_multimodal_description</code> / <code>overall_soundscape</code> / <code>non_diegetic_music</code>)とタイミングマーカー <code>[Shot N] at 00:00.000</code> を §6 に追加。BGM を切る方法、アセット準備の方法論(ターンアラウンドシート / 3D レイアウト / 座席配置)、低解像度なら寄りで撮る、レンタル費用の実測、LLM 自動化のガードレールを収録)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① §9 の実験結果の反映、② 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ 二段階方式で 16GB のクリップ長上限を確定する。</p>
 </footer>
 
 </main>
