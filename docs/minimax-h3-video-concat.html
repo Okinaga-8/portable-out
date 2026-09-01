@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>H3 クリップの継ぎ目</title>
+<title>H3 ローカル制作パイプライン</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=IBM+Plex+Sans+JP:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -206,9 +206,9 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
 <div class="wrap">
 
 <header class="masthead">
-  <span class="eyebrow">リサーチ土台 · 2026-08-30 作成</span>
-  <h1>H3 クリップの継ぎ目</h1>
-  <p class="lede">MiniMax H3 でローカル生成した短尺クリップを、内容の連続性を保ったまま一本にまとめるための調査ノート。結論を出す文書ではなく、<strong>今夕 PC の前で、二人で最適解を詰めるための共通の土台</strong>です。</p>
+  <span class="eyebrow">リサーチ土台 · 結合 / 速度 / 品質</span>
+  <h1>H3 ローカル制作パイプライン</h1>
+  <p class="lede">ComfyUI + MiniMax H3 で 1 分の動画を作りきるための調査ノート。<strong>クリップの結合・生成時間の短縮・映像品質の向上</strong>という三つの軸を、ひとつのパイプラインとして扱います。結論を出す文書ではなく、<strong>PC の前で二人で最適解を詰めるための共通の土台</strong>です。</p>
   <div class="meta">
     <span>目標 1 分</span>
     <span>RTX 4080 16GB + RAM 64GB</span>
@@ -226,6 +226,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
   <ol>
     <li><a href="#s0">この文書の読み方</a></li>
     <li><a href="#s1">まず用語を整える</a></li>
+    <li><a href="#s1b">三つの軸は独立しない</a></li>
     <li><a href="#s2">H3 側の制約</a></li>
     <li><a href="#s2b">1 分をどう割るか</a></li>
     <li><a href="#s3">継ぎ目で壊れるもの</a></li>
@@ -235,6 +236,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s7">ffmpeg 実務レシピ</a></li>
     <li><a href="#s8">4080 16GB の現実解</a></li>
     <li><a href="#s8b">32GB を借りるとき</a></li>
+    <li><a href="#s8d">品質を上げる</a></li>
     <li><a href="#s8c">ノウハウ台帳</a></li>
     <li><a href="#s9">今夕の最小実験</a></li>
     <li><a href="#s10">未解決の論点</a></li>
@@ -251,7 +253,14 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
   <span class="sec-label">前提</span>
   <h2>この文書の読み方</h2>
 
-  <p>「短い動画を、連続性を保ったまま結合する」という課題に対して、<strong>いま分かっていること・分かっていないこと・確かめる順番</strong>を並べてあります。読み終えたときに手が動く状態になっているのが目標です。</p>
+  <p>ComfyUI + MiniMax H3 のパイプライン全体について、<strong>いま分かっていること・分かっていないこと・確かめる順番</strong>を並べてあります。読み終えたときに手が動く状態になっているのが目標です。</p>
+  <div class="box tint">
+    <div class="box-title">扱う三つの軸</div>
+    <p style="margin:0"><strong>① 結合</strong> — 短いクリップを連続性を保ったまま繋ぐ(§1〜§7、§11 以降)<br>
+    <strong>② 速度</strong> — 生成時間を短縮する(§8、§8b)<br>
+    <strong>③ 品質</strong> — 映像・音声の質を上げる(§8d)<br>
+    <strong>この三つは独立していません</strong>。関係の整理が §1b です。<strong>先にそこを読んでください</strong> — 個別に最適化すると互いを壊します。</p>
+  </div>
 
   <div class="box tint">
     <div class="box-title">確度の表記</div>
@@ -356,6 +365,77 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
     <li><strong>フリーズ</strong> — FL2VA でクリップ末尾の数フレームが固まる/崩れる現象。<span class="c c1">一次</span></li>
   </ul>
 </section>
+<section id="s1b">
+  <span class="sec-label">全体像</span>
+  <h2>三つの軸は独立しない</h2>
+
+  <p>「結合」「速度」「品質」を別々の課題として最適化すると、たいてい互いを壊します。実際にこのノートの中で何度も起きたことです。関係を先に押さえてください。</p>
+
+  <figure>
+    <svg class="dia" viewBox="0 0 780 330" role="img" aria-labelledby="axTitle axDesc">
+      <title id="axTitle">三つの軸の相互作用</title>
+      <desc id="axDesc">品質・速度・結合の三つが互いに影響し合う関係を示した図。速度は試行回数を通じて品質に効き、解像度は速度を奪い、VRAM と速度がクリップ長を決め、連鎖の長さがドリフトを生む。</desc>
+
+      <rect class="clip" x="290" y="14" width="200" height="52" rx="3"/>
+      <text class="clip-t" x="390" y="46" text-anchor="middle">③ 品質</text>
+
+      <rect class="clip" x="40" y="228" width="200" height="52" rx="3"/>
+      <text class="clip-t" x="140" y="260" text-anchor="middle">② 速度</text>
+
+      <rect class="clip" x="540" y="228" width="200" height="52" rx="3"/>
+      <text class="clip-t" x="640" y="260" text-anchor="middle">① 結合</text>
+
+      <path class="arrow" d="M175 224 L300 74" marker-end="url(#ar2)"/>
+      <text class="t-strong" x="150" y="150" text-anchor="start">試行回数が増える</text>
+      <text class="t-mute" x="150" y="168" text-anchor="start">速いほど何度も試せる</text>
+
+      <path class="arrow" d="M330 78 L205 222" marker-end="url(#ar2)" stroke-dasharray="5 4"/>
+      <text class="t-mute" x="118" y="196" text-anchor="start">解像度が時間を奪う</text>
+
+      <path class="arrow" d="M250 258 L530 258" marker-end="url(#ar2)"/>
+      <text class="t-strong" x="390" y="248" text-anchor="middle">VRAM がクリップ長を決める</text>
+      <text class="t-mute" x="390" y="292" text-anchor="middle">短いクリップ = 継ぎ目が増える</text>
+
+      <path class="arrow" d="M605 222 L480 74" marker-end="url(#ar2)" stroke-dasharray="5 4"/>
+      <text class="t-mute" x="632" y="150" text-anchor="start">連鎖が長いほど</text>
+      <text class="t-mute" x="632" y="168" text-anchor="start">ドリフトが累積</text>
+
+      <defs>
+        <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path class="head" d="M0 0 L10 5 L0 10 z"/>
+        </marker>
+      </defs>
+    </svg>
+    <figcaption>実線は「効く」、破線は「奪う」。三角形が閉じているので、どこを動かしても他の二つに波及します。</figcaption>
+  </figure>
+
+  <div class="box tint">
+    <div class="box-title">いちばん大事な一本 — 速度は品質の手段です</div>
+    <p style="margin:0">1 テイクに 3 時間かかるなら、1 日に 3 回しか試せません。20 分なら 20 回試せます。<strong>AI 動画の品質は、最終的に「何回やり直せたか」でほぼ決まります。</strong><br>
+    だから<strong>生成時間の短縮は、そのまま品質向上に化けます</strong>。速度を「品質を犠牲にして稼ぐもの」と考えると判断を誤ります。<strong>速度改善は最優先で、しかも品質のためにやる</strong>、というのが正しい捉え方です。</p>
+  </div>
+
+  <h3>実際に起きた干渉</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">動かしたもの</th><th style="width:37%">狙った効果</th><th>副作用</th></tr></thead>
+      <tbody>
+        <tr><td>Turbo LoRA(4〜8 ステップ)</td><td>速度 2.6 倍</td><td>音質が落ちる → <strong>音声差し替え方式なら無関係</strong>(§6)</td></tr>
+        <tr><td>解像度を 768p に上げる</td><td>精細さ</td><td>1 分あたり 2 時間 40 分に。<strong>試行回数が激減して結果的に品質が下がる</strong></td></tr>
+        <tr><td>クリップを長くする</td><td>継ぎ目が減る</td><td>VRAM 超過。16GB では 7〜10 秒が目安(§8)</td></tr>
+        <tr><td>クリップを短くする</td><td>VRAM に収まる</td><td>継ぎ目が倍増 → ドリフトの累積(§2b)</td></tr>
+        <tr><td>量子化を下げる(int4)</td><td>VRAM と速度</td><td>20 ステップでは顔が破綻。<strong>ただし Turbo LoRA と組むと解消した</strong>という実測あり(§8)</td></tr>
+        <tr><td>潜在アップスケーラ</td><td>高解像度を安く</td><td>時間は節約するが <strong>VRAM は節約しない</strong>(§11b)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">だから測り方が大事です</div>
+    <p style="margin:0">一度に複数を変えると、何が効いたのか分からなくなります。<strong>1 回に 1 つだけ変えて、3 軸すべてを記録する</strong> — 所要時間 / 継ぎ目の状態 / 顔と色の破綻。§9 の実験はその形にしてあります。</p>
+  </div>
+</section>
+
 
 <section id="s2">
   <span class="sec-label">制約</span>
@@ -1053,6 +1133,88 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <p style="margin:0"><strong>期待しすぎないこと。</strong> 音のこもりの原因が<strong>連鎖そのもの</strong>なら、VRAM を増やしても解決しません。Turbo LoRA を外せる分は改善するはずですが、それで足りるかどうかは <strong>16GB 側の実験 3 で先に見当がつきます</strong>。借りる前にそこを確かめてください。</p>
   </div>
 </section>
+<section id="s8d">
+  <span class="sec-label">品質</span>
+  <h2>品質を上げる</h2>
+
+  <p>「品質」はひとつのものではありません。<strong>5 つに分けると、それぞれ効く手が違う</strong>ことが見えます。まず自分がどれに困っているかを言い当ててください。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:20%">品質の中身</th><th style="width:30%">症状</th><th>効く手</th></tr></thead>
+      <tbody>
+        <tr><td><strong>精細さ</strong></td><td>眠い、ディテールが出ない</td><td>解像度を上げる / 潜在アップスケーラ / H3-Regenerate-2K / 二段サンプリング</td></tr>
+        <tr><td><strong>被写体の破綻</strong></td><td>顔・手が崩れる</td><td>ステップ数、量子化レベル、参照画像、入力画像のマスク</td></tr>
+        <tr><td><strong>一貫性</strong></td><td>連鎖のうちに顔・色・画風が変わる</td><td>キャラクターシート、任意位置キーフレーム、連鎖を短く切る</td></tr>
+        <tr><td><strong>動きの滑らかさ</strong></td><td>カクつく、動きが硬い</td><td>補間(RIFE 等)で fps を上げる。生成後の後処理</td></tr>
+        <tr><td><strong>音</strong></td><td>こもる、途切れる、声が変わる</td><td>音声トラックの差し替え(§6)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>ベースライン設定 — ここから動かす</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:30%">項目</th><th>値</th></tr></thead>
+      <tbody>
+        <tr><td>ステップ数</td><td class="num">20(Turbo LoRA なら 4〜8)</td></tr>
+        <tr><td>サンプラー</td><td><code>res_multistep</code>。他に Euler、RES multistep CFG++ が使える。<strong>音声重視なら <code>er_sde</code></strong>(§11c)</td></tr>
+        <tr><td>スケジューラ</td><td><code>simple</code></td></tr>
+        <tr><td>denoise</td><td class="num">1.0</td></tr>
+        <tr><td>フレーム数</td><td class="num">124(≒5 秒)= 17×7+5。ここでも格子が成立</td></tr>
+        <tr><td>ノードの順序</td><td>最適化系ノードは <strong>H3 Sigma Shift の後、guider と sampler の前</strong>に置く</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">いずれも二次情報からの値です <span class="c c3">要検証</span>。自分の環境での基準として 1 回測ってから動かしてください。</p>
+
+  <h3>解像度戦略 — 3 通りあります</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">やり方</th><th style="width:37%">内容</th><th>16GB での評価</th></tr></thead>
+      <tbody>
+        <tr><td>最初から高解像度</td><td>目標解像度でそのまま生成</td><td style="color:var(--risk)"><strong>いちばん遅い。</strong>1 分で約 2 時間 40 分(§2b)</td></tr>
+        <tr><td><strong>低解像度 → 潜在アップスケール → 仕上げ</strong></td><td>VAE の decode/encode 往復を飛ばして潜在のまま 1.0〜4.0 倍(§11b)</td><td style="color:var(--accent-ink)"><strong>本命。</strong>時間を大きく削れる。ただし VRAM は減らない</td></tr>
+        <tr><td>H3-Regenerate-2K</td><td>768p の結果と元のコンテキストを H3 に戻して高解像度を再生成する公式の経路 <span class="c c3">要検証</span></td><td>ローカルで回るかは未確認。API 側の機能の可能性</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>解像度はメガピクセルで指定します。動画 2 の本番値は <strong>0.8MP = 1216×672</strong>、テストは 480p でした(§11b)。<strong>この「テストと本番で解像度を変える」運用が、実質的にいちばん効く品質対策</strong>です — 試行回数が確保できるので。</p>
+
+  <h3 style="color:var(--risk)">ステップ数と量子化は、独立に評価できません</h3>
+  <div class="box warn">
+    <p style="margin:0">9 構成を実測した記事で、<strong>20 ステップ単体では顔が破綻した int4 が、Turbo LoRA と組むと破綻が解消して最良の構成になった</strong>という結果が出ています(§8)。<br>
+    つまり<strong>「量子化を上げれば品質が上がる」とは限りません</strong>。ステップ数・量子化・Turbo LoRA の 3 つはセットで評価してください。今夕は「Q 値 × Turbo の有無」で <strong>2〜3 パターンだけ</strong>短いクリップを回して比べるのが現実的です。</p>
+  </div>
+
+  <h3>ドリフトを止める — いちばん安い品質改善</h3>
+  <p>以下はすべて<strong>生成時間を増やしません</strong>。品質改善はここから始めるのが正解です。</p>
+  <ul>
+    <li><strong>キャラクターシートを毎回渡す</strong>(生成物だけを次の入力にし続けない)</li>
+    <li><strong>任意位置にキーフレームを打つ</strong>(§11c)— first/last だけでなく好きな場所に</li>
+    <li><strong>連鎖を短く切る</strong>(カット割りで劣化をリセット / §2b)</li>
+    <li><strong>入力画像をマスクして不要物を除く</strong>(§11c)— プロンプトで「入れるな」と書くより確実</li>
+    <li><strong>プロンプトテンプレートを正しく使う</strong>(§6)— 効果が最も大きく、コストはゼロ</li>
+  </ul>
+
+  <h3>動きの滑らかさ — 補間</h3>
+  <p>H3 は 24fps 固定です。滑らかさが欲しければ <strong>RIFE などの補間</strong>で fps を上げます。動画 3 も最後に補間をかけていました。RIFE とアップスケーラを組み込んだワークフローも配布されています。</p>
+  <p class="cap"><strong>補間は生成後の後処理</strong>です。生成をやり直さずに効くので、コストパフォーマンスが良い部類に入ります。</p>
+
+  <div class="box tint">
+    <div class="box-title">品質改善のコスパ順 — 上から順にやる</div>
+    <ol style="margin-bottom:0">
+      <li><strong>プロンプトテンプレート</strong> — タダ、効果最大</li>
+      <li><strong>参照画像・キーフレーム・入力画像のマスク</strong> — タダ</li>
+      <li><strong>連鎖を短く切る</strong> — タダ</li>
+      <li><strong>補間</strong> — 後処理、安い</li>
+      <li><strong>速度改善</strong> — 試行回数が増えるので、間接的に品質が上がる(§1b)</li>
+      <li>ステップ数・量子化の調整 — 実測が要る</li>
+      <li>解像度を上げる — <strong>いちばん高い。最後にやる</strong></li>
+    </ol>
+  </div>
+</section>
+
 <section id="s8c">
   <span class="sec-label">台帳</span>
   <h2>ノウハウ台帳</h2>
@@ -1158,6 +1320,23 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     </table>
   </div>
 
+  <h3>品質</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:64%">ルール</th><th>出典</th></tr></thead>
+      <tbody>
+        <tr><td><strong>速度改善は品質改善。</strong>1 テイク 3 時間なら 3 回しか試せない。試行回数が品質を決める</td><td>§1b</td></tr>
+        <tr><td><strong>解像度を上げるのは最後。</strong>テストは低解像度、本番だけ高解像度(動画 2 は 480p → 0.8MP)</td><td>§8d / §11b</td></tr>
+        <tr><td>ベースライン: <strong>20 ステップ / <code>res_multistep</code> / <code>simple</code> / denoise 1.0</strong>。Turbo なら 4〜8 ステップ<span class="c c3">要検証</span></td><td>§8d</td></tr>
+        <tr><td>最適化系ノードは <strong>H3 Sigma Shift の後、guider と sampler の前</strong>に置く<span class="c c3">要検証</span></td><td>§8d</td></tr>
+        <tr><td><strong>ステップ数と量子化は独立に評価できない。</strong>20 ステップで破綻した int4 が Turbo LoRA と組むと最良になった実測がある</td><td>§8d / §8</td></tr>
+        <tr><td>高解像度は<strong>潜在アップスケール + 仕上げ</strong>で取りにいく(VAE 往復を飛ばす)</td><td>§8d / §11b</td></tr>
+        <tr><td>滑らかさが欲しければ <strong>RIFE などの補間</strong>。生成後の後処理なので安い</td><td>§8d</td></tr>
+        <tr><td><strong>1 回に 1 つだけ変えて、3 軸すべて記録する</strong>(所要時間 / 継ぎ目 / 破綻)</td><td>§1b / §9</td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <h3>入力画像の扱い</h3>
   <div class="scroll">
     <table>
@@ -1190,7 +1369,22 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <span class="sec-label">次の一手</span>
   <h2>今夕の最小実験</h2>
 
-  <p>動画の内容が分かったので、<strong>「確かめる」実験の多くが「設定する」作業に変わりました</strong>。残る本当の未知は <strong>「あなたの 4080 16GB で回るか」と「1 分にどれだけ時間がかかるか」</strong>の 2 つだけです。所要 2〜3 時間。</p>
+  <p>動画 3 本の内容が分かったので、<strong>「確かめる」実験の多くが「設定する」作業に変わりました</strong>。残る本当の未知は <strong>「あなたの 4080 16GB で回るか」と「1 分にどれだけ時間がかかるか」</strong>の 2 つです。所要 2〜3 時間。</p>
+
+  <div class="box tint">
+    <div class="box-title">測定シート — どの実験でも、この 3 軸を毎回記録する</div>
+    <div class="scroll" style="margin:10px 0 8px">
+      <table>
+        <thead><tr><th style="width:18%">軸</th><th>記録すること</th></tr></thead>
+        <tbody>
+          <tr><td><strong>② 速度</strong></td><td>1 クリップの所要時間 / 解像度 / ステップ数 / Turbo LoRA の有無 / 使った attention ノード</td></tr>
+          <tr><td><strong>③ 品質</strong></td><td>顔と手の破綻(有無と程度)/ 精細さ / プロンプトどおりに動いたか</td></tr>
+          <tr><td><strong>① 結合</strong></td><td>継ぎ目で動きが飛ぶか / 色の段差(§7 レシピ 6 の YAVG)/ 顔や画風の変化</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin:0"><strong>1 回に 1 つだけ変えてください。</strong> 複数変えると何が効いたか分からなくなります(§1b)。</p>
+  </div>
 
   <div class="step">
     <div class="step-n">1</div>
@@ -1226,13 +1420,17 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <div class="step">
     <div class="step-n">3</div>
     <div class="step-b">
-      <h4 style="margin-top:2px">1 ショットだけ通す</h4>
-      <p>連鎖の前に、<strong>1 ショットが狙いどおりに出るか</strong>を確認します。低解像度・低ステップで。</p>
+      <h4 style="margin-top:2px">1 ショット通す + 設定を 2〜3 パターン比べる</h4>
+      <p>連鎖の前に、<strong>1 ショットが狙いどおりに出るか</strong>と、<strong>設定の当たり</strong>を見ます。ここが速度と品質の軸の本番です。</p>
+      <p><strong>比較するのは「Q 値 × Turbo LoRA の有無」で 2〜3 通りだけ。</strong> ステップ数と量子化は独立に評価できません(§8d)。同じプロンプト・同じシードで回して、<strong>所要時間と顔の破綻</strong>を並べてください。</p>
       <ul class="check">
         <li>テンプレートに沿ったプロンプト(被写体定義 + 声色参照の紐づけ)で 1 本生成</li>
         <li><strong>声が用意した参照に似ているか</strong></li>
         <li><strong>台詞が終わったあとにガーガー音が入っていないか</strong>(入っていたら尺が長すぎる → §6)</li>
         <li>キャラがシーン説明文を読み上げていないか(読み上げていたらプロンプト書式の問題)</li>
+        <li><strong>各パターンの所要時間</strong>(§1b のとおり、これが試行回数=品質を決めます)</li>
+        <li><strong>顔と手の破綻</strong>を並べて比較。int4 + Turbo が最良だったという実測もあるので、先入観を持たずに</li>
+        <li>attention ノードを 1 つ入れて、速度差を測る(<strong>1 つずつ</strong>。併用規則は §8)</li>
       </ul>
     </div>
   </div>
@@ -1624,6 +1822,15 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li><a href="https://github.com/xiaolibai-sys/ComfyUI-MiniMaxH3">xiaolibai-sys / ComfyUI-MiniMaxH3</a> — H3 の映像・音声生成ノード</li>
   </ul>
 
+  <h3>設定・品質</h3>
+  <ul>
+    <li><a href="https://www.atlascloud.ai/blog/tips/minimax-h3-comfyui-workflow">Atlas Cloud — ComfyUI ワークフロー(ベースライン設定 20 steps / res_multistep / simple)</a> <span class="c c3">要検証</span></li>
+    <li><a href="https://comfyui-wiki.com/ja/news/2026-08-03-comfyui-spectrum-minimax-h3">ComfyUI Wiki — Spectrum ノードで約 30% 短縮(112.4 秒 → 86.9 秒)</a></li>
+    <li><a href="https://www.minimax.io/blog/minimax-h3">MiniMax 公式ブログ — H3 の解説</a>(未取得)</li>
+    <li><a href="https://civitai.com/models/2857494/minimax-h3-t2v-r2v-fl2vspeeduprifertx-upscaler">Civitai — T2V/R2V/FL2V + Speedup + RIFE + アップスケーラのワークフロー</a>(未取得)</li>
+    <li><a href="https://qiita.com/lumichy/items/d86f7efbed757e5f740f">Qiita — MiniMax H3 × ComfyUI 徹底解説(日本語)</a></li>
+  </ul>
+
   <h3>動画 3 と、そこから辿ったもの</h3>
   <ul>
     <li><strong>動画 3 本編(字幕全文を受領・§11c の出典)</strong> — Nerdy Rodent の H3 更新回 <span class="c c1">一次</span></li>
@@ -1653,8 +1860,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 8 版 2026-08-30(<strong>3 本目の動画の字幕を受領</strong>。§11c を新設。<strong>音声トラックを元音声に差し替える</strong>という決定打により、§4 の「D は台詞に使えない」と §8 の「Turbo LoRA は外せ」を撤回。<strong>Sol-Attn が RTX 40 系に対応している</strong>ことが判明し、前版の「Blackwell 専用」記述を訂正。低 VRAM 手段の一覧と併用規則、任意位置キーフレーム、入力画像のマスクを追加。ノウハウ台帳も更新)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① §9 の実験 1〜5 の結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ 音声差し替え方式が実際に通ったかの確認。</p>
+  <p>初版 2026-08-30 / 第 9 版 2026-08-30(<strong>調査範囲を「クリップの結合」から「ComfyUI + H3 のパイプライン全体」に拡張</strong>。§1b「三つの軸は独立しない」と §8d「品質を上げる」を新設し、実験に 3 軸の測定シートを追加。文書名も改めました)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① §9 の実験結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ 品質のどの側面を優先するかに応じた §8d の重み付け。</p>
 </footer>
 
 </main>
