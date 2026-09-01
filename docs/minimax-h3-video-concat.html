@@ -247,6 +247,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s11e">動画 5 — 1 クリップに 6 ショット</a></li>
     <li><a href="#s11f">動画 6 — 参照は 1 枚に</a></li>
     <li><a href="#s11g">動画 7 — 1 分を作りきった記録</a></li>
+    <li><a href="#s11h">動画 8 — 速度と品質の両立</a></li>
     <li><a href="#s12">出典と確度</a></li>
   </ol>
 </nav>
@@ -424,7 +425,8 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
     <table>
       <thead><tr><th style="width:26%">動かしたもの</th><th style="width:37%">狙った効果</th><th>副作用</th></tr></thead>
       <tbody>
-        <tr><td>Turbo LoRA(4〜8 ステップ)</td><td>速度 2.6 倍</td><td>音質が落ちる → <strong>音声差し替え方式なら無関係</strong>(§6)</td></tr>
+        <tr><td><strong>PDD 加速 LoRA(8 ステップ)</strong></td><td>20 ステップ → 8 ステップ</td><td style="color:var(--accent-ink)"><strong>副作用が見当たらない。</strong>むしろ一貫性が向上する場合がある(§11h)。<strong>この行だけがトレードオフになっていません</strong></td></tr>
+        <tr><td>Turbo LoRA(4〜8 ステップ)</td><td>速度 2.6 倍</td><td>音質が落ちる → <strong>音声差し替え方式なら無関係</strong>(§6)。ただし 4 ステップは映像も破綻</td></tr>
         <tr><td>解像度を 768p に上げる</td><td>精細さ</td><td>1 分あたり 2 時間 40 分に。<strong>試行回数が激減して結果的に品質が下がる</strong></td></tr>
         <tr><td>クリップを長くする</td><td>継ぎ目が減る</td><td>VRAM 超過。16GB では 7〜10 秒が目安(§8)</td></tr>
         <tr><td>クリップを短くする</td><td>VRAM に収まる</td><td>継ぎ目が倍増 → ドリフトの累積(§2b)</td></tr>
@@ -759,6 +761,7 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
         <tr><td><strong>ComfyUI-MiniMax-H3-Extend</strong>(kat3ri / 通称 Kate)</td><td><strong>動画 2 で使われているノード</strong>(§11b)。<code>MiniMaxH3VideoExtendPatched</code> と <code>MiniMaxH3EncodeAVPatched</code> の 2 つ。後者が映像フレームと<strong>任意の音声</strong>を AV 潜在に符号化し、前者の <code>context_latent</code> に渡す。推奨値は <code>context_frames</code> 2 / <code>ref_spacing</code> 1〜2 / <code>ref_decay</code> 0.3 / <code>ref_ramp</code> 3〜4(動きが激しいクリップは 5〜6)。<code>custom_nodes/</code> に clone して再起動するだけ、コア改変なし <span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-H3-Motion-Context-MultiRef</strong>(seitanism)</td><td><strong>動画 3 で使われているパック</strong>(§11c)。NikoDemon80 版のフォークで、<strong>任意位置の複数キーフレーム</strong>、既存動画の差し込み、V2V モーション転写、<strong>H3 の 40Hz オーディオグリッドを正確に扱う音声処理</strong>。<strong>2026-08-30 に Update 8</strong> と非常に活発 <span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-MiniMaxH3-Director</strong>(seesee75-commits)</td><td>ComfyUI 内の<strong>タイムラインエディタ</strong>。トラックにメディアを置いて尺を調整し、ショットごとにプロンプトを付ける。<code>[Shot N]</code> 記法と <code>detailed_description</code> で<strong>プロンプトを自動生成</strong>。<strong>被写体スロット 9 個</strong>、retention マーカー、<strong>リテイク(範囲だけ再生成して繋ぎ直す)</strong>、ライブプレビュー。<strong>fp8 で 480p〜768p なら VRAM 16GB から</strong>、ディスクは約 60GB <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>ComfyUI-MiniMax-H3-PDD-Acc</strong>(Jalen-Brunson)</td><td><strong>Alibaba PAI 公式の 8 ステップ PDD 加速 LoRA を読むための専用ノード。</strong>通常の LoRA ローダーでは読めず、head bank を落とすと蒸留が静かに失われる。<code>MiniMaxH3PDDAccApply</code> / <code>MiniMaxH3PDDAccScheduler</code>。<strong>FL2VA 版と Ref2VA 版があり、取り違えると静かに壊れる</strong>。ComfyUI v0.33.0 以降(§11h)<span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-H3-FaceRefine</strong>(Carasibana)</td><td><strong>小さい顔を作り直す。</strong>フレームごとに顔を追跡 → 切り出して 768px キャンバスに拡大 → H3 で再生成 → 色を合わせて貼り戻す。<strong>顔が小さいほど強く再合成、大きいほど穏やかに保存</strong>。<code>crop_factor</code> 既定 2.5、<code>smooth_window</code> 21 フレーム。VRAM コストは <code>canvas² × frames</code>。<strong>あなたの最優先課題(顔の破綻)に直撃</strong> <span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI_MinimaxH3HybridLoader</strong>(scottmudge)</td><td>FL2VA と Ref2VA のブロックを混ぜて読む。<strong>推奨はブロック 25〜49 の adaln を Ref2VA から</strong>。<strong>ピークメモリはモデル 1 個分(int8 で約 19.5GB)</strong>で 2 倍にならない(§11f)<span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-sol-attn</strong>(Saganaki22)</td><td><strong>RTX 40 系(SM89)対応・4080 SUPER で確認済み</strong>。SageAttention 比 1.38〜2.33 倍、attention で 1.3〜2.7 GiB 削減、<code>MiniMax H3 Chunk FeedForward</code> で <strong>MLP ピーク VRAM −37%</strong>。Windows 可、Triton 3.6.0 <span class="c c1">一次</span></td></tr>
@@ -1125,7 +1128,19 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     また <strong>KJNodes の Low VRAM Attention は <code>Model Attention Backend</code> とスタックしません</strong>(ブロック forward ごと置換するため)。<strong>まず 1 つだけ入れて効果を測り、それから足す</strong>のが安全です。</p>
   </div>
 
-  <h3 style="color:var(--risk)">EasyCache — 「使うな」ではなく「値を直して使う」</h3>
+  <h3 style="color:var(--accent-ink)">まず PDD 加速 LoRA を試す — 速度手段の第一候補</h3>
+  <div class="box tint">
+    <p style="margin:0"><strong>Alibaba PAI の公式 PDD 加速 LoRA が、速度と品質の関係を変えました</strong>(§11h)。<strong>8 ステップで 20 ステップ相当か、それ以上</strong>。とくに <strong>Ref2VA での 2 人のキャラ一貫性テストでは、8 ステップの PDD が 20 ステップより信頼できた</strong>という結果が出ています。<br>
+    <strong>あなたの優先事項(顔の破綻・一貫性)でこそ強い</strong>ので、速度手段としてはこれを最初に試すべきです。設定が厳格(Euler / CFG 1.0 / strength 1.0 / SigmaShift 12・3 / ステップ 4 か 8)なので、§11h の表を見ながら組んでください。</p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">併用できない組み合わせ</div>
+    <p style="margin:0"><strong>PDD を使うなら、Turbo / lightx2v などの他の蒸留 LoRA は外します(蒸留は重ねられません)。EasyCache や blockcache とも併用できません</strong> <span class="c c1">一次</span>。<br>
+    下の EasyCache の話は<strong>PDD を使わない場合</strong>の手段として読んでください。<strong>速度の幅でも品質でも PDD が上なので、PDD が動くならそちらを優先</strong>します。</p>
+  </div>
+
+  <h3 style="color:var(--risk)">EasyCache — 値を直して使う(PDD を使わない場合)</h3>
   <p>初版で「easycache × R2V は品質崩壊」とだけ書きましたが、<strong>実態はもっと具体的で、しかも対処法があります</strong>。</p>
 
   <div class="box warn">
@@ -1181,6 +1196,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>Spectrum オプティマイザ</td><td>SolAttn 併用で I2V 5 秒が 125.3 秒 → 86.9 秒 <span class="c c3">要検証</span></td><td>同上(README に音質劣化の記載)</td></tr>
         <tr><td><code>er_sde</code> サンプラー</td><td>—</td><td><strong>音声生成にやや良い</strong>(LoRA の有無を問わず)<span class="c c3">要検証</span></td></tr>
         <tr><td><strong>映像と音声で shift を分ける</strong></td><td>—</td><td><strong>映像 shift 12 / 音声 shift 3 に分けると、加速 LoRA を使っても音質が改善</strong>したという報告(§11f)<span class="c c3">要検証</span></td></tr>
+        <tr><td><strong>PDD 加速 LoRA</strong>(alibaba-pai)</td><td><strong>20 ステップ → 8 ステップ</strong>。CFG も不要(蒸留済み)</td><td><strong>品質も維持〜向上。</strong>Ref2VA のキャラ一貫性では 20 ステップより良い結果も <span class="c c1">一次</span></td></tr>
         <tr><td><strong>EasyCache</strong></td><td>既定で約 1.4 倍。<strong>ただし <code>end_percent</code> の調整が必須</strong>(下の項)</td><td><strong>音声を明確に劣化させる</strong>(未修正の Issue あり)。<strong>音声差し替え方式なら無関係</strong> <span class="c c1">一次</span></td></tr>
       </tbody>
     </table>
@@ -1364,6 +1380,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <p>9 構成を実測した記事では、<strong>20 ステップ単体では顔が破綻した int4 が、Turbo LoRA と組むと破綻が解消して最良の構成になった</strong>という結果が出ています(§8)。つまり<strong>「量子化を上げれば品質が上がる」とは限りません</strong>。</p>
     <p style="margin-bottom:0"><strong>一方で、逆向きの報告もあります。</strong> RTX 5090 の検証では <strong>Turbo LoRA の 4 ステップ(約 5 倍速)は、R2V + int8_convrot の条件で映像・音声とも破綻</strong>したとされ、<strong>「8 ステップが現時点の実用下限」</strong>と結論づけられています <span class="c c3">要検証</span>。<br>
     <strong>整理すると: 4 ステップは攻めすぎ。8 ステップから始めてください。</strong> そして<strong>映像の破綻は自前音声では救えません</strong> — §11c の「自前音声なら Turbo LoRA の問題は無関係」は<strong>音声についての話</strong>で、映像の破綻は別問題です。</p>
+    <p style="margin-bottom:0"><strong>ただし、これは Turbo LoRA の話です。</strong> <strong>PDD 加速 LoRA は最初から 8 ステップ設計</strong>で、比較テストでは Turbo より一貫性が良く、<strong>Ref2VA のキャラ一貫性では 20 ステップより良い結果</strong>も出ています(§11h)。<strong>ステップ数を削るなら、Turbo ではなく PDD を試してください。</strong></p>
   </div>
 
   <h3 style="color:var(--risk)">顔と手の破綻 — チェックする順番</h3>
@@ -1548,7 +1565,12 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>潜在の縦横を倍にすると<strong>動画トークンは約 4 倍</strong>。<strong>二段目でこそ OOM が起きる</strong>ので Chunk FeedForward を入れておく</td><td>§8d</td></tr>
         <tr><td><code>lock_audio</code> で二段目の音声をロックできる。<strong>音声差し替え方式と噛み合う</strong></td><td>§8d</td></tr>
         <tr><td><strong>Turbo LoRA は 8 ステップが実用下限。</strong>4 ステップは映像も破綻した報告がある。<strong>映像の破綻は自前音声では救えない</strong></td><td>§8d / §8</td></tr>
-        <tr><td><strong>SageAttention は品質を保ったまま約 31% 短縮</strong>という実測がある。速度改善の第一候補</td><td>§8</td></tr>
+        <tr><td><strong>速度手段の第一候補は PDD 加速 LoRA(alibaba-pai 公式)。</strong>8 ステップで 20 ステップ相当、Ref2VA のキャラ一貫性ではそれ以上の結果も</td><td>§8 / §11h</td></tr>
+        <tr><td><strong>PDD の必須設定: Euler / CFG 1.0 / strength 1.0 きっかり / SigmaShift 12.0・3.0 / ステップ 4 か 8。</strong>外すと深刻なアーティファクトや黒画面</td><td>§11h</td></tr>
+        <tr><td><strong>PDD は他の蒸留 LoRA(Turbo / lightx2v)とも EasyCache / blockcache とも併用不可。</strong>FL2VA 版と Ref2VA 版の取り違えは静かに壊れる</td><td>§11h</td></tr>
+        <tr><td>PDD は通常の LoRA ローダーで読めない。<strong>専用ノードを使う</strong>(head bank を落とすと蒸留が静かに失われる)。<code>ComfyUI/models/pdd_acc/</code> に置く。ComfyUI v0.33.0 以降</td><td>§11h / §5</td></tr>
+        <tr><td>VRAM が限界なら <strong>トランク LoRA をオフラインでベイク</strong>してステップごとのパッチ適用オーバーヘッドを消す</td><td>§11h</td></tr>
+        <tr><td><strong>SageAttention は品質を保ったまま約 31% 短縮</strong>という実測がある。PDD を使わない場合の候補</td><td>§8</td></tr>
         <tr><td><strong>EasyCache は <code>end_percent</code> を 0.65〜0.70 に下げて使う。</strong>既定 0.95 は高すぎて<strong>小さい顔がピクセル化</strong>する。二つの独立した実測が一致</td><td>§8 / §11d</td></tr>
         <tr><td>EasyCache が壊すのは<strong>主に音声</strong>(映像 SSIM は 0.94〜0.96 でほぼ無傷)。<strong>音声差し替え方式なら欠点が無関係になる</strong></td><td>§8</td></tr>
         <tr><td><strong>conditioning と潜在をディスクにキャッシュすれば、追加シードは 950 秒 → 96 秒。しかも無損失</strong>。当たり探しが別物になる</td><td>§8</td></tr>
@@ -1668,7 +1690,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
       <h4 style="margin-top:2px">1 ショット通す + 設定を 2〜3 パターン比べる</h4>
       <p>連鎖の前に、<strong>1 ショットが狙いどおりに出るか</strong>と、<strong>設定の当たり</strong>を見ます。ここが速度と品質の軸の本番です。</p>
       <p><strong>比較するのは「Q 値 × ステップ数」で 2〜3 通りだけ。</strong> ステップ数と量子化は独立に評価できません(§8d)。同じプロンプト・<strong>同じシード</strong>で回して、<strong>所要時間と顔・手の破綻</strong>を並べてください。</p>
-      <p><strong>Turbo LoRA は 4 ステップではなく 8 ステップから</strong>試してください。4 ステップで映像も破綻したという報告があります(§8d)。まず「20 ステップ・LoRA なし」で基準を取り、それから「8 ステップ・Turbo LoRA」と比べるのが分かりやすいはずです。</p>
+      <p><strong>比較するのは 3 パターン</strong>: ①「20 ステップ・LoRA なし」で基準を取る → ②「<strong>8 ステップ・PDD 加速 LoRA</strong>」→(余裕があれば)③「8 ステップ・Turbo LoRA」。<br>
+      <strong>②が本命です</strong>(§11h)。設定が厳格なので Euler / CFG 1.0 / strength 1.0 / SigmaShift 12・3 を守ってください。<strong>間違えると黒画面になります。</strong>また <strong>PDD を使うときは EasyCache と Turbo を外します</strong>(併用不可)。</p>
       <ul class="check">
         <li>テンプレートに沿ったプロンプト(被写体定義 + 声色参照の紐づけ)で 1 本生成</li>
         <li><strong>声が用意した参照に似ているか</strong></li>
@@ -2333,6 +2356,111 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <strong>これは §8b の方針(16GB で全部固めてから、本番だけ借りる)が正しいことの裏付けです。</strong> 借りている間に試行錯誤してはいけません。</p>
   </div>
 </section>
+<section id="s11h">
+  <span class="sec-label">動画 8</span>
+  <h2>速度と品質の両立</h2>
+
+  <div class="box">
+    <div class="box-title">出典</div>
+    <p style="margin:0"><strong>MiniMax-H3 — Quality and Speed | 8-Step PDD LoRA vs Turbo LoRA</strong> — <code>https://youtu.be/733GsVq_oxo</code> 字幕全文から要約 <span class="c c1">一次</span></p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">このノート最大の懸案が解けるかもしれません</div>
+    <p style="margin:0">§1b で「速度と品質はトレードオフ」と整理し、§8d で「Turbo LoRA は 4 ステップで破綻、8 が実用下限」と書いてきました。<br>
+    <strong>Alibaba PAI が公式に出した PDD 加速 LoRA は、8 ステップで 20 ステップ相当か、場合によってはそれ以上の結果を出しています。</strong> しかも <strong>FL2VA / Ref2VA の両方に対応</strong>し、<strong>あなたの優先事項(顔の破綻・一貫性)でこそ強い</strong>という内容です。</p>
+  </div>
+
+  <h3>PDD とは何か</h3>
+  <p><strong>Parallel Decoding Distillation(並列デコード蒸留)</strong>。従来の蒸留が score loss や adversarial loss でモデルを圧縮するのに対し、<strong>PDD は「1 回のネットワーク評価で複数のデノイズステップを予測する」ことを学習</strong>します。モデル評価の回数を減らしつつ、品質・モーション・映像の多様性を保つのが狙いです。LTX や Wan、Qwen Image でも成果が出ている手法です <span class="c c2">一致</span>。</p>
+
+  <h3>比較テストの結果(オリジナル 20 ステップ / Turbo / PDD 8 ステップ)</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:22%">テスト</th><th style="width:39%">観点</th><th>結果</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>雨の窓辺のクローズアップ(涙、微細な表情)</td>
+          <td><strong>肌の質感・まつげ</strong></td>
+          <td>オリジナルは<strong>ややソフト</strong>。Turbo は<strong>シャープだが顔が「処理された」感じ</strong>。<strong>PDD は肌とまつげが自然で、ショット全体で一貫</strong></td>
+        </tr>
+        <tr>
+          <td>壁画の虎が現実に出てくる</td>
+          <td>複雑なモーションと遷移の同期</td>
+          <td>オリジナルが<strong>最も制御された進行</strong>。<strong>Turbo は不整合</strong>(飛沫が効く前に虎が出てしまう)。<strong>PDD は飛沫と突破が自然に噛み合う</strong></td>
+        </tr>
+        <tr>
+          <td>バイク一人称でジャングル走行</td>
+          <td>高速モーションの一貫性</td>
+          <td><strong>PDD は POV が安定し、Turbo よりディテールが一貫</strong>(特に高速部分)。オリジナルは全体の洗練度でわずかに上</td>
+        </tr>
+        <tr>
+          <td><strong>Ref2VA で 2 人のタンゴ</strong>(別々の参照画像)</td>
+          <td><strong>キャラの同一性・服装・体型</strong></td>
+          <td><strong>PDD は両者を最後まで維持。ところがオリジナル 20 ステップは、終盤で女性がフレーム下に消えた。</strong>Turbo は維持するが位置取りに不整合<br><strong>= このテストでは PDD がオリジナルより信頼できた</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box tint">
+    <p style="margin:0"><strong>4 番目のテストがあなたに直結します。</strong> Ref2VA で、別々の参照画像から 2 人を同じシーンに置き、同一性を保ったまま連携した動きを作る — <strong>これはあなたがやろうとしていることそのもの</strong>です。そこで <strong>8 ステップの PDD が 20 ステップより良かった</strong>、というのは大きい。</p>
+  </div>
+
+  <h3>実体 — 公式リリースです</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:30%">項目</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td>配布元</td><td><a href="https://huggingface.co/alibaba-pai/MiniMax-H3-Acc-LoRAs"><code>alibaba-pai/MiniMax-H3-Acc-LoRAs</code></a>(ComfyUI キーに変換済みの<a href="https://huggingface.co/aptech0081/MiniMax-H3-Acc-LoRAs-ComfyUI">再配布</a>もあり)</td></tr>
+        <tr><td>中身</td><td><strong>rank-64 のトランク LoRA</strong>(network_alpha 64, BF16)+ <strong>PDD head bank</strong>(最終層の映像・音声投影の 32 個の区間別コピー)。各ステップで単一の mean-block-velocity ヘッドに融合される。<strong>1 ファイル 1.4GB</strong></td></tr>
+        <tr><td>対応</td><td><strong>FL2VA 版と Ref2VA 版の両方</strong></td></tr>
+        <tr><td>ComfyUI ノード</td><td><a href="https://github.com/Jalen-Brunson/ComfyUI-MiniMax-H3-PDD-Acc"><code>ComfyUI-MiniMax-H3-PDD-Acc</code></a>。<strong>通常の LoRA ローダーでは読めません</strong> — head bank を落とすと<strong>蒸留が静かに失われます</strong></td></tr>
+        <tr><td>配置</td><td><code>ComfyUI/models/pdd_acc/</code></td></tr>
+        <tr><td>要件</td><td><strong>ComfyUI v0.33.0 以降</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="color:var(--risk)">設定が厳格です — 間違えると黒画面になります</h3>
+  <div class="box warn">
+    <div class="scroll" style="margin:0 0 10px">
+      <table>
+        <thead><tr><th style="width:30%">設定</th><th style="width:22%">値</th><th>理由</th></tr></thead>
+        <tbody>
+          <tr><td>サンプラー</td><td><strong><code>Euler</code></strong></td><td>1 ステップが 1 つの mean block velocity を消費する</td></tr>
+          <tr><td>ステップ数(<code>nfe</code>)</td><td><strong>8 / 4 / 6</strong></td><td><strong>ブロックサイズは 4 と 8 のみ合法。</strong>外れると激しいノイズ</td></tr>
+          <tr><td><code>lora_strength</code> / <code>head_strength</code></td><td><strong>どちらも 1.0 きっかり</strong></td><td>モデルの最終層を書き換えるため。<strong>間違えると深刻なアーティファクト、テンソルエラー、完全な黒画面</strong></td></tr>
+          <tr><td>CFG</td><td><strong>1.0</strong></td><td><strong>ガイダンスは蒸留済み</strong>。1 ステップ 1 フォワード</td></tr>
+          <tr><td><strong>SigmaShift</strong></td><td><strong>12.0 / 3.0 きっかり</strong></td><td>学習グリッドの要件</td></tr>
+          <tr><td>sigmas</td><td>Apply ノードの出力</td><td>学習済みの境界値を使う</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin:0"><strong>そのほかの禁止事項:</strong><br>
+    ・<strong>他の蒸留 LoRA(lightx2v、Turbo)は外す。蒸留は重ねられません</strong><br>
+    ・<strong>ステップキャッシュ系(blockcache / EasyCache)とは併用しない</strong><br>
+    ・<strong>FL2VA 用の蒸留を ref2va の UNET に当てると(逆も)、エラーにならず静かに間違った結果になります</strong>。現在はノードが検出します</p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">§11f の「shift 12 / 3」の正体でした</div>
+    <p style="margin:0">動画 6 の作者が「<strong>映像は shift 12、音声は shift 3 に分けると、加速 LoRA を使っても音質が改善した</strong>」と述べていた件(§11f)。<strong>PDD の必須設定がまさに SigmaShift 12.0 / 3.0 です。</strong><br>
+    偶然の一致か、同じ制約に別経路から到達したのかは分かりませんが、<strong>この 2 つの数字には根拠があった</strong>ということになります。</p>
+  </div>
+
+  <div class="box">
+    <div class="box-title">16GB 向けの補足</div>
+    <p style="margin:0">VRAM が限界のカード向けに、<strong>トランク LoRA をオフラインでベイクして、ステップごとのパッチ適用オーバーヘッドをなくす</strong>オプションがあります。実測は H200 の 832×480×124 フレームで <strong>2.06 s/it(ベイク)対 2.44 s/it(オフロード)</strong> <span class="c c1">一次</span>。<strong>あなたの 4080 では、この差はもっと大きく出る可能性があります。</strong></p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">ただし §8 の推奨と 1 つ衝突します</div>
+    <p style="margin:0">§8 で <strong>EasyCache の <code>end_percent</code> を 0.65〜0.70 に下げて使う</strong>ことを勧めましたが、<strong>PDD とは併用できません</strong>。<br>
+    <strong>どちらを取るかの判断</strong>: EasyCache は速度向上の約 31% を残す程度、PDD は 20 ステップ → 8 ステップ(理論上 2.5 倍)。<strong>しかも PDD は品質面でも優位</strong>。<strong>PDD が動くなら、そちらを優先すべき</strong>です <span class="c c3">要検証</span>。</p>
+  </div>
+</section>
+
 
 
 
@@ -2413,6 +2541,16 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li><a href="https://github.com/ethanfel/ComfyUI-MiniMax-H3-Guide">ethanfel / ComfyUI-MiniMax-H3-Guide</a> — プロンプト組み立て支援</li>
     <li><a href="https://github.com/benjiyaya/Calliope">benjiyaya / Calliope</a> — 動画 2 の作者のアプリ。<strong>プロンプトテンプレートのセクション名</strong>の出典</li>
     <li><a href="https://github.com/xiaolibai-sys/ComfyUI-MiniMaxH3">xiaolibai-sys / ComfyUI-MiniMaxH3</a> — H3 の映像・音声生成ノード</li>
+  </ul>
+
+  <h3>動画 8 と PDD 加速</h3>
+  <ul>
+    <li><strong><a href="https://youtu.be/733GsVq_oxo">動画 8 本編(字幕全文を受領・§11h の出典)</a></strong> — 8-Step PDD LoRA vs Turbo LoRA <span class="c c1">一次</span></li>
+    <li><a href="https://huggingface.co/alibaba-pai/MiniMax-H3-Acc-LoRAs"><strong>alibaba-pai / MiniMax-H3-Acc-LoRAs</strong></a> — 公式の PDD 加速 LoRA(未取得)</li>
+    <li><a href="https://github.com/Jalen-Brunson/ComfyUI-MiniMax-H3-PDD-Acc">Jalen-Brunson / ComfyUI-MiniMax-H3-PDD-Acc</a> <span class="c c1">一次</span> — <strong>必須設定・禁止事項・ベイクの実測</strong>の出典</li>
+    <li><a href="https://huggingface.co/aptech0081/MiniMax-H3-Acc-LoRAs-ComfyUI">aptech0081 / MiniMax-H3-Acc-LoRAs-ComfyUI</a> — ComfyUI キーに変換済み(未取得)</li>
+    <li><a href="https://comfyui-wiki.com/en/news/2026-08-26-minimax-h3-pdd-acc-lora">ComfyUI Wiki — 公式 8 ステップ PDD 蒸留</a>(未取得)</li>
+    <li><a href="https://arxiv.org/abs/2607.26004">arXiv 2607.26004 — Parallel Decoding Distillation</a> / <a href="https://research.nvidia.com/labs/genair/pdd/">NVIDIA FastGen-PDD</a>(手法の原典。未取得)</li>
   </ul>
 
   <h3>動画 7 と、プロンプト書式</h3>
@@ -2502,8 +2640,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 14 版 2026-08-30(<strong>7 本目の動画</strong>を §11g に追加。<strong>本当の時間予算は「1 テイク × 60〜100 本」で、1 分の完成尺に約 30 時間・採用率 1/3</strong>という実績を §2b に反映。<strong>公式プロンプトの実フィールド名</strong>(<code>integrated_multimodal_description</code> / <code>overall_soundscape</code> / <code>non_diegetic_music</code>)とタイミングマーカー <code>[Shot N] at 00:00.000</code> を §6 に追加。BGM を切る方法、アセット準備の方法論(ターンアラウンドシート / 3D レイアウト / 座席配置)、低解像度なら寄りで撮る、レンタル費用の実測、LLM 自動化のガードレールを収録)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① §9 の実験結果の反映、② 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ 二段階方式で 16GB のクリップ長上限を確定する。</p>
+  <p>初版 2026-08-30 / 第 15 版 2026-08-30(<strong>8 本目の動画</strong>を §11h に追加。<strong>Alibaba PAI 公式の PDD 加速 LoRA</strong>により、このノート最大の懸案だった「速度 vs 品質」がほぼ解消する見込みを反映。8 ステップで 20 ステップ相当、Ref2VA のキャラ一貫性ではそれ以上という比較結果、厳格な必須設定、他の蒸留・キャッシュ系との併用不可、専用ノートが要る点を収録。§8 の速度手段の第一候補を PDD に差し替え、§9 の実験 3 を 3 パターン比較に更新。§11f の「shift 12 / 3」が PDD の学習グリッド要件と一致することも記載)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① §9 の実験結果の反映、② 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ PDD が 16GB で動くかの確認。</p>
 </footer>
 
 </main>
