@@ -235,6 +235,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s6">音声 — 台詞が主役</a></li>
     <li><a href="#s7">ffmpeg 実務レシピ</a></li>
     <li><a href="#s8">4080 16GB の現実解</a></li>
+    <li><a href="#s8e">テキストエンコーダ</a></li>
     <li><a href="#s8b">32GB を借りるとき</a></li>
     <li><a href="#s8d">品質を上げる</a></li>
     <li><a href="#s8c">ノウハウ台帳</a></li>
@@ -1074,6 +1075,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>GGUF の配布幅</td><td>IQ1_S の 3.78 GiB から Q8_0 の 33.56 GiB まで。<strong>16GB に載せるならこの中間から選ぶ</strong>。<span class="c c1">一次</span></td></tr>
         <tr><td><strong>Sol-Attn</strong></td><td><strong>訂正:</strong> 前版で「Blackwell 向けで 4080 は対象外」と書きましたが<strong>誤りでした</strong>。<strong>SM86(RTX 30 系)/ SM89(RTX 40 系)/ SM120(50 系)</strong>に対応し、<strong>RTX 4080 SUPER で動作確認済み</strong>と明記されています。Windows ネイティブ対応、Triton 3.6.0 が必要 <span class="c c1">一次</span>。詳細は下の表へ</td></tr>
         <tr><td>ComfyUI 以外の選択肢</td><td>DiffSynth-Studio の NF4 経路は最小 8GB を謳う。ComfyUI で詰まったときの逃げ道。<span class="c c1">一次</span></td></tr>
+        <tr><td>テキストエンコーダ</td><td><strong>15.7GB。ここだけで一式の 1/3 以上</strong>を占める。ディスクキャッシュや小型化の手段がある → <strong>§8e</strong></td></tr>
         <tr><td><strong>VRAM 計算機</strong></td><td>MiniMax H3 Hub の INT8 VRAM 計算機が <strong>RTX 4080(16GB)を名指しで対象</strong>にしている。<strong>実験を始める前にここで当たりを付けられます</strong> <span class="c c1">一次</span></td></tr>
         <tr><td>潜在アップスケーラ</td><td>低解像度で生成 → 潜在のまま 1.0〜4.0 倍 → 仕上げ。VAE の往復を飛ばすので<strong>速い</strong>。ただし<strong>VRAM は節約しない</strong>(§11b)<span class="c c1">一次</span></td></tr>
       </tbody>
@@ -1170,7 +1172,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 
   <h3 style="color:var(--accent-ink)">同じ設定で別シードを試すのは、劇的に安くできます</h3>
   <div class="box tint">
-    <p style="margin:0">24GB での実測(864×480 / 124 フレーム / 20 ステップ)で、conditioning と潜在をディスクにキャッシュし、モデルを常駐させることで <strong>追加シード 1 本あたり 950 秒 → 96 秒</strong> になったと報告されています。しかも<strong>出力はビット単位で同一(PSNR 無限大)= 完全に無損失</strong> <span class="c c1">一次</span>。<br>
+    <p style="margin:0">24GB での実測(864×480 / 124 フレーム / 20 ステップ)で、conditioning と潜在をディスクにキャッシュし、モデルを常駐させることで <strong>追加シード 1 本あたり 950 秒 → 96 秒(約 9.9 倍)</strong>。しかも<strong>出力はビット単位で同一(PSNR 無限大)= 完全に無損失</strong> <span class="c c1">一次</span>。<strong>ただし新しいプロンプトの 1 本目は encode の代金を払うので約 2.2 倍にとどまります。</strong>手段の比較と注意点は <strong>§8e</strong> にまとめました。<br>
     <strong>これは §1b でいう「試行回数 = 品質」に直接効きます。</strong> 同じプロンプトで 10 本引き直すのが現実的になるからです。<strong>1 本目だけ我慢すれば、2 本目以降は 10 分の 1</strong>。プロンプトを固めた後の「当たり探し」が別物になります。<span class="c c3">要検証(あなたの 16GB での再現性は未知)</span></p>
   </div>
 
@@ -1202,6 +1204,94 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     </table>
   </div>
 </section>
+<section id="s8e">
+  <span class="sec-label">エンコーダ</span>
+  <h2>15.7GB のテキストエンコーダ</h2>
+
+  <p>H3 の重さの正体の半分は<strong>テキストエンコーダ</strong>です。ここを何とかする手段が 3 つ見つかりました。<strong>16GB にとってはかなり大きい話</strong>なので、独立した節にします。</p>
+
+  <h3>問題の構造</h3>
+  <div class="box warn">
+    <p style="margin:0">H3 のテキストエンコーダは <strong>Qwen3-VL-32B ベースで 15.7GB</strong>、拡散モデル(DiT)は <strong>21GB</strong>。<strong>この 2 つは RAM 32GB には同居できません。</strong> だから ComfyUI は <code>--cache-none</code> で走らざるを得ず、<strong>毎回すべてを完全にリロードする</strong>ことになります <span class="c c2">一致</span>。<br>
+    <strong>あなたの RAM 64GB は、ここで効きます。</strong> 15.7 + 21 = 36.7GB なので<strong>同居できる</strong> — §8 に「RAM 64GB は有利」と書いた具体的な根拠がこれです。<strong>下の手段は、64GB のあなたには「必須」ではなく「さらに速くするため」のもの</strong>と読んでください。</p>
+  </div>
+
+  <h3>手段の比較</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:22%">手段</th><th style="width:30%">やること</th><th>効果と代償</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>H3 Conditioning Bank</strong><br>(ComfyUI-MAINodes)</td>
+          <td>encode ノードと guider の間に挟む。<strong>最初の項目が encode してディスクに保存、以降は読み戻す</strong></td>
+          <td><strong>conditioning 入力が lazy なので、バンクヒット時は encode ノードも CLIP ローダーも実行されません。</strong>エンコーダ(int8 ref2va で常駐 14.96GB、16GB シミュレートでピーク 21.2GB)が<strong>その項目では一切ロードされない</strong> <span class="c c1">一次</span></td>
+        </tr>
+        <tr>
+          <td><strong>H3SaveConditioning /<br>H3LoadConditioning</strong><br>(pepikir)</td>
+          <td><code>minimax/cache</code> 以下の 4 ノード。潜在用の <code>H3SaveLatentAV</code> / <code>H3LoadLatentAV</code> も対</td>
+          <td><strong>無損失(ビット同一)。</strong>「一度エンコードして、多数のシードでサンプリングする」設計。§8 の 950 秒 → 96 秒はこれ <span class="c c1">一次</span></td>
+        </tr>
+        <tr>
+          <td><strong>ClipProj</strong><br>(nicolab28)</td>
+          <td><strong>エンコーダ自体を小さいものに差し替える。</strong>Qwen3-VL-32B → <strong>Qwen3-VL-4B + 学習済み線形射影</strong></td>
+          <td><strong>conditioning の VRAM が 15.7GB → 5.2GB</strong>(記事によっては 4.5GB)。<strong>ただし品質面の代償あり(下記)</strong> <span class="c c1">一次</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>ご記載の内容への補正 2 点</h3>
+  <div class="box warn">
+    <div class="box-title">① 「OOM を完全に回避」は言い過ぎです</div>
+    <p style="margin:0">回避できるのは<strong>エンコード段の OOM だけ</strong>です。<strong>サンプリング段の OOM は別問題</strong>で、とくに §8d の二段サンプリングでは<strong>二段目(潜在の縦横を倍にする = 動画トークン約 4 倍)でこそ落ちます</strong>。<br>
+    <strong>Conditioning Bank を入れても、二段目の OOM 対策(Chunk FeedForward など)は依然として必要です。</strong></p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">② 「2 回目以降が劇的に速い」は条件付きです</div>
+    <p style="margin:0">実測では <strong>同じプロンプトの以降のシードで約 9.9 倍</strong>ですが、<strong>新しいプロンプトの 1 本目は encode の代金を払うので約 2.2 倍</strong>にとどまります <span class="c c1">一次</span>。<br>
+    <strong>効き方が「プロンプトを固定してシードを引き直す」作業に偏っている</strong>ということです。幸い、<strong>それは §11g で見た実際の制作(60〜100 生成して 1/3 を採用)そのもの</strong>なので、あなたの用途には噛み合います。</p>
+  </div>
+
+  <h3 style="color:var(--risk)">キャッシュキーの罠 — ここが事故ポイントです</h3>
+  <div class="box warn">
+    <p style="margin:0">Conditioning Bank のキーは <strong>(プロンプト, 参照, キャンバス, 長さ)</strong> の組ですが、<strong>自動でフィンガープリントされるのはプロンプトだけ。しかも自分で配線した場合のみ</strong>です <span class="c c1">一次</span>。<br>
+    <strong>つまり「参照画像を差し替えたのに、古い conditioning がヒットしてしまう」事故が起こりえます。</strong> §11g で「LLM が参照を書き落として、キャラのコートが消えた」という事故を見ましたが、<strong>これはその機械版</strong>です。<br>
+    参照を変えたときは <code>refresh</code> モードで上書きするか、キーを分けてください。</p>
+  </div>
+
+  <h3>ディスクの消費</h3>
+  <p>conditioning のテンソルは <strong>107 フレームのクリップあたり約 513MB</strong>。潜在のバンクは <strong>1 クリップ約 4.8MB</strong> と軽いです <span class="c c1">一次</span>。<br>
+  1 分ぶんを複数プロンプト × 複数テイクで回すと <strong>conditioning だけで数 GB〜十数 GB</strong>になります。NVMe の空き容量を見ておいてください。</p>
+
+  <div class="box tint">
+    <div class="box-title">たぶん、あなたは既に持っています</div>
+    <p style="margin:0"><strong>ComfyUI-MAINodes は、§11c の MultiRef パックの依存に入っています。</strong> あの経路でノードを揃えるなら、Conditioning Bank も一緒に入ってくるはずです。<br>
+    同じパックには <strong>H3 Latent Bank</strong>(pass-1 の潜在を保存)、<strong>H3 Window Plan/Collect</strong>、<strong>H3 Memory Probe</strong>(ブロックごとの VRAM/RSS 台帳)もあります。<strong>Memory Probe は、あなたが「何秒まで通るか」を測るときに直接役立つはずです。</strong></p>
+  </div>
+
+  <h3 style="color:var(--risk)">ClipProj は、あなたには危ないかもしれません</h3>
+  <div class="box warn">
+    <p>エンコーダを 15.7GB → 5.2GB にできるのは魅力的ですが、<strong>作者自身が代償を明記しています</strong> <span class="c c1">一次</span>:</p>
+    <ul style="margin-bottom:8px">
+      <li><strong>固有名詞が劣化する</strong> → 人物は名前で呼ばず、描写で指すようにする</li>
+      <li><strong>英語以外の話し言葉が、画は良くても崩れることがある</strong></li>
+    </ul>
+    <p style="margin-bottom:0"><strong>あなたは台詞が主役で、しかも日本語です。2 つ目が直撃します。</strong><br>
+    仕組み上、これは避けにくいはずです — 32B の隠れ状態を 4B から線形射影で近似する方式(同じトークナイザを共有する性質を使い、行列はリッジ回帰でフィット)なので、<strong>細かい言語情報が落ちる</strong>のは自然です。<br>
+    <strong>使うとしても「映像の当たり探しは ClipProj で高速に回し、本番の台詞入りは本来のエンコーダで」</strong>という使い分けになりそうです <span class="c c3">要検証(私の推論)</span>。proof of concept とされており、単一環境でのテストである点にも注意してください。</p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">まとめ — あなたの優先順位</div>
+    <ol style="margin-bottom:0">
+      <li><strong>まず RAM 64GB を活かす。</strong> <code>--cache-none</code> が要らない構成なら、そもそも毎回のフルリロードが起きません。実験 1 でここを確認</li>
+      <li><strong>次に conditioning のディスクキャッシュ。</strong> シードを引き直す作業が 9.9 倍になるので、§11g の「60〜100 生成」という現実に直接効きます</li>
+      <li><strong>ClipProj は日本語の台詞と衝突する可能性が高い。</strong> 使うなら当たり探し専用に</li>
+    </ol>
+  </div>
+</section>
+
 <section id="s8b">
   <span class="sec-label">将来</span>
   <h2>32GB を借りるとき</h2>
@@ -1573,7 +1663,13 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>SageAttention は品質を保ったまま約 31% 短縮</strong>という実測がある。PDD を使わない場合の候補</td><td>§8</td></tr>
         <tr><td><strong>EasyCache は <code>end_percent</code> を 0.65〜0.70 に下げて使う。</strong>既定 0.95 は高すぎて<strong>小さい顔がピクセル化</strong>する。二つの独立した実測が一致</td><td>§8 / §11d</td></tr>
         <tr><td>EasyCache が壊すのは<strong>主に音声</strong>(映像 SSIM は 0.94〜0.96 でほぼ無傷)。<strong>音声差し替え方式なら欠点が無関係になる</strong></td><td>§8</td></tr>
-        <tr><td><strong>conditioning と潜在をディスクにキャッシュすれば、追加シードは 950 秒 → 96 秒。しかも無損失</strong>。当たり探しが別物になる</td><td>§8</td></tr>
+        <tr><td><strong>conditioning と潜在をディスクにキャッシュすれば、同じプロンプトの追加シードは約 9.9 倍(950 → 96 秒)。無損失。</strong>ただし新プロンプトの 1 本目は約 2.2 倍</td><td>§8 / §8e</td></tr>
+        <tr><td><strong>Conditioning Bank は encode ノードごとスキップする</strong>(lazy 入力)。エンコーダ 14.96GB がその項目で一切ロードされない</td><td>§8e</td></tr>
+        <tr><td style="color:var(--risk)"><strong>キャッシュが回避するのはエンコード段の OOM だけ。</strong>二段目サンプリングの OOM は別問題(Chunk FeedForward が要る)</td><td>§8e</td></tr>
+        <tr><td style="color:var(--risk)"><strong>キャッシュキーはプロンプトしか自動で見ない。</strong>参照画像を差し替えたのに古い conditioning がヒットする事故に注意。<code>refresh</code> で上書きする</td><td>§8e</td></tr>
+        <tr><td>conditioning のディスク消費は <strong>107 フレームで約 513MB</strong>(潜在は約 4.8MB と軽い)</td><td>§8e</td></tr>
+        <tr><td><strong>RAM 64GB ならエンコーダ 15.7GB と DiT 21GB が同居でき、毎回のフルリロードを避けられる</strong>(32GB では <code>--cache-none</code> が要る)</td><td>§8e</td></tr>
+        <tr><td style="color:var(--risk)"><strong>ClipProj(エンコーダ小型化)は固有名詞が劣化し、英語以外の話し言葉が崩れることがある。</strong>日本語の台詞とは相性が悪い</td><td>§8e</td></tr>
         <tr><td>20 ステップが既定。<strong>25 に上げるとモーション品質が上がる</strong>との報告</td><td>§8d</td></tr>
         <tr><td><strong>FL2VA のほうが素の品質は高い。</strong>Ref2VA は参照能力と引き換えに品質を落としている。参照が要らない場面では FL2VA を選ぶ</td><td>§11f</td></tr>
         <tr><td><strong>肌がテカる(オイリー)のは Turbo LoRA + 二段階アップスケールの副作用。</strong>台詞のクローズアップでは de-oil 系 LoRA を、<strong>アクションでは必ずバイパス</strong>(モーションを壊す)</td><td>§11f</td></tr>
@@ -1665,6 +1761,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <li><code>Model Attention Backend</code> で <strong>comfy kitchen attention</strong> を選ぶ(ComfyUI v0.32.0 以降なら追加インストール不要)</li>
         <li>OOM が出るなら <strong>Chunk FeedForward</strong> を追加。attention 系ノードは<strong>択一・順序あり</strong>なので、1 つずつ入れて測る(§8)</li>
         <li>864×480 で 5 秒を 1 本生成し、<strong>所要時間を記録</strong> — 以降すべての見積もりの基準になる</li>
+        <li><strong>RAM 64GB を活かせているか確認</strong> — <code>--cache-none</code> なしで走るか。走るなら毎回のフルリロードが起きない(§8e)</li>
       </ul>
     </div>
   </div>
@@ -2595,6 +2692,16 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li><a href="https://note.com/seal309midorin/n/nd4744caef27e">リダ — 動画が溶ける原因とぼやけの比較検証(日本語)</a></li>
   </ul>
 
+  <h3>テキストエンコーダ(§8e)</h3>
+  <ul>
+    <li><a href="https://github.com/matlowai/ComfyUI-MAINodes">matlowai / ComfyUI-MAINodes</a> <span class="c c1">一次</span> — <strong>H3 Conditioning Bank</strong>(lazy 入力、14.96GB 回避、キャッシュキー、513MB/クリップ)の出典。<strong>MultiRef パックの依存にも入っています</strong></li>
+    <li><a href="https://github.com/pepikir/minimax-h3-speedup">pepikir / minimax-h3-speedup</a> <span class="c c1">一次</span> — <code>H3SaveConditioning</code> ほか 4 ノード、9.9 倍 / 2.2 倍の実測</li>
+    <li><a href="https://github.com/nicolab28/ComfyUI-ClipProj">nicolab28 / ComfyUI-ClipProj</a> <span class="c c1">一次</span> — <strong>エンコーダを 15.7GB → 5.2GB に。ただし固有名詞と非英語の話し言葉が劣化</strong>(<a href="https://github.com/nicolab28/ComfyUI-ClipProj/blob/main/MEASUREMENTS.md">実測</a>)</li>
+    <li><a href="https://comfyui-wiki.com/en/news/2026-08-09-clipproj-minimax-h3">ComfyUI Wiki — ClipProj 紹介</a>(未取得)</li>
+    <li><a href="https://note.com/sepiablue/n/n6a78bb01511a">かみもと — エンコーダを 15.7GB から 5.2GB にして RAM を 32GB に収めた(日本語)</a>(未取得)</li>
+    <li><a href="https://www.instasd.com/post/minimax-h3-text-encoder-guide-comfyui">instaSD — H3 のテキストエンコーダ:ファイル・VRAM・誤解</a>(未取得)</li>
+  </ul>
+
   <h3>設定・品質</h3>
   <ul>
     <li><a href="https://github.com/xmarre/Comfyui_Minimax_h3_latent_Upscaler">xmarre / Comfyui_Minimax_h3_latent_Upscaler</a> <span class="c c1">一次</span> — <strong>二段サンプリングのノード名・パラメータ・部分デノイズ制約</strong>の出典</li>
@@ -2640,8 +2747,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 15 版 2026-08-30(<strong>8 本目の動画</strong>を §11h に追加。<strong>Alibaba PAI 公式の PDD 加速 LoRA</strong>により、このノート最大の懸案だった「速度 vs 品質」がほぼ解消する見込みを反映。8 ステップで 20 ステップ相当、Ref2VA のキャラ一貫性ではそれ以上という比較結果、厳格な必須設定、他の蒸留・キャッシュ系との併用不可、専用ノートが要る点を収録。§8 の速度手段の第一候補を PDD に差し替え、§9 の実験 3 を 3 パターン比較に更新。§11f の「shift 12 / 3」が PDD の学習グリッド要件と一致することも記載)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① §9 の実験結果の反映、② 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ PDD が 16GB で動くかの確認。</p>
+  <p>初版 2026-08-30 / 第 16 版 2026-08-30(<strong>テキストエンコーダの節 §8e を新設</strong>。H3 Conditioning Bank / pepikir のキャッシュノード / ClipProj の 3 手段を比較。<strong>「OOM を完全に回避」はエンコード段のみ</strong>、<strong>速度向上は同一プロンプトで 9.9 倍・新規プロンプトで 2.2 倍</strong>という補正、<strong>キャッシュキーがプロンプトしか見ない事故</strong>、<strong>ClipProj は日本語の台詞と相性が悪い</strong>点を明記。RAM 64GB がここで効く根拠も収録)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① §9 の実験結果の反映、② 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ PDD と Conditioning Bank が 16GB で動くかの確認。</p>
 </footer>
 
 </main>
