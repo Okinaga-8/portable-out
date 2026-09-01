@@ -244,6 +244,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s11b">動画 2 — 潜在で繋ぐ</a></li>
     <li><a href="#s11c">動画 3 — 速度と VRAM</a></li>
     <li><a href="#s11d">動画 4 — 8GB と参照音声</a></li>
+    <li><a href="#s11e">動画 5 — 1 クリップに 6 ショット</a></li>
     <li><a href="#s12">出典と確度</a></li>
   </ol>
 </nav>
@@ -454,7 +455,8 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
         <tr><td>解像度</td><td class="num">短辺 768 が既定</td><td>2K は再生成(regeneration)扱い。ローカルは 768p 級を前提に設計する。<span class="c c1">一次</span></td></tr>
         <tr><td>アスペクト比</td><td class="num">21:9 / 16:9 / 4:3 / 1:1 / 3:4 / 9:16</td><td>連鎖する全クリップで揃える。<span class="c c1">一次</span></td></tr>
         <tr><td>音声</td><td class="num">32 kHz ステレオ</td><td>映像と同一パスで同時生成。<strong>クリップごとに独立した音世界が立ち上がる</strong>。ffmpeg で音を触るときの基準値。<span class="c c1">一次</span></td></tr>
-        <tr><td>参照音声(Ref2VA)</td><td class="num">最大 3 本 / 各 2〜15 秒 / 合計 15 秒以内</td><td><strong>1 分の台詞を丸ごとは渡せない</strong>。クリップ単位でスライスする運用になる → §6。<span class="c c1">一次</span></td></tr>
+        <tr><td><strong>Ref2VA の参照上限</strong></td><td class="num">画像 最大 9 枚 / 動画 最大 3 本 / 音声 最大 3 本</td><td>動画・音声は各 2〜15 秒。<strong>画像が 9 枚も使える</strong>のは大きい — キャラシート・環境・小道具・絵コンテを同時に渡せる(§11e)<span class="c c2">一致</span></td></tr>
+        <tr><td>参照音声の合計</td><td class="num">合計 15 秒以内</td><td><strong>1 分の台詞を丸ごとは渡せない</strong>。クリップ単位でスライスする運用になる → §6。<span class="c c1">一次</span></td></tr>
         <tr><td>対応言語</td><td class="num">11 言語(<strong>日本語を含む</strong>)</td><td>アラビア語 / 中国語 / 英語 / 仏 / 独 / 伊 / <strong>日</strong> / 韓 / 葡 / 露 / 西。いずれもリップシンク付き。<strong>プロンプトで言語を明示する</strong>(§11d)<span class="c c2">一致</span></td></tr>
         <tr><td>精度</td><td class="num">BF16</td><td>公式の配布精度。量子化はここからの派生。<span class="c c1">一次</span></td></tr>
         <tr><td>ComfyUI 要件</td><td class="num">0.30.0 以降</td><td>継続系ノードはさらに新しいビルドを要求する(§5)。<span class="c c3">要検証</span></td></tr>
@@ -497,6 +499,12 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
   <div class="box warn">
     <div class="box-title">尺が決まって見えてきたこと</div>
     <p style="margin:0">継ぎ目が 4 つあるということは、<strong>音声の劣化が 4 回累積する</strong>ということです。§5 の継続系ノードはいずれも README 自身で「連鎖を重ねると音がこもる」と認めています。<strong>1 分という尺は、音声を潜在継続だけで通すには微妙なライン</strong>で、§6 の第 4 段(音を別トラックにする)を最初から選択肢に入れておくべき長さです。逆に 30 秒なら継ぎ目 2 つなので、潜在継続だけで通せる可能性がかなり上がります。</p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">「クリップ」と「ショット」は別物です</div>
+    <p style="margin:0">このノートは長らく「1 クリップ = 1 ショット」を前提にしてきましたが、<strong>絵コンテを 1 枚の参照画像として渡せば、1 クリップの中に複数ショットを入れられます</strong>(§11e)。<br>
+    <strong>継ぎ目の数は下の表のまま変わりません</strong>(VRAM とクリップ長で決まるので)。変わるのは<strong>カット割りをクリップの内側に収められる</strong>ことです。つまり<strong>繋ぎ目を増やさずにカット割りができる</strong>。下の設計はそのまま使いつつ、各クリップの中身を豊かにできる、と読んでください。</p>
   </div>
 
   <h3>カット割りが混ざるなら、連鎖は短く切れる</h3>
@@ -736,6 +744,7 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
       <tbody>
         <tr><td><strong>ComfyUI-MiniMax-H3-Extend</strong>(kat3ri / 通称 Kate)</td><td><strong>動画 2 で使われているノード</strong>(§11b)。<code>MiniMaxH3VideoExtendPatched</code> と <code>MiniMaxH3EncodeAVPatched</code> の 2 つ。後者が映像フレームと<strong>任意の音声</strong>を AV 潜在に符号化し、前者の <code>context_latent</code> に渡す。推奨値は <code>context_frames</code> 2 / <code>ref_spacing</code> 1〜2 / <code>ref_decay</code> 0.3 / <code>ref_ramp</code> 3〜4(動きが激しいクリップは 5〜6)。<code>custom_nodes/</code> に clone して再起動するだけ、コア改変なし <span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-H3-Motion-Context-MultiRef</strong>(seitanism)</td><td><strong>動画 3 で使われているパック</strong>(§11c)。NikoDemon80 版のフォークで、<strong>任意位置の複数キーフレーム</strong>、既存動画の差し込み、V2V モーション転写、<strong>H3 の 40Hz オーディオグリッドを正確に扱う音声処理</strong>。<strong>2026-08-30 に Update 8</strong> と非常に活発 <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>ComfyUI-MiniMaxH3-Director</strong>(seesee75-commits)</td><td>ComfyUI 内の<strong>タイムラインエディタ</strong>。トラックにメディアを置いて尺を調整し、ショットごとにプロンプトを付ける。<code>[Shot N]</code> 記法と <code>detailed_description</code> で<strong>プロンプトを自動生成</strong>。<strong>被写体スロット 9 個</strong>、retention マーカー、<strong>リテイク(範囲だけ再生成して繋ぎ直す)</strong>、ライブプレビュー。<strong>fp8 で 480p〜768p なら VRAM 16GB から</strong>、ディスクは約 60GB <span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-sol-attn</strong>(Saganaki22)</td><td><strong>RTX 40 系(SM89)対応・4080 SUPER で確認済み</strong>。SageAttention 比 1.38〜2.33 倍、attention で 1.3〜2.7 GiB 削減、<code>MiniMax H3 Chunk FeedForward</code> で <strong>MLP ピーク VRAM −37%</strong>。Windows 可、Triton 3.6.0 <span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-MiniMax-H3-LongMedia</strong>(vizart-vj)</td><td><strong>低 VRAM + 長尺 + リップシンクを名指しで狙った唯一のもの。</strong>INT8 K/V 圧縮、チャンク化 MLP、VRAM ガード。<strong>16GB は 7〜10 秒</strong>が目安(§8)。<strong>リップシンクモードはソース音声でタイミングを合わせ、元の音声トラックをそのまま復元する</strong> → §6 の解釈 (a) にあたる <span class="c c1">一次</span></td></tr>
         <tr><td><strong>Minimax H3 Latent Upscaler</strong>(LBH-123-AI)</td><td>24ch 潜在を学習済みネットで 1.0〜4.0 倍にアップスケール。<strong>5B パラメータの VAE decode/encode 往復を飛ばす</strong>ので速い。2D(高速)と 3D(時間方向も整合)の 2 ノード。<strong>時間は節約するが VRAM は節約しない</strong>と作者が明記 <span class="c c1">一次</span></td></tr>
@@ -838,6 +847,13 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
     <div class="box-title">ただし、声と人物の紐づけはプロンプト次第</div>
     <p style="margin:0">参照を 2 本渡しただけでは、H3 はどちらが誰の声かを知りません。<strong>MiniMax が公開している推奨プロンプトテンプレート</strong>に「被写体定義」のセクションがあり、そこで「これは被写体 N 番の声色参照である」と明示します。動画の作者はこれで<strong>「結果が完全に変わった」</strong>と述べています(§11)。<br>
     <strong>これが §12 の「未取得」に置いてある Hugging Face のプロンプト指針です。PC で最初に開いてください。</strong>ここを外すと、他を全部正しくやっても §11 の "disaster"(キャラがシーン説明文を読み上げる、声が入れ替わる)が再現します。</p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">構造は 2 つの独立した情報源で一致しています</div>
+    <p style="margin:0"><strong>① 被写体の定義 → ② 要約(読み順・アクションの連鎖)→ ③ retention(参照をどれだけ厳密に保つか)→ ④ 詳細記述 → ⑤ 制約と音声要件</strong>(§11e)。<br>
+    §11b で別経路から拾ったセクション名(subject definitions / summary / retention analysis / detailed description / soundscape / non-diegetic music)と対応します。<strong>これが H3 の期待する形</strong>と考えてよさそうです。<br>
+    もう一つのコツ: <strong>すべての参照に「役割」を名前で与える</strong> — 画像は外見や構図、動画は動きやカメラ、音声は声や音。そのうえで H3 が何を <strong>retain / transfer / change / 緩い参照として扱う</strong> かを書き分けます <span class="c c2">一致</span>。</p>
   </div>
 
   <h3 style="color:var(--risk)">台詞の尺を合わせる — 見落としやすい罠</h3>
@@ -1244,8 +1260,20 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <p>普通のアップスケーラは<strong>完成した映像を後からシャープにする</strong>ものですが、これは違います。<strong>H3 のサンプラーとサンプラーの「間」で潜在の空間次元を 2 倍にし、フル解像度でデノイズを続ける</strong> — つまり高解像度の絵を「描き直させる」ので、後付けのシャープ化とは別物です <span class="c c1">一次</span>。</p>
 
   <div class="box">
-    <div class="box-title">推奨レシピ</div>
-    <p style="margin:0"><strong>低解像度で 25 ステップのフルパス → 2× 潜在アップスケール → 8 ステップの二回目パス</strong> <span class="c c3">要検証</span></p>
+    <div class="box-title">レシピは 2 通りあります — 別物なので両方試す価値があります</div>
+    <div class="scroll" style="margin:10px 0 0">
+      <table>
+        <thead><tr><th style="width:22%"></th><th style="width:39%">A: フルパス + 仕上げ</th><th>B: 総ステップを分割</th></tr></thead>
+        <tbody>
+          <tr><td>一段目</td><td>低解像度で <strong>25 ステップ</strong>(フルパス)</td><td><strong>0.2MP(16:9 で約 608×352)</strong>で、<strong>総 8 ステップのうち high sigmas 側だけ</strong></td></tr>
+          <tr><td>アップスケール</td><td>2×</td><td>3D 版の FP16。<strong>デコードせず</strong>直接渡す</td></tr>
+          <tr><td>二段目</td><td><strong>8 ステップ</strong>の仕上げ</td><td>残りのステップ。最終 1344×768</td></tr>
+          <tr><td>サンプラー</td><td>—</td><td><code>Euler</code> / <code>Simple</code></td></tr>
+          <tr><td>出典</td><td>§8d の一次情報 <span class="c c3">要検証</span></td><td>§11e(絵コンテ動画の実演)<span class="c c1">一次</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-bottom:0"><strong>16GB なら B から</strong>。一段目が 0.2MP と非常に軽く、総ステップも 8 で済みます。A は総 33 ステップ相当なので重いはずです。</p>
   </div>
 
   <div class="scroll">
@@ -1335,6 +1363,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>MiniMax 推奨のプロンプトテンプレートを使う。</strong>被写体定義 / 要約 / retention 分析 / 詳細記述 / サウンドスケープ / 非ダイエジェティック音楽 の各セクションを埋める。これを外すと<strong>キャラがシーン説明文を読み上げる</strong></td><td>§11 / §11b</td></tr>
         <tr><td><strong>否定形は効かない。</strong>無音がほしいときは「口を閉じて静かに黙考している」と<strong>肯定形で状態を描写</strong>する</td><td>§6 / §11</td></tr>
         <tr><td>参照は<strong>番号で明示的に紐づける</strong>(「〈画像 1〉から人物・服・環境を保つ」「〈音声 2〉は被写体 3 番の声色参照」など)</td><td>§5 / §11</td></tr>
+        <tr><td><strong>プロンプトは 5 層で書く:</strong> 被写体定義 → 要約(読み順・アクション連鎖)→ retention → 詳細記述 → 制約と音声。2 つの独立した情報源が一致</td><td>§6 / §11e</td></tr>
+        <tr><td><strong>すべての参照に「役割」を名前で与える。</strong>画像=外見/構図、動画=動き/カメラ、音声=声/音。何を retain / transfer / change するかを書き分ける</td><td>§6</td></tr>
         <tr><td>同じサウンドスケープの記述を<strong>全クリップのプロンプトに入れる</strong>。入れないと継ぎ目で環境音がリセットする</td><td>§6</td></tr>
         <tr><td>継ぎ目で<strong>矛盾する音の指示を書かない</strong></td><td>§6</td></tr>
         <tr><td>FL2VA と Ref2VA の<strong>アダプタを混ぜない</strong>。一方の shift を他方に流用しない</td><td>§5</td></tr>
@@ -1395,6 +1425,10 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>複数出力は右下の <strong>assets パネル</strong>に溜まる(メインのプレビューには 1 本しか出ない)</td><td>§11</td></tr>
         <tr><td>最初のセグメントは<strong>公式ノードで生成</strong>すればよい(ゼロから作るので継続用ノードは不要)</td><td>§11b</td></tr>
         <tr><td><strong>キーフレームは first/last だけでなく任意の位置に任意個</strong>置ける。position 値を編集するだけ</td><td>§11c</td></tr>
+        <tr><td><strong>絵コンテを 1 枚の参照画像にすると、1 クリップ内に複数ショットを入れられる。</strong>H3 は左→右・上→下に読む。<strong>繋ぎ目を増やさずにカット割りができる</strong></td><td>§11e / §2b</td></tr>
+        <tr><td>絵コンテは <strong>REF2V</strong> で使う。<strong>FL2V では扱えない</strong></td><td>§11e</td></tr>
+        <tr><td><strong>絵コンテ生成時にビジュアルスタイルを必ず指定する。</strong>忘れると鉛筆画の絵コンテが出てくる。ただし鉛筆画でも「最終はフォトリアル」と書けば成立し、<strong>モデルの自由度は上がる</strong></td><td>§11e</td></tr>
+        <tr><td>Ref2VA の参照上限は<strong>画像 9 枚 / 動画 3 本 / 音声 3 本</strong></td><td>§2</td></tr>
         <tr><td>Multi-Ref パックの <code>Video Masked Motion Context</code> は <strong>context length 39 がたいていベスト</strong><span class="c c3">要検証</span></td><td>§11c</td></tr>
         <tr><td>KJ nodes の <code>Image Batch Extend with Overlap</code> がシーン間のブレンドに効く</td><td>§11c</td></tr>
         <tr><td><strong>自分が生成したものでない既存動画も延長できる</strong></td><td>§11c</td></tr>
@@ -1547,6 +1581,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <li>attention ノードを 1 つ入れて、速度差を測る(<strong>1 つずつ</strong>。併用規則は §8)</li>
         <li><strong>EasyCache を使うなら <code>end_percent</code> を 0.65〜0.70 に</strong>してから測る(既定 0.95 のままだと顔がピクセル化します)</li>
         <li><strong>同じ設定でシードだけ変えて 2〜3 本引く。</strong>2 本目以降が目に見えて速いか(conditioning キャッシュが効いているか / §8)</li>
+        <li><strong>絵コンテ方式を 1 回試す</strong> — 3〜4 パネルの絵コンテを 1 枚作って Ref2V に渡し、<strong>1 クリップ内でカットが割れるか</strong>を見る(§11e)。成立すれば設計が大きく楽になります</li>
       </ul>
     </div>
   </div>
@@ -1918,6 +1953,101 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <h3>実測時間</h3>
   <p><strong>8GB VRAM で、640p / 10 秒 / 14 分 4 秒</strong>。単純に外挿すると 1 分で約 84 分です。<strong>あなたの 16GB なら、これより有利な条件から始められます</strong> — §2b の時間予算(低解像度で 1 分あたり約 28 分)と矛盾しない範囲に収まっています。</p>
 </section>
+<section id="s11e">
+  <span class="sec-label">動画 5</span>
+  <h2>1 クリップに 6 ショット</h2>
+
+  <div class="box">
+    <div class="box-title">出典</div>
+    <p style="margin:0"><strong>Master Storyboard-to-Video in MiniMax H3: 6-Grid Reference Guide</strong> — <code>https://youtu.be/LByGCGzu67o</code> 字幕全文から要約 <span class="c c1">一次</span></p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">これは前提を一つ壊します</div>
+    <p style="margin:0">このノートはずっと<strong>「1 クリップ = 1 ショット」</strong>を暗黙の前提にしてきました。<strong>それが崩れます。</strong><br>
+    <strong>1 枚の画像に 6 コマの絵コンテを敷き詰めて Ref2V に渡すと、H3 はそれを左→右・上→下の順に読み、1 本の連続した多カット動画にします。</strong> 単に 1 枚の絵を動かすのではなく、<strong>6 枚のパネルを 1 本のアクションの連鎖として再構成する</strong>、というのが実演の主張です。</p>
+  </div>
+
+  <h3>何がどこまでできたか</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">テスト</th><th style="width:34%">内容</th><th>結果</th></tr></thead>
+      <tbody>
+        <tr><td>1 人・ゆっくり</td><td>茶を淹れる 6 工程</td><td><strong>成功。</strong>ほぼ全ショットが絵コンテのパネルに対応</td></tr>
+        <tr><td>1 人・激しい動き</td><td>屋上でストリートダンス。ロング → 全身 → ローアングル → 俯瞰 → 回転 → クローズアップ</td><td><strong>成功。</strong>髪・上着・スカートに慣性が出て、ショットの切り替わりも滑らか</td></tr>
+        <tr><td>2 人・接触なし</td><td>雨の夜のバイクレース</td><td><strong>成功。</strong>赤い服=赤いバイク、青い服=青いバイクが<strong>入れ替わらない</strong></td></tr>
+        <tr><td>2 人・接触あり</td><td>リング内の格闘。組み合い、腕の制御、体勢の入れ替え</td><td>最難関。細部は完璧ではないが、<strong>アクションの連鎖・ショット順・二人の関係はよく保たれた</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">あなたの 1 分にとって何を意味するか</div>
+    <p>「クリップ」と「ショット」が<strong>別物になります</strong>。継ぎ目(クリップ境界)の数は VRAM とクリップ長で決まるので変わりませんが、<strong>カット割りをクリップの<em>内側</em>に収められる</strong>ようになります。</p>
+    <p style="margin-bottom:0">§2b で「カット割りは技術的な劣化リセットになる」と書きましたが、<strong>そのカット割りが、繋ぎ目を増やさずに実現できる</strong>ということです。同じ継ぎ目の数で、ずっと豊かな映像になります。<br>
+    <strong>ただし台詞主役では割り過ぎに注意。</strong> 15 秒に 6 ショットなら 1 ショット 2.5 秒で、台詞には短すぎます。<strong>台詞のあるシーンは 3〜4 パネル</strong>くらいが現実的でしょう <span class="c c3">要検証(私の推論)</span>。</p>
+  </div>
+
+  <h3>絵コンテ画像の作り方</h3>
+  <ul>
+    <li>画像生成モデルで作る。<strong>まずキャラクターシートを与える</strong>(顔・髪型・服・体型を理解させる)</li>
+    <li>プロンプトは単純でよい — 「6 パネルの絵コンテ」と明示し、キャラ・シーン・中心のアクションを書く。残りはモデルに任せる</li>
+    <li><strong>見落としやすい落とし穴: ビジュアルスタイルを必ず指定する。</strong> 指定しないと<strong>鉛筆画・線画の絵コンテ</strong>が出てきます(伝統的な絵コンテはそう描かれるため)</li>
+  </ul>
+
+  <div class="box tint">
+    <div class="box-title">失敗から出た、むしろ面白い知見</div>
+    <p style="margin:0">スタイル指定を忘れて鉛筆画の絵コンテになったとき、動画側では参照が弱くなりました。<strong>ところが、プロンプトで「最終シーンはフォトリアル」と明示すると、鉛筆画の絵コンテからフォトリアルな動画が生成できました。</strong><br>
+    そしてその場合、<strong>モデルの創作の自由度が上がります</strong> — スケッチは輪郭だけを決め、細部はモデルに委ねられるからです。<strong>絵コンテの作り込みと、モデルの自由度はトレードオフ</strong>だ、という整理ができます。</p>
+  </div>
+
+  <h3 style="color:var(--accent-ink)">プロンプトの 5 層構造 — §6 のテンプレートの裏付け</h3>
+  <p>推奨されているプロンプトの層構造が、§11b で Calliope から拾ったセクション名と<strong>ほぼ一致しました</strong>。別経路からの独立した裏付けです。</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:12%">層</th><th style="width:30%">名前</th><th>中身</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td><strong>被写体の定義</strong></td><td>キャラ・服・環境・重要な小道具を<strong>それぞれ別のオブジェクトとして</strong>扱う</td></tr>
+        <tr><td class="num">2</td><td><strong>要約</strong></td><td>動画の種類、総尺、<strong>絵コンテの読み順</strong>、アクションの連鎖全体</td></tr>
+        <tr><td class="num">3</td><td><strong>retention</strong></td><td><strong>参照情報をどれだけ厳密に保つか</strong></td></tr>
+        <tr><td class="num">4</td><td><strong>詳細記述</strong></td><td>アクションの全シーケンス</td></tr>
+        <tr><td class="num">5</td><td><strong>制約と音声要件</strong></td><td>守らせたい制約と、音の指定</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">§11b の「subject definitions / summary / retention analysis / detailed description / soundscape + non-diegetic music」と対応します。<strong>2 つの独立した情報源が同じ構造を指している</strong>ので、これが H3 の期待する形と考えてよさそうです。</p>
+
+  <h3>技術構成 — 具体的な数値が出ています</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:30%">項目</th><th>値</th></tr></thead>
+      <tbody>
+        <tr><td>モード</td><td><strong>REF2V(参照生成モデル)。FL2V は使えません</strong> — 絵コンテは first/last frame ではないので</td></tr>
+        <tr><td>主モデル</td><td><strong>H3 Eros Max</strong>(約 40GB)。<strong>LoRA ではなく主モデルで、Turbo 加速がマージ済み</strong>。加速 LoRA を別途読む必要がない</td></tr>
+        <tr><td>加速 LoRA を使わない理由</td><td>Ref2V 向けの LightX2V の加速 LoRA は <strong>4 ステップ版 v0.1 のみ</strong>で、<strong>複雑な動きと細部で品質がやや落ちる</strong>ため</td></tr>
+        <tr><td>VAE / テキストエンコーダ</td><td>公式ワークフローのものをそのまま使える</td></tr>
+        <tr><td>attention</td><td><code>Model Attention Backend</code> で <strong>Comfy Kitchen Attention</strong>(§8 と一致)</td></tr>
+        <tr><td>最終解像度</td><td class="num">1344×768 / 24fps</td></tr>
+        <tr><td><strong>一段目の解像度</strong></td><td class="num"><strong>0.2 メガピクセル</strong>。16:9 で約 <strong>608×352</strong></td></tr>
+        <tr><td>サンプラー / スケジューラ</td><td><code>Euler</code> / <code>Simple</code></td></tr>
+        <tr><td><strong>ステップ配分</strong></td><td><strong>合計 8 ステップを 2 段に分割。一段目は high sigmas のみ</strong></td></tr>
+        <tr><td>アップスケーラ</td><td><strong>3D 版の FP16</strong>。空間と時間を同時に処理するので結果が良い(計算は増える)</td></tr>
+        <tr><td>受け渡し</td><td>一段目のあと<strong>デコードせずに</strong>直接アップスケールノードへ</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">16GB での注意</div>
+    <p style="margin:0"><strong>Eros Max は約 40GB の主モデル</strong>なので、そのままでは 16GB に載りません。量子化版を探すか、公式の Turbo Ref2V(4 ステップ)を使うことになります。<strong>ただし 4 ステップは §8d の破綻報告と衝突します</strong> — この動画の作者が加速 LoRA を避けた理由もそこにあります。<br>
+    <strong>16GB での現実解は「Turbo Ref2V を 8 ステップで回す」あたりになりそう</strong>ですが、これは推論です <span class="c c3">要検証</span>。§9 の実験 3 で確かめる項目に入れてください。</p>
+  </div>
+
+  <div class="box tint">
+    <p style="margin:0"><strong>一段目 0.2MP(608×352)という値は、あなたにとって朗報です。</strong> §8d の二段サンプリングを「低解像度 25 ステップ → 8 ステップ」と書きましたが、<strong>こちらは合計 8 ステップを分割するだけ</strong>。しかも一段目が 0.2MP なら 16GB でも軽い。<strong>二つのレシピは別物なので、両方試す価値があります</strong>(§8d)。</p>
+  </div>
+</section>
+
 
 
 
@@ -1997,6 +2127,18 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li><a href="https://github.com/xiaolibai-sys/ComfyUI-MiniMaxH3">xiaolibai-sys / ComfyUI-MiniMaxH3</a> — H3 の映像・音声生成ノード</li>
   </ul>
 
+  <h3>動画 5 と、そこから辿ったもの</h3>
+  <ul>
+    <li><strong><a href="https://youtu.be/LByGCGzu67o">動画 5 本編(字幕全文を受領・§11e の出典)</a></strong> — Master Storyboard-to-Video in MiniMax H3 <span class="c c1">一次</span></li>
+    <li><a href="https://github.com/seesee75-commits/ComfyUI-MiniMaxH3-Director">seesee75-commits / ComfyUI-MiniMaxH3-Director</a> <span class="c c1">一次</span> — タイムラインエディタ。<strong>fp8 なら VRAM 16GB から</strong>という記載の出典</li>
+    <li><a href="https://civitai.com/models/2851079/h3-eros-max">Civitai — H3 Eros Max(Turbo マージ済みの主モデル)</a>(未取得)</li>
+    <li><a href="https://comfyui-wiki.com/en/news/2026-08-13-minimax-h3-turbo-ref2v">ComfyUI Wiki — Turbo Ref2V v0.1(4 ステップ)</a>(未取得)</li>
+    <li><a href="https://huggingface.co/PulpCut/MiniMax-H3-Ref2VA-Turbo-INT8-ConvRot">PulpCut / MiniMax-H3-Ref2VA-Turbo-INT8-ConvRot</a>(未取得。INT8 版)</li>
+    <li><a href="https://www.rundiffusion.com/minimax-h3-prompt-guide">RunDiffusion — プロンプトガイド(参照画像・声・絵コンテ)</a>(未取得)</li>
+    <li><a href="https://github.com/wildminder/awesome-minimax-H3">wildminder / awesome-minimax-H3</a> — もう一つのキュレーションリスト</li>
+    <li><a href="https://civitai.com/models/2834514/minimax-h3-t2v-i2v-ref2v-advanced-filmmaking-workflow-or-all-speedups-qol-features">Civitai — Advanced Filmmaking Workflow(全速度化 + QoL)</a>(未取得)</li>
+  </ul>
+
   <h3>動画 4 と、そこから辿ったもの</h3>
   <ul>
     <li><strong><a href="https://youtu.be/GYP_4QYOSvk">動画 4 本編(字幕全文を受領・§11d の出典)</a></strong> — MiniMax-H3 I2V with Reference Audio on 8GB VRAM <span class="c c1">一次</span></li>
@@ -2051,8 +2193,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 11 版 2026-08-30(<strong>4 本目の動画</strong>を §11d に追加。<strong>EasyCache は「使うな」ではなく <code>end_percent</code> を 0.65〜0.70 に下げて使う</strong>に改訂し、壊れるのは主に音声で映像はほぼ無傷である点、音声差し替え方式なら欠点が無関係になる点を追記。<strong>追加シードが 950→96 秒になる無損失キャッシュ</strong>、<strong>日本語は安定サポート言語</strong>、<code>Ref Audio</code> への接続、1 クリップ 2 話者の成功例を反映。§8d に「顔と手の破綻を疑う順番」を新設)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① §9 の実験結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ 実測時間が出たあとの時間目標の設定。</p>
+  <p>初版 2026-08-30 / 第 12 版 2026-08-30(<strong>5 本目の動画</strong>を §11e に追加。<strong>「1 クリップ = 1 ショット」という前提が崩れ</strong>、絵コンテを 1 枚の参照画像にすれば繋ぎ目を増やさずにカット割りができることを反映。プロンプトの 5 層構造が 2 つの独立した情報源で一致したこと、Ref2VA の参照上限が画像 9 / 動画 3 / 音声 3 であること、二段サンプリングにもう一つのレシピ(総 8 ステップを分割・一段目 0.2MP)があることを追加。Director(16GB から動く)も §5 に収録)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① §9 の実験結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ 絵コンテ方式が 16GB で成立するかの確認。</p>
 </footer>
 
 </main>
