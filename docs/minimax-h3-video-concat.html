@@ -1067,7 +1067,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <table>
       <thead><tr><th style="width:24%">手段</th><th style="width:36%">速度への効果</th><th>音声への影響</th></tr></thead>
       <tbody>
-        <tr><td><strong>Turbo LoRA</strong>(4〜8 ステップ)</td><td>830 秒 → 375 秒、2.6 倍などの報告 <span class="c c2">一致</span></td><td>音質劣化の報告あり。<strong>ただし自前音声を使うなら無関係</strong> <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>Turbo LoRA</strong></td><td>830 秒 → 375 秒、2.6 倍などの報告 <span class="c c2">一致</span>。<strong>ただし 4 ステップは映像も破綻したという報告があり、8 ステップが実用下限</strong> <span class="c c3">要検証</span></td><td>音質劣化の報告あり。<strong>自前音声を使うなら音については無関係</strong>。ただし<strong>映像の破綻は救えない</strong> <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>SageAttention</strong></td><td><strong>品質 QC を通したまま 31.48% 短縮</strong>という実測(RTX 5090)<span class="c c3">要検証</span></td><td>影響の報告なし。<strong>品質を落とさない速度改善の代表例</strong></td></tr>
         <tr><td>Spectrum オプティマイザ</td><td>SolAttn 併用で I2V 5 秒が 125.3 秒 → 86.9 秒 <span class="c c3">要検証</span></td><td>同上(README に音質劣化の記載)</td></tr>
         <tr><td><code>er_sde</code> サンプラー</td><td>—</td><td><strong>音声生成にやや良い</strong>(LoRA の有無を問わず)<span class="c c3">要検証</span></td></tr>
         <tr><td>easycache × R2V</td><td>—</td><td style="color:var(--risk)"><strong>品質崩壊の報告</strong> <span class="c c3">要検証</span></td></tr>
@@ -1152,12 +1153,19 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     </table>
   </div>
 
+  <div class="box tint">
+    <div class="box-title">あなたの優先順位</div>
+    <p><strong>被写体の破綻</strong>・<strong>一貫性</strong>・<strong>精細さ</strong>の 3 つ。動きの滑らかさは優先度が低いとのことなので、補間(RIFE)は後回しにします。</p>
+    <p style="margin-bottom:0"><strong>ただし率直に言うと、この 3 つは時間予算の面で仲が悪いです。</strong> 一貫性と破綻は「タダの手」でかなり改善できますが、<strong>精細さだけは時間を買うしかありません</strong>。しかも解像度を上げると試行回数が減り、破綻や一貫性の作り込みが浅くなります(§1b)。<br>
+    <strong>だから順序は「破綻と一貫性を安い手で仕上げてから、最後に精細さを二段サンプリングで取りにいく」</strong>。これが今夕以降の方針になります。</p>
+  </div>
+
   <h3>ベースライン設定 — ここから動かす</h3>
   <div class="scroll">
     <table>
       <thead><tr><th style="width:30%">項目</th><th>値</th></tr></thead>
       <tbody>
-        <tr><td>ステップ数</td><td class="num">20(Turbo LoRA なら 4〜8)</td></tr>
+        <tr><td>ステップ数</td><td class="num">20 が既定。<strong>25 に上げるとモーション品質が向上</strong>との報告あり。Turbo LoRA なら <strong>8 が実用下限</strong>(4 は破綻報告あり)</td></tr>
         <tr><td>サンプラー</td><td><code>res_multistep</code>。他に Euler、RES multistep CFG++ が使える。<strong>音声重視なら <code>er_sde</code></strong>(§11c)</td></tr>
         <tr><td>スケジューラ</td><td><code>simple</code></td></tr>
         <tr><td>denoise</td><td class="num">1.0</td></tr>
@@ -1181,10 +1189,41 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   </div>
   <p>解像度はメガピクセルで指定します。動画 2 の本番値は <strong>0.8MP = 1216×672</strong>、テストは 480p でした(§11b)。<strong>この「テストと本番で解像度を変える」運用が、実質的にいちばん効く品質対策</strong>です — 試行回数が確保できるので。</p>
 
+  <h3 style="color:var(--accent-ink)">二段サンプリング — 精細さの本命、具体レシピ</h3>
+  <p>普通のアップスケーラは<strong>完成した映像を後からシャープにする</strong>ものですが、これは違います。<strong>H3 のサンプラーとサンプラーの「間」で潜在の空間次元を 2 倍にし、フル解像度でデノイズを続ける</strong> — つまり高解像度の絵を「描き直させる」ので、後付けのシャープ化とは別物です <span class="c c1">一次</span>。</p>
+
+  <div class="box">
+    <div class="box-title">推奨レシピ</div>
+    <p style="margin:0"><strong>低解像度で 25 ステップのフルパス → 2× 潜在アップスケール → 8 ステップの二回目パス</strong> <span class="c c3">要検証</span></p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:34%">ノード / パラメータ</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td><code>Minimax H3 Latent Upscaler (2D)</code></td><td><code>scale</code> 1.0〜4.0(既定 2.0)、<code>precision</code>。高速で時間次元は保つ</td></tr>
+        <tr><td><code>Minimax H3 Latent Upscaler (3D)</code></td><td>上記 + <code>mode</code>(倍率 / 目標寸法 / メガピクセル)、<code>keep_proportion</code>、<code>offload_after_upscale</code>。時間方向も整合</td></tr>
+        <tr><td><strong><code>MiniMax H3 Latent Upscaler + Refine (3D)</code></strong></td><td>アップスケールと二段目サンプリングが<strong>統合されたノード</strong>。<code>noise</code> / <code>sampler</code> / <code>sigmas</code> / <code>cfg</code> に加えて <code>audio_latent</code> と <strong><code>lock_audio</code></strong> を持つ</td></tr>
+        <tr><td>モデルの置き場所</td><td><code>ComfyUI/models/latent_upscale_models/</code>(ローダーが構成を自動判別)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">二段目は必ず「部分デノイズ」に</div>
+    <p style="margin:0"><strong><code>sigmas[0]</code> は 0 以上 1 未満でなければなりません。1.0 から始まるフルデノイズのスケジュールは<em>拒否されます</em></strong> <span class="c c1">一次</span>。二段目は「描き直し」ではなく「仕上げ」だからです。<br>
+    そして<strong>安くはありません</strong> — 潜在の縦横を倍にすると<strong>動画トークンは約 4 倍</strong>になります。「時間を節約するが VRAM は節約しない」というのはこのことです。<strong>16GB では二段目でこそ OOM が起きやすい</strong>ので、Chunk FeedForward(§8)を入れておいてください。</p>
+  </div>
+
+  <div class="box tint">
+    <p style="margin:0"><strong><code>lock_audio</code> に注目してください。</strong> 二段目で音声をロックできるので、<strong>§6 の音声差し替え方式と噛み合います</strong> — 映像だけ高解像度で仕上げ、音は触らない。あなたの構成にはこれが効くはずです。<span class="c c3">要検証</span></p>
+  </div>
+
   <h3 style="color:var(--risk)">ステップ数と量子化は、独立に評価できません</h3>
   <div class="box warn">
-    <p style="margin:0">9 構成を実測した記事で、<strong>20 ステップ単体では顔が破綻した int4 が、Turbo LoRA と組むと破綻が解消して最良の構成になった</strong>という結果が出ています(§8)。<br>
-    つまり<strong>「量子化を上げれば品質が上がる」とは限りません</strong>。ステップ数・量子化・Turbo LoRA の 3 つはセットで評価してください。今夕は「Q 値 × Turbo の有無」で <strong>2〜3 パターンだけ</strong>短いクリップを回して比べるのが現実的です。</p>
+    <p>9 構成を実測した記事では、<strong>20 ステップ単体では顔が破綻した int4 が、Turbo LoRA と組むと破綻が解消して最良の構成になった</strong>という結果が出ています(§8)。つまり<strong>「量子化を上げれば品質が上がる」とは限りません</strong>。</p>
+    <p style="margin-bottom:0"><strong>一方で、逆向きの報告もあります。</strong> RTX 5090 の検証では <strong>Turbo LoRA の 4 ステップ(約 5 倍速)は、R2V + int8_convrot の条件で映像・音声とも破綻</strong>したとされ、<strong>「8 ステップが現時点の実用下限」</strong>と結論づけられています <span class="c c3">要検証</span>。<br>
+    <strong>整理すると: 4 ステップは攻めすぎ。8 ステップから始めてください。</strong> そして<strong>映像の破綻は自前音声では救えません</strong> — §11c の「自前音声なら Turbo LoRA の問題は無関係」は<strong>音声についての話</strong>で、映像の破綻は別問題です。</p>
   </div>
 
   <h3>ドリフトを止める — いちばん安い品質改善</h3>
@@ -1210,7 +1249,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
       <li><strong>補間</strong> — 後処理、安い</li>
       <li><strong>速度改善</strong> — 試行回数が増えるので、間接的に品質が上がる(§1b)</li>
       <li>ステップ数・量子化の調整 — 実測が要る</li>
-      <li>解像度を上げる — <strong>いちばん高い。最後にやる</strong></li>
+      <li>解像度を上げる — <strong>いちばん高い。最後にやる</strong>(あなたが挙げた「精細さ」はここ。<strong>1〜5 を先に済ませてから</strong>)</li>
     </ol>
   </div>
 </section>
@@ -1330,7 +1369,13 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>ベースライン: <strong>20 ステップ / <code>res_multistep</code> / <code>simple</code> / denoise 1.0</strong>。Turbo なら 4〜8 ステップ<span class="c c3">要検証</span></td><td>§8d</td></tr>
         <tr><td>最適化系ノードは <strong>H3 Sigma Shift の後、guider と sampler の前</strong>に置く<span class="c c3">要検証</span></td><td>§8d</td></tr>
         <tr><td><strong>ステップ数と量子化は独立に評価できない。</strong>20 ステップで破綻した int4 が Turbo LoRA と組むと最良になった実測がある</td><td>§8d / §8</td></tr>
-        <tr><td>高解像度は<strong>潜在アップスケール + 仕上げ</strong>で取りにいく(VAE 往復を飛ばす)</td><td>§8d / §11b</td></tr>
+        <tr><td>高解像度は<strong>二段サンプリング</strong>で取りにいく:<strong>低解像度 25 ステップ → 2× 潜在アップスケール → 8 ステップ仕上げ</strong></td><td>§8d</td></tr>
+        <tr><td><strong>二段目は部分デノイズ必須</strong>(<code>sigmas[0]</code> は 1.0 未満)。フルデノイズは拒否される</td><td>§8d</td></tr>
+        <tr><td>潜在の縦横を倍にすると<strong>動画トークンは約 4 倍</strong>。<strong>二段目でこそ OOM が起きる</strong>ので Chunk FeedForward を入れておく</td><td>§8d</td></tr>
+        <tr><td><code>lock_audio</code> で二段目の音声をロックできる。<strong>音声差し替え方式と噛み合う</strong></td><td>§8d</td></tr>
+        <tr><td><strong>Turbo LoRA は 8 ステップが実用下限。</strong>4 ステップは映像も破綻した報告がある。<strong>映像の破綻は自前音声では救えない</strong></td><td>§8d / §8</td></tr>
+        <tr><td><strong>SageAttention は品質を保ったまま約 31% 短縮</strong>という実測がある。速度改善の第一候補</td><td>§8</td></tr>
+        <tr><td>20 ステップが既定。<strong>25 に上げるとモーション品質が上がる</strong>との報告</td><td>§8d</td></tr>
         <tr><td>滑らかさが欲しければ <strong>RIFE などの補間</strong>。生成後の後処理なので安い</td><td>§8d</td></tr>
         <tr><td><strong>1 回に 1 つだけ変えて、3 軸すべて記録する</strong>(所要時間 / 継ぎ目 / 破綻)</td><td>§1b / §9</td></tr>
       </tbody>
@@ -1422,7 +1467,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <div class="step-b">
       <h4 style="margin-top:2px">1 ショット通す + 設定を 2〜3 パターン比べる</h4>
       <p>連鎖の前に、<strong>1 ショットが狙いどおりに出るか</strong>と、<strong>設定の当たり</strong>を見ます。ここが速度と品質の軸の本番です。</p>
-      <p><strong>比較するのは「Q 値 × Turbo LoRA の有無」で 2〜3 通りだけ。</strong> ステップ数と量子化は独立に評価できません(§8d)。同じプロンプト・同じシードで回して、<strong>所要時間と顔の破綻</strong>を並べてください。</p>
+      <p><strong>比較するのは「Q 値 × ステップ数」で 2〜3 通りだけ。</strong> ステップ数と量子化は独立に評価できません(§8d)。同じプロンプト・<strong>同じシード</strong>で回して、<strong>所要時間と顔・手の破綻</strong>を並べてください。</p>
+      <p><strong>Turbo LoRA は 4 ステップではなく 8 ステップから</strong>試してください。4 ステップで映像も破綻したという報告があります(§8d)。まず「20 ステップ・LoRA なし」で基準を取り、それから「8 ステップ・Turbo LoRA」と比べるのが分かりやすいはずです。</p>
       <ul class="check">
         <li>テンプレートに沿ったプロンプト(被写体定義 + 声色参照の紐づけ)で 1 本生成</li>
         <li><strong>声が用意した参照に似ているか</strong></li>
@@ -1824,6 +1870,13 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 
   <h3>設定・品質</h3>
   <ul>
+    <li><a href="https://github.com/xmarre/Comfyui_Minimax_h3_latent_Upscaler">xmarre / Comfyui_Minimax_h3_latent_Upscaler</a> <span class="c c1">一次</span> — <strong>二段サンプリングのノード名・パラメータ・部分デノイズ制約</strong>の出典</li>
+    <li><a href="https://zenn.dev/toki_mwc/articles/minimax-h3-rtx5090-benchmark">zenn / toki_mwc — RTX 5090 実測、SageAttention 31.48% 短縮、Turbo LoRA 4 ステップの破綻(日本語)</a></li>
+    <li><a href="https://zenn.dev/toki_mwc/articles/minimax-h3-three-failures">zenn / toki_mwc — 機械の QC は PASS、人間の耳は FAIL(日本語)</a></li>
+    <li><a href="https://note.com/ai_0049/n/n94d8f3f6e2f9">おーら — 4step LoRA 全 6 種を同一シードで比較(日本語)</a></li>
+    <li><a href="https://jo-nike.github.io/h3-turbo-eval/">h3-turbo-eval — Turbo LoRA の比較</a></li>
+    <li><a href="https://comfyui-wiki.com/en/news/2026-08-08-minimax-h3-latent-upscaler">ComfyUI Wiki — 2x 潜在アップスケーラ</a></li>
+    <li><a href="https://comfyui-wiki.com/ja/news/2026-08-03-minimax-h3-community-quants">ComfyUI Wiki — コミュニティ量子化(GGUF Q2〜Q5 / INT4 / INT8 / NVFP)</a></li>
     <li><a href="https://www.atlascloud.ai/blog/tips/minimax-h3-comfyui-workflow">Atlas Cloud — ComfyUI ワークフロー(ベースライン設定 20 steps / res_multistep / simple)</a> <span class="c c3">要検証</span></li>
     <li><a href="https://comfyui-wiki.com/ja/news/2026-08-03-comfyui-spectrum-minimax-h3">ComfyUI Wiki — Spectrum ノードで約 30% 短縮(112.4 秒 → 86.9 秒)</a></li>
     <li><a href="https://www.minimax.io/blog/minimax-h3">MiniMax 公式ブログ — H3 の解説</a>(未取得)</li>
@@ -1860,8 +1913,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 9 版 2026-08-30(<strong>調査範囲を「クリップの結合」から「ComfyUI + H3 のパイプライン全体」に拡張</strong>。§1b「三つの軸は独立しない」と §8d「品質を上げる」を新設し、実験に 3 軸の測定シートを追加。文書名も改めました)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① §9 の実験結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ 品質のどの側面を優先するかに応じた §8d の重み付け。</p>
+  <p>初版 2026-08-30 / 第 10 版 2026-08-30(品質の優先順位を<strong>破綻・一貫性・精細さ</strong>に確定し §8d を再構成。<strong>二段サンプリングの具体レシピ</strong>(低解像度 25 ステップ → 2× 潜在アップスケール → 8 ステップ仕上げ、部分デノイズ必須、<code>lock_audio</code>)を追加。<strong>Turbo LoRA の実用下限は 8 ステップ</strong>という報告を反映し、「自前音声なら無関係」は音声限定で映像の破綻は別問題である旨を補正)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① §9 の実験結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ 実測時間が出たあとの時間目標の設定。</p>
 </footer>
 
 </main>
