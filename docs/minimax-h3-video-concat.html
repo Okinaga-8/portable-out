@@ -245,6 +245,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s11c">動画 3 — 速度と VRAM</a></li>
     <li><a href="#s11d">動画 4 — 8GB と参照音声</a></li>
     <li><a href="#s11e">動画 5 — 1 クリップに 6 ショット</a></li>
+    <li><a href="#s11f">動画 6 — 参照は 1 枚に</a></li>
     <li><a href="#s12">出典と確度</a></li>
   </ol>
 </nav>
@@ -455,7 +456,7 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
         <tr><td>解像度</td><td class="num">短辺 768 が既定</td><td>2K は再生成(regeneration)扱い。ローカルは 768p 級を前提に設計する。<span class="c c1">一次</span></td></tr>
         <tr><td>アスペクト比</td><td class="num">21:9 / 16:9 / 4:3 / 1:1 / 3:4 / 9:16</td><td>連鎖する全クリップで揃える。<span class="c c1">一次</span></td></tr>
         <tr><td>音声</td><td class="num">32 kHz ステレオ</td><td>映像と同一パスで同時生成。<strong>クリップごとに独立した音世界が立ち上がる</strong>。ffmpeg で音を触るときの基準値。<span class="c c1">一次</span></td></tr>
-        <tr><td><strong>Ref2VA の参照上限</strong></td><td class="num">画像 最大 9 枚 / 動画 最大 3 本 / 音声 最大 3 本</td><td>動画・音声は各 2〜15 秒。<strong>画像が 9 枚も使える</strong>のは大きい — キャラシート・環境・小道具・絵コンテを同時に渡せる(§11e)<span class="c c2">一致</span></td></tr>
+        <tr><td><strong>Ref2VA の参照上限</strong></td><td class="num">画像 最大 9 枚 / 動画 最大 3 本 / 音声 最大 3 本</td><td>動画・音声は各 2〜15 秒。<strong>ただし画像は「9 枚使える」であって「9 枚使うべき」ではありません</strong> — 枚数を増やすほど品質が落ちるという実測があり、<strong>1 枚のシートに集約する</strong>のが定石(§11f)<span class="c c2">一致</span></td></tr>
         <tr><td>参照音声の合計</td><td class="num">合計 15 秒以内</td><td><strong>1 分の台詞を丸ごとは渡せない</strong>。クリップ単位でスライスする運用になる → §6。<span class="c c1">一次</span></td></tr>
         <tr><td>対応言語</td><td class="num">11 言語(<strong>日本語を含む</strong>)</td><td>アラビア語 / 中国語 / 英語 / 仏 / 独 / 伊 / <strong>日</strong> / 韓 / 葡 / 露 / 西。いずれもリップシンク付き。<strong>プロンプトで言語を明示する</strong>(§11d)<span class="c c2">一致</span></td></tr>
         <tr><td>精度</td><td class="num">BF16</td><td>公式の配布精度。量子化はここからの派生。<span class="c c1">一次</span></td></tr>
@@ -745,6 +746,8 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
         <tr><td><strong>ComfyUI-MiniMax-H3-Extend</strong>(kat3ri / 通称 Kate)</td><td><strong>動画 2 で使われているノード</strong>(§11b)。<code>MiniMaxH3VideoExtendPatched</code> と <code>MiniMaxH3EncodeAVPatched</code> の 2 つ。後者が映像フレームと<strong>任意の音声</strong>を AV 潜在に符号化し、前者の <code>context_latent</code> に渡す。推奨値は <code>context_frames</code> 2 / <code>ref_spacing</code> 1〜2 / <code>ref_decay</code> 0.3 / <code>ref_ramp</code> 3〜4(動きが激しいクリップは 5〜6)。<code>custom_nodes/</code> に clone して再起動するだけ、コア改変なし <span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-H3-Motion-Context-MultiRef</strong>(seitanism)</td><td><strong>動画 3 で使われているパック</strong>(§11c)。NikoDemon80 版のフォークで、<strong>任意位置の複数キーフレーム</strong>、既存動画の差し込み、V2V モーション転写、<strong>H3 の 40Hz オーディオグリッドを正確に扱う音声処理</strong>。<strong>2026-08-30 に Update 8</strong> と非常に活発 <span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-MiniMaxH3-Director</strong>(seesee75-commits)</td><td>ComfyUI 内の<strong>タイムラインエディタ</strong>。トラックにメディアを置いて尺を調整し、ショットごとにプロンプトを付ける。<code>[Shot N]</code> 記法と <code>detailed_description</code> で<strong>プロンプトを自動生成</strong>。<strong>被写体スロット 9 個</strong>、retention マーカー、<strong>リテイク(範囲だけ再生成して繋ぎ直す)</strong>、ライブプレビュー。<strong>fp8 で 480p〜768p なら VRAM 16GB から</strong>、ディスクは約 60GB <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>ComfyUI-H3-FaceRefine</strong>(Carasibana)</td><td><strong>小さい顔を作り直す。</strong>フレームごとに顔を追跡 → 切り出して 768px キャンバスに拡大 → H3 で再生成 → 色を合わせて貼り戻す。<strong>顔が小さいほど強く再合成、大きいほど穏やかに保存</strong>。<code>crop_factor</code> 既定 2.5、<code>smooth_window</code> 21 フレーム。VRAM コストは <code>canvas² × frames</code>。<strong>あなたの最優先課題(顔の破綻)に直撃</strong> <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>ComfyUI_MinimaxH3HybridLoader</strong>(scottmudge)</td><td>FL2VA と Ref2VA のブロックを混ぜて読む。<strong>推奨はブロック 25〜49 の adaln を Ref2VA から</strong>。<strong>ピークメモリはモデル 1 個分(int8 で約 19.5GB)</strong>で 2 倍にならない(§11f)<span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-sol-attn</strong>(Saganaki22)</td><td><strong>RTX 40 系(SM89)対応・4080 SUPER で確認済み</strong>。SageAttention 比 1.38〜2.33 倍、attention で 1.3〜2.7 GiB 削減、<code>MiniMax H3 Chunk FeedForward</code> で <strong>MLP ピーク VRAM −37%</strong>。Windows 可、Triton 3.6.0 <span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-MiniMax-H3-LongMedia</strong>(vizart-vj)</td><td><strong>低 VRAM + 長尺 + リップシンクを名指しで狙った唯一のもの。</strong>INT8 K/V 圧縮、チャンク化 MLP、VRAM ガード。<strong>16GB は 7〜10 秒</strong>が目安(§8)。<strong>リップシンクモードはソース音声でタイミングを合わせ、元の音声トラックをそのまま復元する</strong> → §6 の解釈 (a) にあたる <span class="c c1">一次</span></td></tr>
         <tr><td><strong>Minimax H3 Latent Upscaler</strong>(LBH-123-AI)</td><td>24ch 潜在を学習済みネットで 1.0〜4.0 倍にアップスケール。<strong>5B パラメータの VAE decode/encode 往復を飛ばす</strong>ので速い。2D(高速)と 3D(時間方向も整合)の 2 ノード。<strong>時間は節約するが VRAM は節約しない</strong>と作者が明記 <span class="c c1">一次</span></td></tr>
@@ -1138,6 +1141,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>SageAttention</strong></td><td><strong>品質 QC を通したまま 31.48% 短縮</strong>という実測(RTX 5090)<span class="c c3">要検証</span></td><td>影響の報告なし。<strong>品質を落とさない速度改善の代表例</strong></td></tr>
         <tr><td>Spectrum オプティマイザ</td><td>SolAttn 併用で I2V 5 秒が 125.3 秒 → 86.9 秒 <span class="c c3">要検証</span></td><td>同上(README に音質劣化の記載)</td></tr>
         <tr><td><code>er_sde</code> サンプラー</td><td>—</td><td><strong>音声生成にやや良い</strong>(LoRA の有無を問わず)<span class="c c3">要検証</span></td></tr>
+        <tr><td><strong>映像と音声で shift を分ける</strong></td><td>—</td><td><strong>映像 shift 12 / 音声 shift 3 に分けると、加速 LoRA を使っても音質が改善</strong>したという報告(§11f)<span class="c c3">要検証</span></td></tr>
         <tr><td><strong>EasyCache</strong></td><td>既定で約 1.4 倍。<strong>ただし <code>end_percent</code> の調整が必須</strong>(下の項)</td><td><strong>音声を明確に劣化させる</strong>(未修正の Issue あり)。<strong>音声差し替え方式なら無関係</strong> <span class="c c1">一次</span></td></tr>
       </tbody>
     </table>
@@ -1270,10 +1274,12 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
           <tr><td>二段目</td><td><strong>8 ステップ</strong>の仕上げ</td><td>残りのステップ。最終 1344×768</td></tr>
           <tr><td>サンプラー</td><td>—</td><td><code>Euler</code> / <code>Simple</code></td></tr>
           <tr><td>出典</td><td>§8d の一次情報 <span class="c c3">要検証</span></td><td>§11e(絵コンテ動画の実演)<span class="c c1">一次</span></td></tr>
+          <tr><td colspan="3" style="background:var(--surface-2)"><strong>C:</strong> 一段目 <strong>0.2MP</strong> → 二段目 <strong>1MP</strong>(最終 1376×768)。<strong>総 12 ステップのうち一段目 6 ステップで high sigmas のみ</strong>、二段目は手動 sigma。<strong>RTX 4090 で 15 秒が 5 分ちょっと</strong>(§11f)<span class="c c1">一次</span></td></tr>
         </tbody>
       </table>
     </div>
-    <p style="margin-bottom:0"><strong>16GB なら B から</strong>。一段目が 0.2MP と非常に軽く、総ステップも 8 で済みます。A は総 33 ステップ相当なので重いはずです。</p>
+    <p style="margin-bottom:0"><strong>16GB なら B か C から</strong>。どちらも一段目が 0.2MP と非常に軽く、総ステップも 8〜12 で済みます。A は総 33 ステップ相当なので重いはずです。<br>
+    <strong>B と C の違いは二段目の解像度(C は 1MP まで上げる)とステップ配分だけ</strong>なので、まず C の数値で試し、重ければ二段目を下げる、という進め方が素直です。</p>
   </div>
 
   <div class="scroll">
@@ -1314,6 +1320,9 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
       <li><strong>量子化レベル</strong> — ただし単独では判断できない(下記)</li>
       <li><strong>参照画像</strong> — 顔が小さいカットでは、キャラクターシートを渡す効果が大きい</li>
       <li><strong>入力画像のマスク</strong> — 意図しない要素の混入を断つ(§11c)</li>
+      <li><strong>参照画像の枚数</strong> — <strong>複数枚渡していないか。1 枚のシートに集約する</strong>(§11f)</li>
+      <li><strong>肌がテカっていないか</strong> — Turbo LoRA + 二段階アップスケールの副作用。<strong>台詞のクローズアップでは de-oil 系 LoRA を使う</strong>。ただしアクションではモーションを壊すのでバイパス(§11f)</li>
+      <li><strong>それでも小さい顔が崩れるなら</strong> — <code>ComfyUI-H3-FaceRefine</code> で顔だけ切り出して作り直す(§5)</li>
     </ol>
   </div>
 
@@ -1429,6 +1438,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>絵コンテは <strong>REF2V</strong> で使う。<strong>FL2V では扱えない</strong></td><td>§11e</td></tr>
         <tr><td><strong>絵コンテ生成時にビジュアルスタイルを必ず指定する。</strong>忘れると鉛筆画の絵コンテが出てくる。ただし鉛筆画でも「最終はフォトリアル」と書けば成立し、<strong>モデルの自由度は上がる</strong></td><td>§11e</td></tr>
         <tr><td>Ref2VA の参照上限は<strong>画像 9 枚 / 動画 3 本 / 音声 3 本</strong></td><td>§2</td></tr>
+        <tr><td><strong>参照画像は枚数を増やすほど品質が落ちる。1 枚のシートに集約する。</strong>絵コンテ方式も「1 枚にまとめる」点で同じ思想</td><td>§11f / §11e</td></tr>
         <tr><td>Multi-Ref パックの <code>Video Masked Motion Context</code> は <strong>context length 39 がたいていベスト</strong><span class="c c3">要検証</span></td><td>§11c</td></tr>
         <tr><td>KJ nodes の <code>Image Batch Extend with Overlap</code> がシーン間のブレンドに効く</td><td>§11c</td></tr>
         <tr><td><strong>自分が生成したものでない既存動画も延長できる</strong></td><td>§11c</td></tr>
@@ -1478,6 +1488,11 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>EasyCache が壊すのは<strong>主に音声</strong>(映像 SSIM は 0.94〜0.96 でほぼ無傷)。<strong>音声差し替え方式なら欠点が無関係になる</strong></td><td>§8</td></tr>
         <tr><td><strong>conditioning と潜在をディスクにキャッシュすれば、追加シードは 950 秒 → 96 秒。しかも無損失</strong>。当たり探しが別物になる</td><td>§8</td></tr>
         <tr><td>20 ステップが既定。<strong>25 に上げるとモーション品質が上がる</strong>との報告</td><td>§8d</td></tr>
+        <tr><td><strong>FL2VA のほうが素の品質は高い。</strong>Ref2VA は参照能力と引き換えに品質を落としている。参照が要らない場面では FL2VA を選ぶ</td><td>§11f</td></tr>
+        <tr><td><strong>肌がテカる(オイリー)のは Turbo LoRA + 二段階アップスケールの副作用。</strong>台詞のクローズアップでは de-oil 系 LoRA を、<strong>アクションでは必ずバイパス</strong>(モーションを壊す)</td><td>§11f</td></tr>
+        <tr><td>小さい顔が崩れるなら <strong><code>ComfyUI-H3-FaceRefine</code> で顔だけ作り直す</strong></td><td>§5</td></tr>
+        <tr><td>二段階の実測値: <strong>一段目 0.2MP → 二段目 1MP、総 12 ステップ(一段目 6・high sigmas のみ)で 15 秒が RTX 4090 で 5 分ちょっと</strong></td><td>§11f</td></tr>
+        <tr><td><strong>二段階アップスケール方式は VRAM 効率が良く、16GB でも 15 秒が視野に入る可能性がある</strong>(§8 の「7〜10 秒」は別方式の目安)<span class="c c3">要検証</span></td><td>§11f</td></tr>
         <tr><td>滑らかさが欲しければ <strong>RIFE などの補間</strong>。生成後の後処理なので安い</td><td>§8d</td></tr>
         <tr><td><strong>1 回に 1 つだけ変えて、3 軸すべて記録する</strong>(所要時間 / 継ぎ目 / 破綻)</td><td>§1b / §9</td></tr>
       </tbody>
@@ -1501,6 +1516,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
       <thead><tr><th style="width:64%">ルール</th><th>出典</th></tr></thead>
       <tbody>
         <tr><td><strong>1 本の長尺として書き出さない。</strong>クリップは個別に保存し、編集で繋ぐ。部分的なやり直しが効く</td><td>§11 / §11b</td></tr>
+        <tr><td><strong>first frame を使うと、その画像が冒頭にそのまま出る。</strong>編集で最初の 0.1 秒ほどを削る</td><td>§11f</td></tr>
         <tr><td>パラメータが揃っていれば <code>concat</code> demuxer + <code>-c copy</code> で<strong>無劣化連結</strong></td><td>§7</td></tr>
         <tr><td>作業中の中間ファイルは <strong>ProRes などの準可逆</strong>で持つ(継ぎ目ごとの再エンコードが色ドリフトを作る)</td><td>§7</td></tr>
         <tr><td>継ぎ目のクリックノイズは <code>acrossfade</code> <strong>15〜30ms</strong> で消える</td><td>§7 / §6</td></tr>
@@ -1581,6 +1597,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <li>attention ノードを 1 つ入れて、速度差を測る(<strong>1 つずつ</strong>。併用規則は §8)</li>
         <li><strong>EasyCache を使うなら <code>end_percent</code> を 0.65〜0.70 に</strong>してから測る(既定 0.95 のままだと顔がピクセル化します)</li>
         <li><strong>同じ設定でシードだけ変えて 2〜3 本引く。</strong>2 本目以降が目に見えて速いか(conditioning キャッシュが効いているか / §8)</li>
+        <li><strong>二段階アップスケールで 15 秒が通るか</strong>を見る — 一段目 0.2MP / 二段目 1MP、総 12 ステップ(一段目 6・high sigmas のみ)。<strong>通れば §2b の設計が「15 秒 × 5 本」で確定します</strong>(§11f)</li>
         <li><strong>絵コンテ方式を 1 回試す</strong> — 3〜4 パネルの絵コンテを 1 枚作って Ref2V に渡し、<strong>1 クリップ内でカットが割れるか</strong>を見る(§11e)。成立すれば設計が大きく楽になります</li>
       </ul>
     </div>
@@ -2047,6 +2064,96 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <p style="margin:0"><strong>一段目 0.2MP(608×352)という値は、あなたにとって朗報です。</strong> §8d の二段サンプリングを「低解像度 25 ステップ → 8 ステップ」と書きましたが、<strong>こちらは合計 8 ステップを分割するだけ</strong>。しかも一段目が 0.2MP なら 16GB でも軽い。<strong>二つのレシピは別物なので、両方試す価値があります</strong>(§8d)。</p>
   </div>
 </section>
+<section id="s11f">
+  <span class="sec-label">動画 6</span>
+  <h2>参照は 1 枚に集約する</h2>
+
+  <div class="box">
+    <div class="box-title">出典</div>
+    <p style="margin:0"><strong>All-in-One MiniMax H3 Workflow — Best for Action Shots (T2V + I2V, Latent Upscale)</strong> — <code>https://youtu.be/rOB7rLu3Y9w</code> 字幕全文から要約 <span class="c c1">一次</span>。作者は「1,000 本近く生成し、10 以上の組み合わせを試した」と述べています。<strong>T2V + I2V(first/last frame)のワークフローで、Ref2V ではありません</strong>。</p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">動画 5 と矛盾して見えて、実は一致しています</div>
+    <p>この動画の「最大の学び」として挙げられているのは:</p>
+    <p style="margin-left:1em"><strong>参照画像は多いほど品質が落ちる。</strong>3〜4 枚上げると、1 枚のときよりずっと悪くなる。<strong>すべてのディテールを 1 枚の画像に詰め込んで渡す</strong>のが最高品質の秘訣。</p>
+    <p style="margin-bottom:0">一見すると「絵コンテを渡す」動画 5 と別の話に見えますが、<strong>動画 5 も 6 コマを<em>1 枚の画像</em>にまとめて渡していました</strong>。<strong>二つは同じことを言っています</strong> — 参照は複数枚に分けず、1 枚に集約する。<br>
+    §2 に「Ref2VA は画像を 9 枚まで受け付ける」と書きましたが、<strong>受け付けることと、使うべきことは別</strong>でした。<strong>キャラ・環境・小道具・構図は、1 枚のシートに詰め込む。</strong></p>
+  </div>
+
+  <h3>モデル選択 — FL2VA のほうが素の品質は高い</h3>
+  <p>使っているのは <strong>FL2VA と Ref2VA のハイブリッド</strong>。調べたところ、これは実在するマージで、中身も分かりました <span class="c c1">一次</span>。</p>
+  <ul>
+    <li><strong>FL2VA</strong> は first/last キーフレーム条件付けのみで学習されており、<strong>映像・音声の品質が明確に高い</strong></li>
+    <li><strong>Ref2VA</strong> はマルチモーダル参照条件付けも学習しているが、<strong>学習品質の問題が文書化されている</strong></li>
+    <li>ハイブリッドは <strong>FL2VA をベースに、transformer ブロック 25〜49 の <code>adaln_proj</code> を Ref2VA のものに差し替える</strong>。<strong>ウェイトの 97% 超はビット同一かコサイン 0.9997 以上</strong>で、意味のある差は AdaLN 変調投影と出力ヘッドだけ</li>
+  </ul>
+  <div class="box warn">
+    <p style="margin:0"><strong>これは設計判断に効きます。</strong> 「参照が使えるから Ref2VA」と単純に選ぶと、<strong>品質を落としている</strong>可能性があります。参照条件付けが要らない場面では FL2VA、要る場面ではハイブリッド、という使い分けが筋です。<br>
+    ローダーは <code>ComfyUI_MinimaxH3HybridLoader</code>。<strong>ピークのメモリはモデル 1 個分(int8 で約 19.5GB)で、2 倍にはなりません</strong> — システム RAM 64GB のあなたなら問題ない範囲です <span class="c c1">一次</span>。</p>
+  </div>
+
+  <h3 style="color:var(--risk)">Turbo LoRA の評価が、動画 5 と割れています</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:22%">情報源</th><th style="width:20%">モード</th><th>評価</th></tr></thead>
+      <tbody>
+        <tr><td>動画 6(この動画)</td><td>T2V + I2V(FL2V)</td><td><strong>LightX2V の最初の 4-step v0.1 が最良だった</strong>(作者自身が驚いている)</td></tr>
+        <tr><td>動画 5</td><td>Ref2V</td><td><strong>Ref2V 向けの 4-step v0.1 は複雑な動きと細部で品質が落ちる</strong>ので使わない</td></tr>
+        <tr><td>§8d の実測(RTX 5090)</td><td>R2V + int8_convrot</td><td><strong>4 ステップは映像・音声とも破綻。8 ステップが実用下限</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>整理すると、割れているのは「モード」です。</strong> FL2V 系では 4 ステップが通り、Ref2V 系では通らない、という読み方ができます。<strong>あなたは Ref2V 側を使う可能性が高いので、8 ステップから</strong>という §8d の方針は変えません。ただし FL2V を使う場面があるなら 4 ステップも試す価値があります。</p>
+
+  <h3>de-oil LoRA — 台詞主役のあなたに直接効きます</h3>
+  <div class="box tint">
+    <p style="margin:0"><strong>Turbo LoRA と二段階アップスケールを組み合わせると、肌が「オイリー(テカった)」質感になる</strong>という指摘です。それを打ち消す de-oil LoRA を使うのですが、<strong>使い分けが明確</strong>です。</p>
+    <ul style="margin-bottom:0">
+      <li><strong>クローズアップの顔ショットにだけ使う。</strong> 顔が大きく映る動画なら有効</li>
+      <li><strong>顔が小さいなら不要</strong></li>
+      <li><strong>モーションを壊すので、アクションショットでは必ずバイパス</strong></li>
+      <li><strong>トーキングショットでは使う</strong> ← <strong>あなたの用途はここ</strong></li>
+    </ul>
+  </div>
+  <p class="cap">de-oil LoRA そのものは Web 検索では特定できませんでした <span class="c c3">要検証</span>。ただし <strong>oily skin 問題は既知</strong>で、専用の解説動画も存在します。近い代替として <code>fal/MiniMax-H3-Realism-People-LoRA</code>(クローズアップに耐える顔、自然な肌の質感)があります。</p>
+
+  <h3 style="color:var(--accent-ink)">音声の shift を映像と分ける — Turbo LoRA の音質問題への対処</h3>
+  <div class="box tint">
+    <p style="margin:0"><strong>dual clock assembler と native flow を使い、映像は shift 12、音声は shift 3 に分けている</strong>と述べています。<strong>これによって加速 LoRA を使っても音質が改善した</strong>とのこと <span class="c c3">要検証</span>。<br>
+    §8 でずっと「Turbo LoRA は音質を落とす」と書いてきましたが、<strong>映像と音声で shift を分ければ緩和できる</strong>可能性があります。音声を差し替えるあなたには必須ではありませんが、<strong>H3 の生成音をそのまま使う場面が出てきたら思い出す価値があります</strong>。</p>
+  </div>
+
+  <h3>二段階の設定 — 3 つ目のレシピ</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">項目</th><th>値</th></tr></thead>
+      <tbody>
+        <tr><td><strong>一段目 / 二段目の解像度</strong></td><td class="num"><strong>0.2 メガピクセル → 1 メガピクセル</strong></td></tr>
+        <tr><td>最終解像度</td><td class="num">1376×768</td></tr>
+        <tr><td><strong>ステップ配分</strong></td><td><strong>総 12 ステップ。一段目は 6 ステップで high sigmas のみ</strong>(low sigmas は使わない = 形を描くだけ)。二段目は手動 sigma</td></tr>
+        <tr><td>アップスケーラ</td><td><code>minimax H3 latent upscaler 3D FP16</code>(動画 5 と同じ)</td></tr>
+        <tr><td>attention</td><td>comfy kitchen attention(動画 3・5 と同じ。<strong>3 本が一致</strong>)</td></tr>
+        <tr><td><strong>実測</strong></td><td><strong>RTX 4090 で 15 秒が 5 分ちょっと</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">§8 の「16GB は 7〜10 秒」への反証候補です</div>
+    <p style="margin:0">作者は「<strong>古いワークフローは VRAM を食いすぎて長い動画が作れなかったが、潜在アップスケール方式ははるかに VRAM 効率が良い</strong>」とし、<strong>15 秒を余裕をもって生成できる</strong>と述べています。<br>
+    §8 に載せた「16GB は 7〜10 秒」は、<strong>二段階アップスケールを前提としない別のノードパックの目安</strong>でした。<strong>一段目が 0.2MP なら、16GB でも 15 秒が視野に入る可能性があります。</strong> §2b の設計(15 秒 × 5 本 か、10 秒 × 7 本か)は、<strong>実験 5 でこの方式を試してから決めるべき</strong>です <span class="c c3">要検証</span>。</p>
+  </div>
+
+  <h3>細かいが効く点</h3>
+  <ul>
+    <li><strong>first frame を使うと、その画像が動画の冒頭にそのまま出ます。</strong> 編集で<strong>最初の 0.1 秒ほどを削る</strong>とよい</li>
+    <li>プレビューを見て、気に入らなければ途中で止めて引き直す(§8 のシード反復と組み合わせると効く)</li>
+    <li>冒頭のデモ映像はすべて<strong>キャラクターシート 1 枚</strong>から生成されている</li>
+    <li>作者はクラウドの ComfyUI(RunningHub)で実演しており、費用を「15 秒で 1 セント強」と主張しています <span class="c c3">要検証</span>。§8b の「借りる」選択肢の一つとして頭の隅に</li>
+  </ul>
+</section>
+
 
 
 
@@ -2127,6 +2234,17 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li><a href="https://github.com/xiaolibai-sys/ComfyUI-MiniMaxH3">xiaolibai-sys / ComfyUI-MiniMaxH3</a> — H3 の映像・音声生成ノード</li>
   </ul>
 
+  <h3>動画 6 と、そこから辿ったもの</h3>
+  <ul>
+    <li><strong><a href="https://youtu.be/rOB7rLu3Y9w">動画 6 本編(字幕全文を受領・§11f の出典)</a></strong> — All-in-One MiniMax H3 Workflow <span class="c c1">一次</span></li>
+    <li><a href="https://github.com/Carasibana/ComfyUI-H3-FaceRefine">Carasibana / ComfyUI-H3-FaceRefine</a> <span class="c c1">一次</span> — <strong>小さい顔の作り直し</strong>。あなたの最優先課題に直撃</li>
+    <li><a href="https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader">scottmudge / ComfyUI_MinimaxH3HybridLoader</a> <span class="c c1">一次</span> — <strong>FL2VA と Ref2VA の品質差とマージ方法</strong>の出典</li>
+    <li><a href="https://comfyui-wiki.com/en/news/2026-08-11-minimax-h3-fl2va-ref2va-hybrid">ComfyUI Wiki — FL2VA / Ref2VA ハイブリッドマージ</a>(未取得)</li>
+    <li><a href="https://huggingface.co/fal/MiniMax-H3-Realism-People-LoRA">fal / MiniMax-H3-Realism-People-LoRA</a> — クローズアップに耐える顔・自然な肌の質感(未取得)</li>
+    <li><a href="https://huggingface.co/larryvrh/MiniMax-H3-Turbo-Lora">larryvrh / MiniMax-H3-Turbo-Lora</a>(未取得)</li>
+    <li><a href="https://www.stablediffusiontutorials.com/2026/08/minimax-h3-lora-models.html">Minimax H3 の LoRA 19 種まとめ</a>(未取得)</li>
+  </ul>
+
   <h3>動画 5 と、そこから辿ったもの</h3>
   <ul>
     <li><strong><a href="https://youtu.be/LByGCGzu67o">動画 5 本編(字幕全文を受領・§11e の出典)</a></strong> — Master Storyboard-to-Video in MiniMax H3 <span class="c c1">一次</span></li>
@@ -2193,8 +2311,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 12 版 2026-08-30(<strong>5 本目の動画</strong>を §11e に追加。<strong>「1 クリップ = 1 ショット」という前提が崩れ</strong>、絵コンテを 1 枚の参照画像にすれば繋ぎ目を増やさずにカット割りができることを反映。プロンプトの 5 層構造が 2 つの独立した情報源で一致したこと、Ref2VA の参照上限が画像 9 / 動画 3 / 音声 3 であること、二段サンプリングにもう一つのレシピ(総 8 ステップを分割・一段目 0.2MP)があることを追加。Director(16GB から動く)も §5 に収録)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① §9 の実験結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ 絵コンテ方式が 16GB で成立するかの確認。</p>
+  <p>初版 2026-08-30 / 第 13 版 2026-08-30(<strong>6 本目の動画</strong>を §11f に追加。<strong>参照画像は枚数を増やすほど品質が落ちるので 1 枚に集約する</strong>という指摘を反映し、動画 5 の絵コンテ方式と同じ思想であることを整理。<strong>FL2VA のほうが素の品質が高い</strong>こと、de-oil LoRA の使い分け、映像と音声で shift を分ける対処、二段階の 3 つ目のレシピ(0.2MP → 1MP / 総 12 ステップ)を追加。<strong>16GB でも 15 秒が視野に入る可能性</strong>を §8 の目安への反証候補として記載。FaceRefine と HybridLoader も §5 に収録)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① §9 の実験結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ 二段階方式で 16GB のクリップ長上限を確定する。</p>
 </footer>
 
 </main>
