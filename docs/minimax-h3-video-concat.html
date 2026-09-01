@@ -243,6 +243,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s11">動画 1 — 公式ノードで組む</a></li>
     <li><a href="#s11b">動画 2 — 潜在で繋ぐ</a></li>
     <li><a href="#s11c">動画 3 — 速度と VRAM</a></li>
+    <li><a href="#s11d">動画 4 — 8GB と参照音声</a></li>
     <li><a href="#s12">出典と確度</a></li>
   </ol>
 </nav>
@@ -454,6 +455,7 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
         <tr><td>アスペクト比</td><td class="num">21:9 / 16:9 / 4:3 / 1:1 / 3:4 / 9:16</td><td>連鎖する全クリップで揃える。<span class="c c1">一次</span></td></tr>
         <tr><td>音声</td><td class="num">32 kHz ステレオ</td><td>映像と同一パスで同時生成。<strong>クリップごとに独立した音世界が立ち上がる</strong>。ffmpeg で音を触るときの基準値。<span class="c c1">一次</span></td></tr>
         <tr><td>参照音声(Ref2VA)</td><td class="num">最大 3 本 / 各 2〜15 秒 / 合計 15 秒以内</td><td><strong>1 分の台詞を丸ごとは渡せない</strong>。クリップ単位でスライスする運用になる → §6。<span class="c c1">一次</span></td></tr>
+        <tr><td>対応言語</td><td class="num">11 言語(<strong>日本語を含む</strong>)</td><td>アラビア語 / 中国語 / 英語 / 仏 / 独 / 伊 / <strong>日</strong> / 韓 / 葡 / 露 / 西。いずれもリップシンク付き。<strong>プロンプトで言語を明示する</strong>(§11d)<span class="c c2">一致</span></td></tr>
         <tr><td>精度</td><td class="num">BF16</td><td>公式の配布精度。量子化はここからの派生。<span class="c c1">一次</span></td></tr>
         <tr><td>ComfyUI 要件</td><td class="num">0.30.0 以降</td><td>継続系ノードはさらに新しいビルドを要求する(§5)。<span class="c c3">要検証</span></td></tr>
         <tr><td>ライセンス</td><td>米国 / EU / 英国 / 韓国を除く地域</td><td><strong>日本は対象地域内</strong>。年商 2,000万 USD までは商用利用も無償。<span class="c c2">一致</span></td></tr>
@@ -856,7 +858,17 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
   <h3 style="color:var(--risk)">複数人が喋る場合の既知の不具合</h3>
   <div class="box warn">
     <p style="margin:0">公式リポジトリに <strong>Issue #17「Ref2VA: 複数被写体で声のアイデンティティが混ざる」</strong> が立っています。一方の声がもう一方に漏れる、片方の声が両者を支配してしまう、という報告です <span class="c c1">一次</span>。<br>
-    <strong>会話シーンを作るなら、1 カットに 1 人だけ喋らせる</strong>構成にしておくのが安全です。切り返し(ショット/リバースショット)で撮る、という古典的な作りが、そのまま技術的な回避策になります。</p>
+    <strong>ただし緩和材料があります。</strong> 動画 4 では <strong>1 クリップ内で 2 人を喋らせて成功</strong>しています(§11d)。プロンプトで被写体と音声を明示的に紐づけているのが効いていると見られます。<br>
+    <strong>「必ず分けろ」ではなく「まず 2 人で試して、混ざったら切り返しに分ける」</strong>で進めてください。</p>
+  </div>
+
+  <h3>接続と言語 — 事故の起きやすい 2 点</h3>
+  <div class="box">
+    <ul style="margin:0">
+      <li><strong>参照音声は <code>Ref Audio</code> に繋ぐ。<code>Ref Video Audio</code> ではありません</strong>(§11d)</li>
+      <li><strong>プロンプトに「日本語で話す」と明示的に書く。</strong> 日本語は 11 の安定サポート言語に入っていますが(§2)、<strong>固有名詞や数字が別の言語に化ける事故</strong>が報告されています</li>
+      <li>参照音声の実用的な長さは <strong>5〜10 秒</strong>(公式仕様は 2〜15 秒)</li>
+    </ul>
   </div>
 
   <h3>台詞は継ぎ目をまたがせない</h3>
@@ -1055,6 +1067,45 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     また <strong>KJNodes の Low VRAM Attention は <code>Model Attention Backend</code> とスタックしません</strong>(ブロック forward ごと置換するため)。<strong>まず 1 つだけ入れて効果を測り、それから足す</strong>のが安全です。</p>
   </div>
 
+  <h3 style="color:var(--risk)">EasyCache — 「使うな」ではなく「値を直して使う」</h3>
+  <p>初版で「easycache × R2V は品質崩壊」とだけ書きましたが、<strong>実態はもっと具体的で、しかも対処法があります</strong>。</p>
+
+  <div class="box warn">
+    <div class="box-title">何が壊れるのか — 音声です</div>
+    <p style="margin:0">ComfyUI の未修正の Issue によると、既定設定(<code>reuse_threshold</code> 0.2)で <strong>音声 RMS 比 0.503〜0.971、log-mel L1 0.395〜0.690</strong> という劣化が出る一方、<strong>映像の SSIM は 0.945〜0.963 でほぼ無傷</strong>です <span class="c c1">一次</span>。<br>
+    原因は<strong>映像ストリームの変化だけを見てキャッシュを判断し、同じ残差を音声にも当ててしまう</strong>こと。H3 の音声は別の sigma スケジュール(速度スケーリングが 4.0 から 0.26 まで変化する)で動いているため、位置のずれた残差を再生するとスペクトルが歪みます。<strong>Open のまま、本体では未修正</strong>です。<br>
+    <strong>つまり「低音が減ってこもる、振幅が半分」という症状は音声側の話で、映像はほぼ無事</strong>。<strong>あなたのように音声を差し替えるなら、この欠点は丸ごと無関係になります。</strong></p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title"><code>end_percent</code> を下げる — 二つの独立した実測が一致</div>
+    <p>映像側にも、後半のスキップによる <strong>weave とクロマのアーティファクト</strong>が出ます。対処は <code>end_percent</code> を下げることです。</p>
+    <div class="scroll" style="margin:10px 0">
+      <table>
+        <thead><tr><th style="width:34%">設定</th><th style="width:22%">所要時間</th><th>ビットレート(細部の量の目安)</th></tr></thead>
+        <tbody>
+          <tr><td>既定 <code>end_percent</code> 0.95</td><td class="num">369.8 秒</td><td class="num">1.80 Mbps(アーティファクト由来で高い)</td></tr>
+          <tr><td><strong>修正 <code>end_percent</code> 0.70</strong></td><td class="num">467.5 秒</td><td class="num">1.387 Mbps</td></tr>
+          <tr><td>キャッシュ無し</td><td class="num">534.2 秒</td><td class="num">1.391 Mbps</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-bottom:0"><strong>0.70 なら、キャッシュ無しとほぼ同じ画質のまま、速度向上の約 31% を残せます</strong> <span class="c c1">一次</span>。<br>
+    そして動画 4 の作者は、まったく別の環境で <strong>0.65</strong> に下げていました(顔が小さくピクセル化するため)。<strong>0.65〜0.70 が実用域</strong>と考えてよさそうです。<br>
+    既定値の目安: <code>reuse_threshold</code> 0.2 / <code>start_percent</code> 0.15 / <code>end_percent</code> 0.95 <span class="c c3">要検証</span>。</p>
+  </div>
+
+  <h3 style="color:var(--accent-ink)">同じ設定で別シードを試すのは、劇的に安くできます</h3>
+  <div class="box tint">
+    <p style="margin:0">24GB での実測(864×480 / 124 フレーム / 20 ステップ)で、conditioning と潜在をディスクにキャッシュし、モデルを常駐させることで <strong>追加シード 1 本あたり 950 秒 → 96 秒</strong> になったと報告されています。しかも<strong>出力はビット単位で同一(PSNR 無限大)= 完全に無損失</strong> <span class="c c1">一次</span>。<br>
+    <strong>これは §1b でいう「試行回数 = 品質」に直接効きます。</strong> 同じプロンプトで 10 本引き直すのが現実的になるからです。<strong>1 本目だけ我慢すれば、2 本目以降は 10 分の 1</strong>。プロンプトを固めた後の「当たり探し」が別物になります。<span class="c c3">要検証(あなたの 16GB での再現性は未知)</span></p>
+  </div>
+
+  <div class="box">
+    <div class="box-title">SageAttention の実測(参考)</div>
+    <p style="margin:0">Ampere 環境で<strong>サンプリング約 1.37 倍</strong>(9.00 s/it → 6.57 s/it)、参照比 <strong>PSNR 32.01 dB</strong> で出力はクリーン。約 56,000 トークンまでは安定。<strong>Blackwell では高トークン数でノイズが出る</strong>との注記あり <span class="c c1">一次</span>。あなたの 4080(Ada)はこの間なので、実測してみる価値があります。</p>
+  </div>
+
   <h3>Turbo LoRA — 罠ではなくなりました</h3>
   <div class="box tint">
     <div class="box-title">前版からの変更</div>
@@ -1071,7 +1122,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>SageAttention</strong></td><td><strong>品質 QC を通したまま 31.48% 短縮</strong>という実測(RTX 5090)<span class="c c3">要検証</span></td><td>影響の報告なし。<strong>品質を落とさない速度改善の代表例</strong></td></tr>
         <tr><td>Spectrum オプティマイザ</td><td>SolAttn 併用で I2V 5 秒が 125.3 秒 → 86.9 秒 <span class="c c3">要検証</span></td><td>同上(README に音質劣化の記載)</td></tr>
         <tr><td><code>er_sde</code> サンプラー</td><td>—</td><td><strong>音声生成にやや良い</strong>(LoRA の有無を問わず)<span class="c c3">要検証</span></td></tr>
-        <tr><td>easycache × R2V</td><td>—</td><td style="color:var(--risk)"><strong>品質崩壊の報告</strong> <span class="c c3">要検証</span></td></tr>
+        <tr><td><strong>EasyCache</strong></td><td>既定で約 1.4 倍。<strong>ただし <code>end_percent</code> の調整が必須</strong>(下の項)</td><td><strong>音声を明確に劣化させる</strong>(未修正の Issue あり)。<strong>音声差し替え方式なら無関係</strong> <span class="c c1">一次</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -1226,6 +1277,18 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <strong>整理すると: 4 ステップは攻めすぎ。8 ステップから始めてください。</strong> そして<strong>映像の破綻は自前音声では救えません</strong> — §11c の「自前音声なら Turbo LoRA の問題は無関係」は<strong>音声についての話</strong>で、映像の破綻は別問題です。</p>
   </div>
 
+  <h3 style="color:var(--risk)">顔と手の破綻 — チェックする順番</h3>
+  <div class="box warn">
+    <p style="margin:0"><strong>「顔が崩れる」ときに疑う順序</strong>があります。上から確認してください。</p>
+    <ol style="margin-bottom:0">
+      <li><strong>EasyCache の <code>end_percent</code></strong> — 既定 0.95 のままなら <strong>0.65〜0.70 に下げる</strong>。<strong>小さい顔がピクセル化する</strong>という具体的な症状が報告されています(§8 / §11d)。ここがいちばん見落としやすい</li>
+      <li><strong>ステップ数</strong> — Turbo LoRA の <strong>4 ステップは映像が破綻</strong>した報告あり。<strong>8 が実用下限</strong>。まず 20 ステップ・LoRA なしで基準を取る</li>
+      <li><strong>量子化レベル</strong> — ただし単独では判断できない(下記)</li>
+      <li><strong>参照画像</strong> — 顔が小さいカットでは、キャラクターシートを渡す効果が大きい</li>
+      <li><strong>入力画像のマスク</strong> — 意図しない要素の混入を断つ(§11c)</li>
+    </ol>
+  </div>
+
   <h3>ドリフトを止める — いちばん安い品質改善</h3>
   <p>以下はすべて<strong>生成時間を増やしません</strong>。品質改善はここから始めるのが正解です。</p>
   <ul>
@@ -1286,12 +1349,14 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
       <tbody>
         <tr><td><strong>声の一貫性は「参照の共有」で取る。</strong><code>voice0</code> / <code>voice1</code> を Set ノードで登録し、全ショットの <code>reference_audio_*</code> に繋ぐ</td><td>§6 / §11</td></tr>
         <tr><td><strong>クリップ長は台詞の長さから決める。</strong>余った時間は雑音で埋まり、<strong>キャラがその雑音にリップシンクする</strong>。音だけ消しても口は動いたまま</td><td>§6 / §11</td></tr>
-        <tr><td>参照音声は<strong>最大 3 本 / 各 2〜15 秒 / 合計 15 秒以内</strong>。3 本目を BGM・環境音の参照に使える</td><td>§2</td></tr>
+        <tr><td>参照音声は<strong>最大 3 本 / 各 2〜15 秒 / 合計 15 秒以内</strong>。実用的な長さは <strong>5〜10 秒</strong></td><td>§2 / §11d</td></tr>
+        <tr><td><strong>接続先は <code>Ref Audio</code>。<code>Ref Video Audio</code> ではない</strong></td><td>§11d</td></tr>
+        <tr><td><strong>プロンプトに「日本語で話す」と明示する。</strong>日本語は 11 の安定サポート言語に入るが、固有名詞が別言語に化ける事故がある</td><td>§11d / §2</td></tr>
         <tr><td>音声は <strong>32 kHz ステレオ</strong>。ffmpeg で触るときの基準値</td><td>§2</td></tr>
         <tr><td><strong>連鎖を重ねると音がこもる</strong>(各ノードの README が自認)。台詞主役では致命的になりやすい</td><td>§5 / §6</td></tr>
         <tr><td><strong>Turbo LoRA と Spectrum は音質を落とす。</strong>音の基準を取るまでは外しておく</td><td>§8</td></tr>
         <tr><td>台詞は<strong>継ぎ目をまたがせない</strong>。継ぎ目は文と文の間、または息継ぎに置く</td><td>§6</td></tr>
-        <tr><td>複数人の会話は <strong>1 カット 1 人</strong>にする(Ref2VA で声が混ざる既知の不具合)</td><td>§6</td></tr>
+        <tr><td>複数人の会話は<strong>まず 1 クリップ 2 人で試し、声が混ざったら切り返しに分ける</strong>(1 クリップ 2 人の成功例あり)</td><td>§6 / §11d</td></tr>
         <tr><td><strong>最終出力の音声トラックを元音声に差し替える。</strong>リップシンクは映像側で取り、音は生成物を使わない。<strong>これが台詞主役の本命</strong></td><td>§6 / §11c</td></tr>
         <tr><td>台詞音声を<strong>そのまま使いたい</strong>なら、LongMedia のリップシンクモード(ソース音声のトラックを復元)。ただし 16GB では 7〜10 秒/クリップ</td><td>§6 / §5</td></tr>
         <tr><td><strong>自前音声を使うなら Turbo LoRA の音質劣化は無関係。</strong>速度制約が外れる</td><td>§8 / §11c</td></tr>
@@ -1375,6 +1440,9 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><code>lock_audio</code> で二段目の音声をロックできる。<strong>音声差し替え方式と噛み合う</strong></td><td>§8d</td></tr>
         <tr><td><strong>Turbo LoRA は 8 ステップが実用下限。</strong>4 ステップは映像も破綻した報告がある。<strong>映像の破綻は自前音声では救えない</strong></td><td>§8d / §8</td></tr>
         <tr><td><strong>SageAttention は品質を保ったまま約 31% 短縮</strong>という実測がある。速度改善の第一候補</td><td>§8</td></tr>
+        <tr><td><strong>EasyCache は <code>end_percent</code> を 0.65〜0.70 に下げて使う。</strong>既定 0.95 は高すぎて<strong>小さい顔がピクセル化</strong>する。二つの独立した実測が一致</td><td>§8 / §11d</td></tr>
+        <tr><td>EasyCache が壊すのは<strong>主に音声</strong>(映像 SSIM は 0.94〜0.96 でほぼ無傷)。<strong>音声差し替え方式なら欠点が無関係になる</strong></td><td>§8</td></tr>
+        <tr><td><strong>conditioning と潜在をディスクにキャッシュすれば、追加シードは 950 秒 → 96 秒。しかも無損失</strong>。当たり探しが別物になる</td><td>§8</td></tr>
         <tr><td>20 ステップが既定。<strong>25 に上げるとモーション品質が上がる</strong>との報告</td><td>§8d</td></tr>
         <tr><td>滑らかさが欲しければ <strong>RIFE などの補間</strong>。生成後の後処理なので安い</td><td>§8d</td></tr>
         <tr><td><strong>1 回に 1 つだけ変えて、3 軸すべて記録する</strong>(所要時間 / 継ぎ目 / 破綻)</td><td>§1b / §9</td></tr>
@@ -1477,6 +1545,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <li><strong>各パターンの所要時間</strong>(§1b のとおり、これが試行回数=品質を決めます)</li>
         <li><strong>顔と手の破綻</strong>を並べて比較。int4 + Turbo が最良だったという実測もあるので、先入観を持たずに</li>
         <li>attention ノードを 1 つ入れて、速度差を測る(<strong>1 つずつ</strong>。併用規則は §8)</li>
+        <li><strong>EasyCache を使うなら <code>end_percent</code> を 0.65〜0.70 に</strong>してから測る(既定 0.95 のままだと顔がピクセル化します)</li>
+        <li><strong>同じ設定でシードだけ変えて 2〜3 本引く。</strong>2 本目以降が目に見えて速いか(conditioning キャッシュが効いているか / §8)</li>
       </ul>
     </div>
   </div>
@@ -1790,6 +1860,65 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     依存: VideoHelperSuite / KJNodes / rgthree-comfy / MAINodes / SolAttn_triton / Minimax H3 Latent Upscaler</p>
   </div>
 </section>
+<section id="s11d">
+  <span class="sec-label">動画 4</span>
+  <h2>8GB と参照音声</h2>
+
+  <div class="box">
+    <div class="box-title">出典</div>
+    <p style="margin:0"><strong>MiniMax-H3 I2V with Reference Audio on 8GB VRAM</strong> — <code>https://youtu.be/GYP_4QYOSvk</code> 字幕全文から要約 <span class="c c1">一次</span></p>
+  </div>
+
+  <div class="box tint">
+    <p style="margin:0"><strong>4 本の中で、あなたの条件にいちばん近い動画です。</strong> 複数話者 + 参照音声 + 低 VRAM。しかも <strong>8GB で動いています</strong>(あなたは 16GB なので余裕があります)。</p>
+  </div>
+
+  <h3>参照音声の実運用 — 1 クリップ内で 2 人喋らせている</h3>
+  <p>参照音声を <strong>2 本</strong>(女性の声と自分の声)読み込み、<strong>プロンプトで「女性が話すときは audio 1」「男性が挨拶するときは audio 2」と書き分けて</strong>います。結果は成功。</p>
+
+  <div class="box warn">
+    <div class="box-title">§6 の「1 カット 1 人」を緩められそうです</div>
+    <p style="margin:0">Issue #17(複数被写体で声が混ざる)を根拠に「会話は 1 カット 1 人が安全」と書きましたが、<strong>この動画は 1 クリップ内で 2 人を喋らせて成功しています</strong>。プロンプトで被写体と音声を明示的に紐づけているのが効いていると見られます。<br>
+    成功例が 1 件なので断定はしませんが、<strong>「必ず分けろ」ではなく「まず 2 人で試して、混ざったら分ける」</strong>に緩和します。</p>
+  </div>
+
+  <h3>実務の細部 — 効きそうなものが多い</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:32%">項目</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td><strong>接続先を間違えない</strong></td><td><strong><code>Ref Audio</code> に繋ぐ。<code>Ref Video Audio</code> ではない</strong>。氏がわざわざ注意しているので、間違えやすいポイントのはず</td></tr>
+        <tr><td><strong>参照音声の長さ</strong></td><td>8.5 秒の音声を入れて length は 7 秒。<strong>5〜10 秒あたりが良さそう</strong>との実感(公式仕様は 2〜15 秒 / §2)</td></tr>
+        <tr><td>音声の読み込み</td><td>パス指定の Load Audio ノードを使用。入力は面倒だが <strong>M4A に対応</strong>する</td></tr>
+        <tr><td><strong>言語を明示する</strong></td><td>プロンプトに言語(この例では広東語)を明記。<strong>固有名詞が別の言語に化けることがある</strong>ため。「ローカルモデルで広東語がまともに喋れた初めてのケース」との評</td></tr>
+        <tr><td>開始画像</td><td>image reference を使い、<strong>プロンプトでは画像に言及せず</strong>、シーン(大きなステージ)だけを描写している</td></tr>
+        <tr><td>Spectrum</td><td>氏の環境では<strong>効果が薄かった</strong>(外さずに置いてはある)。速度手段の効果は環境依存という裏付け</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">日本語は大丈夫です</div>
+    <p style="margin:0">H3 が安定サポートする 11 言語は <strong>アラビア語 / 中国語 / 英語 / フランス語 / ドイツ語 / イタリア語 / <strong>日本語</strong> / 韓国語 / ポルトガル語 / ロシア語 / スペイン語</strong>で、いずれもリップシンク付きで生成されます <span class="c c2">一致</span>。<br>
+    ただし上の実例にならって、<strong>プロンプトに「日本語で話す」と明示的に書いてください</strong>。固有名詞や数字が他言語に化ける事故を防げます。</p>
+  </div>
+
+  <h3 style="color:var(--risk)">EasyCache — 「品質崩壊」ではなく「値を下げれば使える」</h3>
+  <p>氏は EasyCache を使っていますが、<strong>既定の <code>end_percent</code> 0.95 は高すぎる</strong>として <strong>0.65</strong> に下げています。理由が具体的です。</p>
+  <ul>
+    <li><strong>値が高いと、小さい顔がピクセル化する</strong>(この動画は顔が小さく、環境が暗い)</li>
+    <li><strong>高音の女性声で問題が出やすい</strong>。女性声なら 0.7 程度で十分</li>
+    <li>それでもダメなら<strong>丸ごとバイパス</strong>(遅くなるが品質は良い)</li>
+  </ul>
+  <div class="box tint">
+    <p style="margin:0"><strong>別の実測が独立に同じ結論に着いています。</strong> 24GB での検証で「<strong><code>end_percent</code> を 0.70 に抑えると、後半のスキップによる weave とクロマのアーティファクトが消え、EasyCache の速度向上の約 31% は残る</strong>」と報告されています <span class="c c1">一次</span>。<br>
+    <strong>0.65 と 0.70 — 別々の人が別々の環境で、ほぼ同じ値に行き着いた</strong>ということです。信頼してよさそうです。詳細は §8。</p>
+  </div>
+
+  <h3>実測時間</h3>
+  <p><strong>8GB VRAM で、640p / 10 秒 / 14 分 4 秒</strong>。単純に外挿すると 1 分で約 84 分です。<strong>あなたの 16GB なら、これより有利な条件から始められます</strong> — §2b の時間予算(低解像度で 1 分あたり約 28 分)と矛盾しない範囲に収まっています。</p>
+</section>
+
 
 
 
@@ -1868,6 +1997,15 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li><a href="https://github.com/xiaolibai-sys/ComfyUI-MiniMaxH3">xiaolibai-sys / ComfyUI-MiniMaxH3</a> — H3 の映像・音声生成ノード</li>
   </ul>
 
+  <h3>動画 4 と、そこから辿ったもの</h3>
+  <ul>
+    <li><strong><a href="https://youtu.be/GYP_4QYOSvk">動画 4 本編(字幕全文を受領・§11d の出典)</a></strong> — MiniMax-H3 I2V with Reference Audio on 8GB VRAM <span class="c c1">一次</span></li>
+    <li><a href="https://github.com/pepikir/minimax-h3-speedup">pepikir / minimax-h3-speedup</a> <span class="c c1">一次</span> — <strong>EasyCache の <code>end_percent</code> 0.70 修正、conditioning/潜在ディスクキャッシュ 950→96 秒、SageAttention 実測</strong>の出典</li>
+    <li><a href="https://github.com/Comfy-Org/ComfyUI/issues/15326">ComfyUI Issue #15326 — EasyCache が H3 の音声を劣化させる(Open)</a> <span class="c c1">一次</span></li>
+    <li><a href="https://github.com/lihaoyun6/ComfyUI-MiniMaxH3-Cache">lihaoyun6 / ComfyUI-MiniMaxH3-Cache</a> — H3 専用に最適化されたキャッシュノード</li>
+    <li><a href="https://note.com/seal309midorin/n/nd4744caef27e">リダ — 動画が溶ける原因とぼやけの比較検証(日本語)</a></li>
+  </ul>
+
   <h3>設定・品質</h3>
   <ul>
     <li><a href="https://github.com/xmarre/Comfyui_Minimax_h3_latent_Upscaler">xmarre / Comfyui_Minimax_h3_latent_Upscaler</a> <span class="c c1">一次</span> — <strong>二段サンプリングのノード名・パラメータ・部分デノイズ制約</strong>の出典</li>
@@ -1913,7 +2051,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 10 版 2026-08-30(品質の優先順位を<strong>破綻・一貫性・精細さ</strong>に確定し §8d を再構成。<strong>二段サンプリングの具体レシピ</strong>(低解像度 25 ステップ → 2× 潜在アップスケール → 8 ステップ仕上げ、部分デノイズ必須、<code>lock_audio</code>)を追加。<strong>Turbo LoRA の実用下限は 8 ステップ</strong>という報告を反映し、「自前音声なら無関係」は音声限定で映像の破綻は別問題である旨を補正)。更新履歴はこのファイルの git コミットログを参照。<br>
+  <p>初版 2026-08-30 / 第 11 版 2026-08-30(<strong>4 本目の動画</strong>を §11d に追加。<strong>EasyCache は「使うな」ではなく <code>end_percent</code> を 0.65〜0.70 に下げて使う</strong>に改訂し、壊れるのは主に音声で映像はほぼ無傷である点、音声差し替え方式なら欠点が無関係になる点を追記。<strong>追加シードが 950→96 秒になる無損失キャッシュ</strong>、<strong>日本語は安定サポート言語</strong>、<code>Ref Audio</code> への接続、1 クリップ 2 話者の成功例を反映。§8d に「顔と手の破綻を疑う順番」を新設)。更新履歴はこのファイルの git コミットログを参照。<br>
   次回の更新予定: ① §9 の実験結果の反映、② Hugging Face のプロンプト指針を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ 実測時間が出たあとの時間目標の設定。</p>
 </footer>
 
