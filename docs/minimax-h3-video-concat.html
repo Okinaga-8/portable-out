@@ -1170,6 +1170,68 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     既定値の目安: <code>reuse_threshold</code> 0.2 / <code>start_percent</code> 0.15 / <code>end_percent</code> 0.95 <span class="c c3">要検証</span>。</p>
   </div>
 
+  <h3>キャッシュ系アクセラレータは一族です</h3>
+  <p>EasyCache を調べていて分かりましたが、<strong>「隣接するステップの出力は似ているから使い回す」という同じ発想のノードが、いくつも並立しています</strong>。名前が違うだけで構造は同じなので、まとめて把握しておくのが得です。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">ノード</th><th style="width:32%">何を使い回すか</th><th>公称の効果</th></tr></thead>
+      <tbody>
+        <tr><td><strong>TE-Speed-MiniMaxH3-OSS</strong>(HELPMEEADICE)</td><td><strong>50 層 DiT ループの「後半ブロック」の残差</strong>。sigma の差が小さいステップで、warmup ブロックだけ再計算して残りは保存済み残差を当てる</td><td><strong>既定で約 45%</strong>(30 ステップ / 8 秒の動画)<span class="c c1">一次</span></td></tr>
+        <tr><td><strong>ComfyUI-MiniMaxH3-TeaCache</strong>(Icyoung)</td><td>timestep 単位。累積入力デルタが閾値内なら、ブロック出力を次の数ステップに使い回す</td><td><strong>全体で約 3.0 倍</strong>(サンプリング段で 64.6% 短縮)<span class="c c3">要検証</span></td></tr>
+        <tr><td>ComfyUI-MiniMaxH3-FirstBlockCache(duckyshell)</td><td><strong>最初のブロックだけ毎ステップ実行</strong>し、残差の変化が小さければ残りのブロックスタックのキャッシュを再利用</td><td>—</td></tr>
+        <tr><td>comfyui-minimax-h3-blockcache-T8 / ComfyUI-MiniMaxH3-Cache(lihaoyun6)</td><td>同系統の実装違い</td><td>—</td></tr>
+        <tr><td>EasyCache(ComfyUI 内蔵)</td><td>同系統。ただし<strong>音声を壊す既知の不具合あり</strong>(下記)</td><td>約 1.4 倍(end_percent 既定時)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">一族に共通する構造 — ダイヤルは同じです</div>
+    <p style="margin:0">どれも <strong>①「どれだけ深くキャッシュするか」</strong>と <strong>②「サンプリングのどの区間でキャッシュを許すか」</strong>という 2 つのつまみを持ちます。<strong>深く・長くするほど速く、品質が落ちる</strong> — 例外はありません。<br>
+    そして <strong>§8 で EasyCache について学んだ教訓(終盤のスキップが weave とクロマのアーティファクトを生むので、終端を 0.95 → 0.70 に早める)は、この一族全体に当てはまるはずです</strong> <span class="c c3">要検証(私の推論)</span>。</p>
+  </div>
+
+  <h3>TE-Speed-MiniMaxH3-OSS の詳細</h3>
+  <p>ノード名は <code>TESpeedMiniMaxH3</code>。H3 の <strong>50 層 DiT ループ</strong>にフックして、<strong>sigma の差が小さいステップでは後半ブロックの残差を使い回します</strong> <span class="c c1">一次</span>。</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:32%">パラメータ</th><th style="width:14%">既定</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><code>cache_depth</code></td><td class="num">0.75</td><td><strong>キャッシュから供給する後半ブロックの割合。</strong>この値が約 45% 高速化に対応。<strong>下げると品質が安定し、上げると速くなる</strong></td></tr>
+        <tr><td><code>processing_control_value</code></td><td class="num">0.12</td><td>ステップ間の sigma 差の閾値。<strong>0 にするとキャッシュ無効</strong></td></tr>
+        <tr><td><code>processing_percent_1</code> / <code>_2</code></td><td class="num">0.1 / 0.9</td><td><strong>キャッシュを許す区間。</strong>最初の 10% と最後の 10% はフル計算</td></tr>
+        <tr><td><code>mcs</code></td><td class="num">2</td><td>連続してキャッシュを使える最大ステップ数</td></tr>
+        <tr><td><code>device</code></td><td>auto</td><td>キャッシュ残差の置き場所(GPU / CPU)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">キャッシュが効く条件は<strong>すべて満たされたときだけ</strong>です — 区間内 かつ sigma 差が閾値以下 かつ 連続回数が上限未満。<strong>各サイクルの最初のステップは必ずフル計算</strong>されます。</p>
+
+  <div class="box tint">
+    <p style="margin:0"><strong><code>processing_percent_2</code> の既定 0.9 は、EasyCache の <code>end_percent</code> 既定 0.95 と同じ役割です。</strong> EasyCache では 0.70 に下げるのが正解でした(§8 の実測)。<strong>TE-Speed でも 0.9 → 0.7〜0.8 に下げてみる価値があります</strong> <span class="c c3">要検証(私の推論)</span>。<br>
+    そして<strong>あなたの最優先課題(顔の破綻)を考えると、<code>cache_depth</code> は 0.75 より下げたほうがよい</strong>かもしれません。まず既定で測り、顔が崩れるなら下げる、という順序で。</p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">導入方法が他と違います — ここは注意</div>
+    <p style="margin:0"><strong>TE-Speed は <code>python patch_model.py</code> を実行して、MiniMax H3 のモデルファイル本体にパッチを当てる必要があります</strong>(バックアップは自動作成)<span class="c c1">一次</span>。<br>
+    対して <strong>TeaCache は「公式の <code>set_model_unet_function_wrapper</code> API を使い、ComfyUI のコアを一切改変しない」</strong>と明記しています。<br>
+    <strong>侵襲性が違うので、まず TeaCache 系から試すほうが安全</strong>です。TE-Speed を試すなら、モデルファイルのバックアップが取れていることを確認してから。</p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">TeaCache の「3 倍」は割り引いて読んでください</div>
+    <p style="margin:0">「キャッシュの有無で潜在がビット同一(数値誤差の範囲で)」と書かれていますが、<strong>計算を飛ばしているのに出力が同一というのは、原理的に噛み合いません</strong>。おそらく<strong>「キャッシュの判断が決定的で、実行が再現可能」</strong>という意味だと思われます。<br>
+    また<strong>ベンチマーク環境が NVIDIA CMP 170HX</strong> という特殊なカードです。<strong>3 倍という数字は、あなたの 4080 でそのまま出るとは限りません</strong> <span class="c c3">要検証</span>。</p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">そして一族全員、PDD とは併用できません</div>
+    <p style="margin:0">§11h のとおり、<strong>PDD 加速 LoRA は blockcache / EasyCache 系との併用が禁止</strong>されています。TE-Speed も TeaCache もこの系統なので同じです。<br>
+    <strong>判断: PDD が動くなら PDD 一本。</strong>20 ステップ → 8 ステップ(2.5 倍)で、しかも品質は維持〜向上。キャッシュ系の 45%〜は、<strong>PDD が動かなかった場合の次善</strong>と位置づけてください。</p>
+  </div>
+
   <h3 style="color:var(--accent-ink)">同じ設定で別シードを試すのは、劇的に安くできます</h3>
   <div class="box tint">
     <p style="margin:0">24GB での実測(864×480 / 124 フレーム / 20 ステップ)で、conditioning と潜在をディスクにキャッシュし、モデルを常駐させることで <strong>追加シード 1 本あたり 950 秒 → 96 秒(約 9.9 倍)</strong>。しかも<strong>出力はビット単位で同一(PSNR 無限大)= 完全に無損失</strong> <span class="c c1">一次</span>。<strong>ただし新しいプロンプトの 1 本目は encode の代金を払うので約 2.2 倍にとどまります。</strong>手段の比較と注意点は <strong>§8e</strong> にまとめました。<br>
@@ -1662,6 +1724,10 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>VRAM が限界なら <strong>トランク LoRA をオフラインでベイク</strong>してステップごとのパッチ適用オーバーヘッドを消す</td><td>§11h</td></tr>
         <tr><td><strong>SageAttention は品質を保ったまま約 31% 短縮</strong>という実測がある。PDD を使わない場合の候補</td><td>§8</td></tr>
         <tr><td><strong>EasyCache は <code>end_percent</code> を 0.65〜0.70 に下げて使う。</strong>既定 0.95 は高すぎて<strong>小さい顔がピクセル化</strong>する。二つの独立した実測が一致</td><td>§8 / §11d</td></tr>
+        <tr><td><strong>キャッシュ系は一族。</strong>TE-Speed / TeaCache / FirstBlockCache / blockcache / EasyCache はすべて「隣接ステップの出力を使い回す」同じ発想。<strong>ダイヤルは「どれだけ深く」「どの区間で」の 2 つ</strong></td><td>§8</td></tr>
+        <tr><td><strong>TE-Speed は 50 層 DiT の後半ブロックの残差を使い回す。</strong><code>cache_depth</code> 0.75 が約 45% 高速化。<strong>顔が崩れるなら下げる</strong>。区間の <code>processing_percent_2</code> 既定 0.9 は EasyCache の end_percent と同じ役割</td><td>§8</td></tr>
+        <tr><td style="color:var(--risk)"><strong>TE-Speed は <code>patch_model.py</code> でモデルファイル本体にパッチを当てる。</strong>TeaCache はコア無改変。<strong>侵襲性が違うので TeaCache 系から試すほうが安全</strong></td><td>§8</td></tr>
+        <tr><td><strong>キャッシュ系は全員 PDD と併用不可。</strong>PDD が動くなら PDD 一本(2.5 倍・品質維持)。キャッシュ系は次善</td><td>§8 / §11h</td></tr>
         <tr><td>EasyCache が壊すのは<strong>主に音声</strong>(映像 SSIM は 0.94〜0.96 でほぼ無傷)。<strong>音声差し替え方式なら欠点が無関係になる</strong></td><td>§8</td></tr>
         <tr><td><strong>conditioning と潜在をディスクにキャッシュすれば、同じプロンプトの追加シードは約 9.9 倍(950 → 96 秒)。無損失。</strong>ただし新プロンプトの 1 本目は約 2.2 倍</td><td>§8 / §8e</td></tr>
         <tr><td><strong>Conditioning Bank は encode ノードごとスキップする</strong>(lazy 入力)。エンコーダ 14.96GB がその項目で一切ロードされない</td><td>§8e</td></tr>
@@ -2692,6 +2758,15 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li><a href="https://note.com/seal309midorin/n/nd4744caef27e">リダ — 動画が溶ける原因とぼやけの比較検証(日本語)</a></li>
   </ul>
 
+  <h3>キャッシュ系アクセラレータ(§8)</h3>
+  <ul>
+    <li><a href="https://github.com/HELPMEEADICE/TE-Speed-MiniMaxH3-OSS">HELPMEEADICE / TE-Speed-MiniMaxH3-OSS</a> <span class="c c1">一次</span> — <strong>ノード名・全パラメータ・キャッシュ条件・45% の測定条件・patch_model.py</strong> の出典</li>
+    <li><a href="https://github.com/Icyoung/ComfyUI-MiniMaxH3-TeaCache">Icyoung / ComfyUI-MiniMaxH3-TeaCache</a> <span class="c c1">一次</span> — timestep キャッシュ、約 3 倍(測定環境は CMP 170HX)</li>
+    <li><a href="https://github.com/duckyshell/ComfyUI-MiniMaxH3-FirstBlockCache">duckyshell / ComfyUI-MiniMaxH3-FirstBlockCache</a></li>
+    <li><a href="https://github.com/T8mars/comfyui-minimax-h3-blockcache-T8">T8mars / comfyui-minimax-h3-blockcache-T8</a></li>
+    <li><a href="https://github.com/lihaoyun6/ComfyUI-MiniMaxH3-Cache">lihaoyun6 / ComfyUI-MiniMaxH3-Cache</a></li>
+  </ul>
+
   <h3>テキストエンコーダ(§8e)</h3>
   <ul>
     <li><a href="https://github.com/matlowai/ComfyUI-MAINodes">matlowai / ComfyUI-MAINodes</a> <span class="c c1">一次</span> — <strong>H3 Conditioning Bank</strong>(lazy 入力、14.96GB 回避、キャッシュキー、513MB/クリップ)の出典。<strong>MultiRef パックの依存にも入っています</strong></li>
@@ -2747,8 +2822,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 16 版 2026-08-30(<strong>テキストエンコーダの節 §8e を新設</strong>。H3 Conditioning Bank / pepikir のキャッシュノード / ClipProj の 3 手段を比較。<strong>「OOM を完全に回避」はエンコード段のみ</strong>、<strong>速度向上は同一プロンプトで 9.9 倍・新規プロンプトで 2.2 倍</strong>という補正、<strong>キャッシュキーがプロンプトしか見ない事故</strong>、<strong>ClipProj は日本語の台詞と相性が悪い</strong>点を明記。RAM 64GB がここで効く根拠も収録)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① §9 の実験結果の反映、② 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ PDD と Conditioning Bank が 16GB で動くかの確認。</p>
+  <p>初版 2026-08-30 / 第 17 版 2026-08-30(<strong>キャッシュ系アクセラレータの一族</strong>を §8 に整理。TE-Speed-MiniMaxH3-OSS の全パラメータ(<code>cache_depth</code> 0.75 が約 45%)、TeaCache、FirstBlockCache などを並べ、<strong>共通のダイヤルは「どれだけ深く」「どの区間で」の 2 つ</strong>であること、<strong>EasyCache の教訓が一族全体に横展開できる</strong>こと、<strong>TE-Speed はモデルファイル本体にパッチを当てる</strong>点、<strong>全員 PDD と併用不可</strong>である点を記載)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① §9 の実験結果の反映、② 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ PDD が 16GB で動くかの確認(動けばキャッシュ系は不要)。</p>
 </footer>
 
 </main>
