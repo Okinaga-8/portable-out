@@ -251,6 +251,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s11f">動画 6 — 参照は 1 枚に</a></li>
     <li><a href="#s11g">動画 7 — 1 分を作りきった記録</a></li>
     <li><a href="#s11h">動画 8 — 速度と品質の両立</a></li>
+    <li><a href="#s11i">動画 9 — 全機能地図</a></li>
     <li><a href="#s12">出典と確度</a></li>
   </ol>
 </nav>
@@ -457,12 +458,13 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
       <thead><tr><th style="width:22%">項目</th><th style="width:30%">値</th><th>結合設計への影響</th></tr></thead>
       <tbody>
         <tr><td>フレームレート</td><td class="num">24 fps</td><td>秒とフレームの換算基準。<span class="c c2">一致</span></td></tr>
-        <tr><td>フレーム数の粒度</td><td class="num">17k + 5</td><td>17 フレーム単位のブロック + 5。要求した秒数は次の 17k+5 に切り上げられる。<span class="c c2">一致</span></td></tr>
+        <tr><td>フレーム数の粒度</td><td class="num"><code>length % 17 == 5</code></td><td><strong>5, 22, 39, 56…</strong>。最初の 5 フレーム + 17 フレームのブロック。要求した秒数は次の有効値に切り上げられる。<strong>§5 の <code>context_length</code> の選択肢と同じ数列</strong>(§11i)<span class="c c1">一次</span></td></tr>
         <tr><td>クリップ長</td><td class="num">4 〜 15 秒</td><td>公式値。初版の「約 5〜15 秒」を訂正。15 秒指定で <strong>362 フレーム</strong>。<span class="c c1">一次</span></td></tr>
         <tr><td>解像度</td><td class="num">短辺 768 が既定</td><td>2K は再生成(regeneration)扱い。ローカルは 768p 級を前提に設計する。<span class="c c1">一次</span></td></tr>
         <tr><td>アスペクト比</td><td class="num">21:9 / 16:9 / 4:3 / 1:1 / 3:4 / 9:16</td><td>連鎖する全クリップで揃える。<span class="c c1">一次</span></td></tr>
         <tr><td>音声</td><td class="num">32 kHz ステレオ</td><td>映像と同一パスで同時生成。<strong>クリップごとに独立した音世界が立ち上がる</strong>。ffmpeg で音を触るときの基準値。<span class="c c1">一次</span></td></tr>
         <tr><td><strong>Ref2VA の参照上限</strong></td><td class="num">画像 最大 9 枚 / 動画 最大 3 本 / 音声 最大 3 本</td><td>動画・音声は各 2〜15 秒。<strong>ただし画像は「9 枚使える」であって「9 枚使うべき」ではありません</strong> — 枚数を増やすほど品質が落ちるという実測があり、<strong>1 枚のシートに集約する</strong>のが定石(§11f)<span class="c c2">一致</span></td></tr>
+        <tr><td><strong>参照画像のサイズ</strong></td><td class="num">1 辺 256〜5760px</td><td><strong>アスペクト比 0.4〜2.5(長辺は短辺の 2.5 倍まで)、30MB 以下、JPG/PNG/WEBP/HEIC/HEIF。</strong>超えるとエラー(§11i)<span class="c c2">一致</span></td></tr>
         <tr><td>参照音声の合計</td><td class="num">合計 15 秒以内</td><td><strong>1 分の台詞を丸ごとは渡せない</strong>。クリップ単位でスライスする運用になる → §6。<span class="c c1">一次</span></td></tr>
         <tr><td>対応言語</td><td class="num">11 言語(<strong>日本語を含む</strong>)</td><td>アラビア語 / 中国語 / 英語 / 仏 / 独 / 伊 / <strong>日</strong> / 韓 / 葡 / 露 / 西。いずれもリップシンク付き。<strong>プロンプトで言語を明示する</strong>(§11d)<span class="c c2">一致</span></td></tr>
         <tr><td>精度</td><td class="num">BF16</td><td>公式の配布精度。量子化はここからの派生。<span class="c c1">一次</span></td></tr>
@@ -859,6 +861,7 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
       <tbody>
         <tr><td><strong>ComfyUI-MiniMax-H3-Extend</strong>(kat3ri / 通称 Kate)</td><td><strong>動画 2 で使われているノード</strong>(§11b)。<code>MiniMaxH3VideoExtendPatched</code> と <code>MiniMaxH3EncodeAVPatched</code> の 2 つ。後者が映像フレームと<strong>任意の音声</strong>を AV 潜在に符号化し、前者の <code>context_latent</code> に渡す。推奨値は <code>context_frames</code> 2 / <code>ref_spacing</code> 1〜2 / <code>ref_decay</code> 0.3 / <code>ref_ramp</code> 3〜4(動きが激しいクリップは 5〜6)。<code>custom_nodes/</code> に clone して再起動するだけ、コア改変なし <span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-H3-Motion-Context-MultiRef</strong>(seitanism)</td><td><strong>動画 3 で使われているパック</strong>(§11c)。NikoDemon80 版のフォークで、<strong>任意位置の複数キーフレーム</strong>、既存動画の差し込み、V2V モーション転写、<strong>H3 の 40Hz オーディオグリッドを正確に扱う音声処理</strong>。<strong>2026-08-30 に Update 8</strong> と非常に活発 <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>ComfyUI-MiniMaxDirector</strong>(imbutus)</td><td><strong>H3 の文書化された機能をひととおり実装したタイムライン workflow</strong>(§11i)。エンティティ(カード)、retention 4 段階、話者と言語、Carries over、Camera トラック、実行前 lint。<strong>ComfyUI 0.31.0 以降、外部依存なし</strong>。<strong>タイムラインはプロンプト文字列にコンパイルされるだけ</strong>なので、連鎖系ノードとは役割が違い競合しない <span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-MiniMaxH3-Director</strong>(seesee75-commits)</td><td>ComfyUI 内の<strong>タイムラインエディタ</strong>。トラックにメディアを置いて尺を調整し、ショットごとにプロンプトを付ける。<code>[Shot N]</code> 記法と <code>detailed_description</code> で<strong>プロンプトを自動生成</strong>。<strong>被写体スロット 9 個</strong>、retention マーカー、<strong>リテイク(範囲だけ再生成して繋ぎ直す)</strong>、ライブプレビュー。<strong>fp8 で 480p〜768p なら VRAM 16GB から</strong>、ディスクは約 60GB <span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-MiniMax-H3-PDD-Acc</strong>(Jalen-Brunson)</td><td><strong>Alibaba PAI 公式の 8 ステップ PDD 加速 LoRA を読むための専用ノード。</strong>通常の LoRA ローダーでは読めず、head bank を落とすと蒸留が静かに失われる。<code>MiniMaxH3PDDAccApply</code> / <code>MiniMaxH3PDDAccScheduler</code>。<strong>FL2VA 版と Ref2VA 版があり、取り違えると静かに壊れる</strong>。ComfyUI v0.33.0 以降(§11h)<span class="c c1">一次</span></td></tr>
         <tr><td><strong>ComfyUI-H3-FaceRefine</strong>(Carasibana)</td><td><strong>小さい顔を作り直す。</strong>フレームごとに顔を追跡 → 切り出して 768px キャンバスに拡大 → H3 で再生成 → 色を合わせて貼り戻す。<strong>顔が小さいほど強く再合成、大きいほど穏やかに保存</strong>。<code>crop_factor</code> 既定 2.5、<code>smooth_window</code> 21 フレーム。VRAM コストは <code>canvas² × frames</code>。<strong>あなたの最優先課題(顔の破綻)に直撃</strong> <span class="c c1">一次</span></td></tr>
@@ -930,7 +933,8 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
   <div class="box tint">
     <div class="box-title">結論: (b)。ただし心配は解決する</div>
     <p>実際に動く workflow が使っているのは <strong>(b) — 声色(timbre)の参照</strong>でした。台詞そのものは毎回生成されます。公式リポジトリの読み方が正しかったことになります。</p>
-    <p style="margin-bottom:0"><strong>それでも、あなたの本当の心配(継ぎ目で声が変わる)は解決します。</strong> 同じ声の参照を全ショットで共有すればよいからです。次の項がその手順です。</p>
+    <p><strong>それでも、あなたの本当の心配(継ぎ目で声が変わる)は解決します。</strong> 同じ声の参照を全ショットで共有すればよいからです。次の項がその手順です。</p>
+    <p style="margin-bottom:0"><strong>【確定】</strong> Director のドキュメントに <strong>「出力される音声は常に合成される。モデルはあなたの録音を<em>聴く</em>だけ」</strong>と明言されています(§11i)<span class="c c1">一次</span>。<strong>渡した波形がそのまま出てくることはありません。</strong>この論点はこれで決着です。</p>
   </div>
 
   <div class="box audio">
@@ -1020,6 +1024,12 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
     <p style="margin:0">公式リポジトリに <strong>Issue #17「Ref2VA: 複数被写体で声のアイデンティティが混ざる」</strong> が立っています。一方の声がもう一方に漏れる、片方の声が両者を支配してしまう、という報告です <span class="c c1">一次</span>。<br>
     <strong>ただし緩和材料があります。</strong> 動画 4 では <strong>1 クリップ内で 2 人を喋らせて成功</strong>しています(§11d)。プロンプトで被写体と音声を明示的に紐づけているのが効いていると見られます。<br>
     <strong>「必ず分けろ」ではなく「まず 2 人で試して、混ざったら切り返しに分ける」</strong>で進めてください。</p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">台詞が継ぎ目をまたぐ場合には、明示的な指定があります</div>
+    <p style="margin:0">下で「台詞は継ぎ目をまたがせない」と書きますが、<strong>またがせたい場合の手段も存在します</strong> — Director の <strong>Carries over</strong>(台詞がセグメントの終わりを越えて続く)や、§5 の Infinite Continuation Suite の「視覚のカットをまたぐ台詞を保持する」音声テール引き継ぎです(§11i)。<br>
+    <strong>回避するか、明示的に指定するか。まずは回避(息継ぎに継ぎ目を置く)から始めて、どうしてもまたぐ必要が出たらこちらを使う</strong>、という順序を推します。</p>
   </div>
 
   <h3>接続と言語 — 事故の起きやすい 2 点</h3>
@@ -1828,6 +1838,11 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>音は明示的に名指しする。</strong>指定しないとミックスは運任せになる</td><td>§6</td></tr>
         <tr><td><strong>BGM を切るなら <code>non_diegetic_music: None</code>。</strong>編集は順次にならないので、モデルに BGM を作らせると継ぎ目で合わない</td><td>§6 / §11g</td></tr>
         <tr><td><strong>すべての参照に「役割」を名前で与える。</strong>画像=外見/構図、動画=動き/カメラ、音声=声/音。何を retain / transfer / change するかを書き分ける</td><td>§6</td></tr>
+        <tr><td><strong>retention は 4 段階: Fully preserved / Partially preserved(ポーズと光は変わる)/ Attribute transfer(1 特徴だけ)/ Weak reference(スタイルだけ)</strong></td><td>§11i</td></tr>
+        <tr><td><strong>Storyboard として渡すと「構図だけ」を取る。外見は含まれないので別ファイルが要る</strong></td><td>§11i</td></tr>
+        <tr><td>Key frame(中間フレーム)は<strong>精度が保証されない</strong></td><td>§11i</td></tr>
+        <tr><td style="color:var(--risk)"><strong>顔を移植するときは、受け手を「顔なし」で記述する。</strong>そうしないとモデルが勝手に顔を描く</td><td>§11i</td></tr>
+        <tr><td><strong>Global music は楽器とテンポを書く。気分や感情ではなく</strong></td><td>§11i</td></tr>
         <tr><td>同じサウンドスケープの記述を<strong>全クリップのプロンプトに入れる</strong>。入れないと継ぎ目で環境音がリセットする</td><td>§6</td></tr>
         <tr><td>継ぎ目で<strong>矛盾する音の指示を書かない</strong></td><td>§6</td></tr>
         <tr><td>FL2VA と Ref2VA の<strong>アダプタを混ぜない</strong>。一方の shift を他方に流用しない</td><td>§5</td></tr>
@@ -1858,7 +1873,9 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>音声は <strong>32 kHz ステレオ</strong>。ffmpeg で触るときの基準値</td><td>§2</td></tr>
         <tr><td><strong>連鎖を重ねると音がこもる</strong>(各ノードの README が自認)。台詞主役では致命的になりやすい</td><td>§5 / §6</td></tr>
         <tr><td><strong>Turbo LoRA と Spectrum は音質を落とす。</strong>音の基準を取るまでは外しておく</td><td>§8</td></tr>
-        <tr><td>台詞は<strong>継ぎ目をまたがせない</strong>。継ぎ目は文と文の間、または息継ぎに置く</td><td>§6</td></tr>
+        <tr><td>台詞は<strong>継ぎ目をまたがせない</strong>。継ぎ目は文と文の間、または息継ぎに置く。<strong>どうしてもまたぐなら Carries over や音声テール引き継ぎがある</strong></td><td>§6 / §11i</td></tr>
+        <tr><td><strong>【確定】出力音声は常に合成される。モデルは録音を「聴く」だけ。</strong>渡した波形はそのまま出てこない</td><td>§6 / §11i</td></tr>
+        <tr><td>エンティティは<strong>声を記述して初めて話者(S1)になる。</strong>空欄なら無言でダイアログに追加できない</td><td>§11i</td></tr>
         <tr><td>複数人の会話は<strong>まず 1 クリップ 2 人で試し、声が混ざったら切り返しに分ける</strong>(1 クリップ 2 人の成功例あり)</td><td>§6 / §11d</td></tr>
         <tr><td><strong>最終出力の音声トラックを元音声に差し替える。</strong>リップシンクは映像側で取り、音は生成物を使わない。<strong>これが台詞主役の本命</strong></td><td>§6 / §11c</td></tr>
         <tr><td>台詞音声を<strong>そのまま使いたい</strong>なら、LongMedia のリップシンクモード(ソース音声のトラックを復元)。ただし 16GB では 7〜10 秒/クリップ</td><td>§6 / §5</td></tr>
@@ -1901,7 +1918,9 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>絵コンテを 1 枚の参照画像にすると、1 クリップ内に複数ショットを入れられる。</strong>H3 は左→右・上→下に読む。<strong>繋ぎ目を増やさずにカット割りができる</strong></td><td>§11e / §2b</td></tr>
         <tr><td>絵コンテは <strong>REF2V</strong> で使う。<strong>FL2V では扱えない</strong></td><td>§11e</td></tr>
         <tr><td><strong>絵コンテ生成時にビジュアルスタイルを必ず指定する。</strong>忘れると鉛筆画の絵コンテが出てくる。ただし鉛筆画でも「最終はフォトリアル」と書けば成立し、<strong>モデルの自由度は上がる</strong></td><td>§11e</td></tr>
-        <tr><td>Ref2VA の参照上限は<strong>画像 9 枚 / 動画 3 本 / 音声 3 本</strong></td><td>§2</td></tr>
+        <tr><td>Ref2VA の参照上限は<strong>画像 9 枚 / 動画 3 本 / 音声 3 本(合計 12 ファイル)</strong></td><td>§2</td></tr>
+        <tr><td style="color:var(--risk)"><strong>参照画像は 1 辺 256〜5760px、長辺は短辺の 2.5 倍まで、30MB 以下。</strong>6 コマを横 1 列に並べると超える — <strong>2×3 か 3×2 の格子に</strong></td><td>§2 / §11f</td></tr>
+        <tr><td><strong>参照画像は Match(動画サイズに縮小)で渡すと速い。</strong>Max は元の品質だが遅い。16GB なら Match を既定に</td><td>§11i</td></tr>
         <tr><td><strong>参照画像は枚数を増やすほど品質が落ちる。1 枚のシートに集約する。</strong>絵コンテ方式も「1 枚にまとめる」点で同じ思想</td><td>§11f / §11e</td></tr>
         <tr><td>Multi-Ref パックの <code>Video Masked Motion Context</code> は <strong>context length 39 がたいていベスト</strong><span class="c c3">要検証</span></td><td>§11c</td></tr>
         <tr><td>KJ nodes の <code>Image Batch Extend with Overlap</code> がシーン間のブレンドに効く</td><td>§11c</td></tr>
@@ -2584,6 +2603,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <p style="margin-left:1em"><strong>参照画像は多いほど品質が落ちる。</strong>3〜4 枚上げると、1 枚のときよりずっと悪くなる。<strong>すべてのディテールを 1 枚の画像に詰め込んで渡す</strong>のが最高品質の秘訣。</p>
     <p style="margin-bottom:0">一見すると「絵コンテを渡す」動画 5 と別の話に見えますが、<strong>動画 5 も 6 コマを<em>1 枚の画像</em>にまとめて渡していました</strong>。<strong>二つは同じことを言っています</strong> — 参照は複数枚に分けず、1 枚に集約する。<br>
     §2 に「Ref2VA は画像を 9 枚まで受け付ける」と書きましたが、<strong>受け付けることと、使うべきことは別</strong>でした。<strong>キャラ・環境・小道具・構図は、1 枚のシートに詰め込む。</strong></p>
+    <p style="margin-bottom:0"><strong>ただし縦横比に注意。</strong>参照画像は<strong>長辺が短辺の 2.5 倍まで</strong>です(§2)。<strong>6 コマを横 1 列に並べると超えます。2×3 か 3×2 の格子に組んでください。</strong></p>
   </div>
 
   <h3>モデル選択 — FL2VA のほうが素の品質は高い</h3>
@@ -2860,6 +2880,123 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <strong>どちらを取るかの判断</strong>: EasyCache は速度向上の約 31% を残す程度、PDD は 20 ステップ → 8 ステップ(理論上 2.5 倍)。<strong>しかも PDD は品質面でも優位</strong>。<strong>PDD が動くなら、そちらを優先すべき</strong>です <span class="c c3">要検証</span>。</p>
   </div>
 </section>
+<section id="s11i">
+  <span class="sec-label">動画 9</span>
+  <h2>Director — H3 の全機能地図</h2>
+
+  <div class="box">
+    <div class="box-title">出典</div>
+    <p style="margin:0"><strong>MiniMax Director: One ComfyUI Workflow That Covers Every MiniMax H3 Feature</strong> — <code>https://youtu.be/XIKDfvoFcCY</code> 字幕全文から要約 <span class="c c1">一次</span>。実体は <a href="https://github.com/imbutus/ComfyUI-MiniMaxDirector"><code>imbutus/ComfyUI-MiniMaxDirector</code></a>(LTX Director に着想を得た独立プロジェクト)<span class="c c1">一次</span>。</p>
+  </div>
+
+  <div class="box tint">
+    <p style="margin:0"><strong>作者は「H3 の文書化された機能をすべて実装した」と述べています。つまりこの動画は、ツールの紹介であると同時に、事実上の「H3 機能仕様書」です。</strong> このノートで断片的に集めてきたことが、ここで一枚の地図になりました。<br>
+    なお「MiniMax H3 Director」は<strong>複数の実装が並立する総称</strong>で、公式製品ではありません(§5 に挙げた別実装もあります)。</p>
+  </div>
+
+  <h3 style="color:var(--accent-ink)">17k+5 が確定しました</h3>
+  <div class="box tint">
+    <p style="margin:0">リポジトリに明記されています — <strong><code>length % 17 == 5</code>(24fps)。すなわち 5, 22, 39, 56…</strong> <span class="c c1">一次</span>。動画では「最初の 5 フレーム、その後 17 フレームのブロック」と説明されていました。<br>
+    <strong>そして、この数列は §5 の Motion Context の <code>context_length</code> 選択肢(5 / 22 / 39 / 56)とまったく同じです。</strong> §2 で「のりしろも 17 フレーム格子に載るのでは」と推論しましたが、<strong>同じ格子を使っているから同じ数列になる</strong>、というのが答えでした。<br>
+    Director のエディタは<strong>自動的に有効な長さに着地させ、クリップが伸びるときはパディングします</strong>。</p>
+  </div>
+
+  <h3 style="color:var(--accent-ink)">retention の 4 段階 — 5 層プロンプトの第 3 層の実体</h3>
+  <p>§11e で「プロンプトの第 3 層は retention(参照をどれだけ厳密に保つか)」と書きましたが、<strong>その選択肢が判明しました</strong>。ファイルごとに「どれだけそのまま残すか」を選びます。</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:30%">設定</th><th>意味</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Fully preserved</strong></td><td>そのままコピーする</td></tr>
+        <tr><td><strong>Partially preserved</strong></td><td><strong>ポーズと光は変わってよい</strong></td></tr>
+        <tr><td><strong>Attribute transfer</strong></td><td><strong>1 つの特徴だけを移す</strong>(顔の移植など)</td></tr>
+        <tr><td><strong>Weak reference</strong></td><td><strong>スタイルだけ</strong>。一般的な似姿、種類、構図、雰囲気。literal なものは取らない</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>キャラクターシートは Fully / Partially、画風の参照は Weak reference</strong>、という使い分けになります。§8d の「一貫性」と直結する設定です。</p>
+
+  <h3>ファイルの「使われ方」の分類</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">used as</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Reference</strong></td><td>見本 — 人物、場面、スタイル</td></tr>
+        <tr><td><strong>Storyboard</strong></td><td><strong>構図だけを取る</strong>(カメラ位置と、フレーム内の物の配置)。<strong>外見は含まれないので、外見用のファイルが別に要ります</strong> ← §11e の絵コンテ方式の正しい使い方</td></tr>
+        <tr><td>First frame / Last frame</td><td>出来合いのフレーム。画が先頭または末尾になり、残りをモデルが生成</td></tr>
+        <tr><td><strong>Key frame</strong></td><td><strong>フレームが途中のどこかに入る。ただし精度は保証されません。</strong>始めと終わりを生成し、中間が画に合う(§11c の任意位置キーフレームの実体)</td></tr>
+        <tr><td>Continue from(動画のみ)</td><td>クリップの続きを作る</td></tr>
+        <tr><td>Edit(動画のみ)</td><td>作り直す</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">フレーム系には <strong>fit 設定</strong>(Crop = 切る / Stretch = 伸縮)があり、<strong>Set width and height</strong> でクリップ側を画に合わせることもできます。</p>
+
+  <h3 style="color:var(--accent-ink)">音声について、決定的な確認が取れました</h3>
+  <div class="box warn">
+    <p style="margin:0"><strong>「出力される音声は常に合成される。モデルはあなたの録音を<em>聴く</em>だけ」</strong>と明言されています <span class="c c1">一次</span>。<br>
+    <strong>これで §6 の (a)/(b) 論点が完全に決着しました。</strong> 参照音声は声色と喋り方の参照であって、<strong>渡した波形がそのまま出てくることはありません</strong>。<br>
+    <strong>だからこそ §6b の「最終出力の音声を差し替える」が、日本語のアクセント問題への唯一確実な答え</strong>になります。</p>
+  </div>
+
+  <h3>台詞まわり — あなたに直接効く機能が揃っています</h3>
+  <ul>
+    <li><strong>Dialogue はメインセグメントにのみ付けられます</strong></li>
+    <li><strong>エンティティが喋るには、その声を記述する必要があります。</strong>記述すると <code>S1</code>(話者 1)ラベルが付き、カードが「話者」になります。<strong>空欄なら無言で、ダイアログに追加できません</strong></li>
+    <li>誰が喋るか / <strong>どう喋るか</strong> / <strong>どの言語か</strong> を選べます(<strong>言語指定が UI にあります</strong> — §11d の「日本語と明示する」がここで実装されている)</li>
+    <li><strong>複数エンティティを選ぶとユニゾンで喋ります</strong></li>
+    <li><strong>Offscreen</strong> にすると画面外の声になります</li>
+    <li style="color:var(--accent-ink)"><strong>Carries over — 台詞がセグメントの終わりを越えて続く</strong></li>
+    <li><strong>Voice from</strong> で、記述ではなく<strong>メディアファイル(音声か動画)から声色を取れます</strong></li>
+  </ul>
+
+  <div class="box tint">
+    <div class="box-title">"Carries over" は §6 の課題への公式な解です</div>
+    <p style="margin:0">§6 で「<strong>台詞は継ぎ目をまたがせない。継ぎ目は息継ぎに置く</strong>」と書きました。これは回避策でしたが、<strong>Director には「台詞がセグメント境界を越える」ことを明示的に指定する機能があります</strong>。<br>
+    §5 の Infinite Continuation Suite が「視覚のカットをまたぐ台詞を保持する」と謳っていたのも、同じ問題への別解でした。<strong>回避するか、明示的に指定するか、という 2 つの道がある</strong>ということです。</p>
+  </div>
+
+  <h3>エンティティ(カード)システム</h3>
+  <p>この workflow の中心的な発想です。<strong>1 つのメディアファイルから、人物・衣装・場所・スタイルなどを好きなだけ「エンティティ」として取り出し、それぞれに番号とカードを与えて、生成全体のどこでも再利用する。</strong> だから<strong>同じ人物が別セグメントでも同じ人物のまま</strong>になります。</p>
+  <p>カードの項目: 何を取るかの記述 / プロンプトに入れる名前 / <strong>From</strong>(元ファイル)/ <strong>Keep it</strong>(上の retention)/ <strong>Motion from</strong>(動画から動きを取る)/ <strong>How they sound</strong>(声の記述)/ <strong>Voice from</strong>(声色の取得元)。</p>
+
+  <div class="box">
+    <div class="box-title">顔の移植の実務 — 落とし穴つき</div>
+    <p style="margin:0">人物カードと顔カードを<strong>別々に作り</strong>、顔カードに <strong>attribute transfer</strong> を設定して転送先を選ぶ、という手順です。<br>
+    <strong>そして受け手の人物は「顔なし」で記述してください。</strong> そうしないと<strong>モデルが勝手に顔を描いてしまいます</strong> <span class="c c1">一次</span>。§11f の「要らないものは送らない」と同じ発想です。</p>
+  </div>
+
+  <h3>その他、拾っておきたい設定</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">項目</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Duration の主単位</strong></td><td><strong>フレーム数</strong>。秒は参考表示。fps は常に 24</td></tr>
+        <tr><td><strong>Default resize</strong></td><td>参照画像をどの大きさで渡すか。<strong>Match = 動画サイズに縮小(速い)</strong> / <strong>Max = 元の品質のまま(遅い)</strong>。<strong>16GB なら Match を既定に</strong></td></tr>
+        <tr><td>Camera トラック</td><td><strong>motion / strength / speed</strong> の 3 つ。既定は中央値(strength=medium, speed=normal)。Zoom、Dolly in/out など。<strong>リストにない動きは先頭を選んでプロンプトで書く</strong></td></tr>
+        <tr><td><strong>Global music</strong></td><td>全体の BGM。<strong>楽器とテンポを書く。気分や感情ではなく</strong> ← 具体的な指針</td></tr>
+        <tr><td>Turbo モード</td><td><strong>5 倍速だが品質は落ちる。デバッグ用</strong>と明言。<strong>Ref2VA turbo は v0.1 プレビューで、音声と速い動きの扱いが弱い</strong>(§8d・§11f の話と一致)</td></tr>
+        <tr><td>Upscale モード</td><td>生成の上に 1 ステップ追加。<strong>1 段目はキャッシュから来る</strong>(upscale なしで生成済みなら)。ただし<strong>大きいサイズでは未検証</strong>と作者が注記。既定オフ</td></tr>
+        <tr><td><strong>report ノード</strong></td><td><strong>警告のみで実行は止めません。</strong>実行前に読む。<strong>完成するまで気づかないことを拾ってくれる</strong>(参照されていないファイルなど)</td></tr>
+        <tr><td>Import / Export</td><td>ノードの状態を 1 ファイルに保存。<strong>ただしファイル名だけで、ファイル自体は保存されません</strong> — 別マシンでは再アップロードが要ります</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">画像の制約が判明しました</div>
+    <p style="margin:0"><strong>1 辺 256〜5760 px。アスペクト比は 0.4〜2.5(長辺は短辺の 2.5 倍まで)。30MB 以下。JPG / PNG / WEBP / HEIC / HEIF</strong> <span class="c c2">一致</span>。<br>
+    超えるとエラーになります。<strong>§11f の「参照は 1 枚のシートに集約する」を実践するとき、横長になりすぎないよう注意してください</strong> — 6 コマを横 1 列に並べたら 2.5:1 を超えます。<strong>2×3 や 3×2 の格子に組むこと。</strong></p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">あなたにとっての意味</div>
+    <p style="margin:0"><strong>これは、あなたが必要としているものにかなり近いツールです。</strong> タイムライン、エンティティ管理、話者と言語の指定、retention の制御、実行前チェック — このノートで «こうすべき» と積み上げてきたことが、UI として実装されています。<br>
+    要件は <strong>ComfyUI 0.31.0 以降、外部依存なし、Comfy-Org/MiniMax-H3 のウェイト 4 つ</strong>。<strong>導入は軽い</strong>ほうです。<br>
+    ただし<strong>タイムラインは「コンパイラでプロンプト文字列に変換される」</strong>だけで、潜在への特殊な注入をするわけではありません。<strong>つまり §5 の連鎖系ノードとは役割が違い、競合しません</strong> — Director でプロンプトを組み、連鎖は別の仕組みで、という併用が考えられます <span class="c c3">要検証(私の推論)</span>。</p>
+  </div>
+</section>
+
 
 
 
@@ -2995,6 +3132,15 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li><a href="https://note.com/seal309midorin/n/nd4744caef27e">リダ — 動画が溶ける原因とぼやけの比較検証(日本語)</a></li>
   </ul>
 
+  <h3>動画 9 と Director(§11i)</h3>
+  <ul>
+    <li><strong><a href="https://youtu.be/XIKDfvoFcCY">動画 9 本編(字幕全文を受領・§11i の出典)</a></strong> — MiniMax Director の全機能ウォークスルー <span class="c c1">一次</span></li>
+    <li><a href="https://github.com/imbutus/ComfyUI-MiniMaxDirector">imbutus / ComfyUI-MiniMaxDirector</a> <span class="c c1">一次</span> — <strong><code>length % 17 == 5</code> の明記、要件、Turbo / Upscale の注記</strong>の出典</li>
+    <li><a href="https://morphic.com/resources/models/minimax-h3">morphic — H3 の仕様と入力制限</a>(未取得。<strong>画像 256〜5760px / アスペクト比 0.4〜2.5 / 30MB</strong>の出典)</li>
+    <li><a href="https://comfyui-wiki.com/en/news/2026-08-18-minimax-h3-director">ComfyUI Wiki — MiniMax H3 Director 紹介</a>(未取得)</li>
+    <li><a href="https://github.com/Thefrizzy1/ComfyUI-MiniMaxH3-Director">Thefrizzy1 / ComfyUI-MiniMaxH3-Director</a> / <a href="https://github.com/Songssx/ComfyUI-MiniMaxH3-TimelineDirector">Songssx / TimelineDirector</a> — 同名の別実装</li>
+  </ul>
+
   <h3>日本語の発話(§6b)</h3>
   <ul>
     <li><a href="https://www.weshop.ai/solutions/models/mini-max-h3-prompt-guide-for-dialogue-and-timing">weshop — 台詞とタイミングのプロンプトガイド</a>(未取得。<strong><code>&lt;d&gt;</code> タグ・話者 ID・句読点</strong>の出典)</li>
@@ -3079,7 +3225,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 19 版 2026-08-30(<strong>§6b「アクセントとイントネーション」を新設</strong>。対策を 4 層に整理し、<strong>本命は日本語 TTS で作った音声への差し替え</strong>(既存の音声差し替え方式がそのまま答えになる)と結論。あわせて<strong>H3 の発話制御の書式</strong>(<code>&lt;d&gt;[Japanese]…&lt;/d&gt;</code> タグ、話者 ID <code>(S1)</code>、喋り方の指定、<strong>句読点がイントネーションを導く</strong>、1 行 10 語)を収録。参照音声が「喋り方」の参照にもなる点、ClipProj を避けるべき理由も記載)。更新履歴はこのファイルの git コミットログを参照。<br>
+  <p>初版 2026-08-30 / 第 20 版 2026-08-30(<strong>9 本目の動画を §11i に追加</strong>。H3 の全機能を実装した Director workflow の解説で、事実上の機能仕様書として扱った。<strong>17k+5 が <code>length % 17 == 5</code> として確定</strong>、<strong>retention の 4 段階</strong>(5 層プロンプトの第 3 層の実体)、<strong>Storyboard は構図だけで外見は別ファイル</strong>、<strong>「出力音声は常に合成される」の確定</strong>、<strong>Carries over</strong>、<strong>参照画像のサイズとアスペクト比の制約</strong>、顔移植の落とし穴、Global music の書き方などを収録)。更新履歴はこのファイルの git コミットログを参照。<br>
   次回の更新予定: ① §9 の実験結果の反映、② 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ FastH3 の Ref2VA 対応が出たら再評価。</p>
 </footer>
 
