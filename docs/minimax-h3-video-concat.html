@@ -1115,7 +1115,7 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
         <tr><td><strong>話者 ID <code>(S1)</code> <code>(S2)</code> を使う</strong></td><td><strong>話者の同一性と「どう喋るか」はタグの外、タグの中は言語と発話内容だけ。</strong>役割を分離する</td></tr>
         <tr><td><strong>喋り方を言葉で指定する</strong></td><td>「低く落ち着いた声で」「明るく元気に」のように書くと、<strong>トーン・ペース・感情が変わります</strong></td></tr>
         <tr><td style="color:var(--accent-ink)"><strong>句読点でペーシングとイントネーションを導く</strong></td><td><strong>これが今回の直球の答えです。</strong>読点の位置が抑揚を変えます。不自然なら<strong>まず読点を打ち直す</strong></td></tr>
-        <tr><td>1 行あたり約 10 語に収める</td><td>テンポが整う。日本語なら短めの一文に相当</td></tr>
+        <tr><td>1 行あたり約 10 語に収める</td><td><strong>英語での目安</strong>。日本語への換算は下の項を参照</td></tr>
         <tr><td>言語を明示する</td><td>固有名詞が別言語に化ける事故を防ぐ(§11d)</td></tr>
       </tbody>
     </table>
@@ -1123,6 +1123,38 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
 
   <div class="box tint">
     <p style="margin:0"><strong>まず試すのは「読点の打ち直し」です。</strong> コストがゼロで、効果が最も直接的。<strong>「〜は、〜です」のように区切る位置を変えるだけで抑揚が変わる</strong>のなら、それが最初の一手になります。</p>
+  </div>
+
+  <h3 style="color:var(--accent-ink)">「1 行 約 10 語」を日本語に換算する</h3>
+  <p>この数字は<strong>英語圏の目安をそのまま引いたもの</strong>で、日本語にはそのままでは使えません。<strong>そして単位は「文字数」ではなく、実質は「時間」です。</strong></p>
+
+  <div class="box tint">
+    <div class="box-title">何を制限しているのか</div>
+    <p style="margin:0">モデルが語数を数えて弾いているわけではありません。<strong>「1 つの発話が長すぎると、テンポが崩れて聞き取りにくくなる」という経験則</strong>です。<br>
+    そして<strong>本当に効いている制約は §6 の「クリップ長は台詞の実尺に合わせる」のほう</strong>です — 尺が余ると H3 は残りを雑音で埋め、しかもキャラがその雑音にリップシンクします。<strong>語数の目安は、その下流にある目安にすぎません。</strong></p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:34%">単位</th><th>目安</th></tr></thead>
+      <tbody>
+        <tr><td>英語 10 語</td><td class="num">おおよそ <strong>3.5〜4.5 秒</strong>の発話(会話速度 130〜150 語/分として)</td></tr>
+        <tr><td><strong>日本語(かな換算)</strong></td><td class="num">同じ 3.5〜4.5 秒なら <strong>およそ 20〜27 モーラ</strong>(話速 6 モーラ/秒として)</td></tr>
+        <tr><td><strong>日本語(見た目の文字数)</strong></td><td class="num">漢字かな交じりで <strong>おおむね 12〜18 文字</strong></td></tr>
+        <tr><td>フレーム数(17k+5 格子)</td><td class="num">3 秒 → <strong>73 フレーム</strong> / 4.5 秒 → <strong>107 フレーム</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap"><strong>この換算は私の計算です</strong> <span class="c c3">要検証</span>。話速には個人差と演出の差があるので、<strong>実際には「自分で声に出して測る」のがいちばん確実</strong>です。TTS で作るなら、生成した音声ファイルの長さがそのまま答えになります(§6b 層 0)。</p>
+
+  <div class="box">
+    <div class="box-title">「1 行」の単位について</div>
+    <p style="margin:0"><strong>1 クリップではなく、1 つの発話(<code>&lt;d&gt;…&lt;/d&gt;</code> ひとまとまり)</strong>です。<strong>1 クリップの中に複数の発話を置けます</strong> — <code>[Shot 2] at 00:03.000</code> のタイミングマーカーで位置を指定します(§6)。<br>
+    たとえば 15 秒のクリップなら、<strong>4 秒の台詞を 3 本 + 間(ま)</strong>、といった配分ができます。<strong>ただし発話と発話の間の無音も設計してください</strong> — 何も書かないと H3 はそこを音で埋めたがります(§6 の「無音は作らせる」)。</p>
+  </div>
+
+  <div class="box tint">
+    <p style="margin:0"><strong>実務的には、文字数を数えるより「TTS で作った音声の秒数」で設計するほうが速くて正確です。</strong> §6b 層 0(音声差し替え)を採るなら、台詞音声を先に作るので<strong>秒数が最初から確定しています</strong>。その秒数を 17k+5 格子に合わせてクリップ長を決める、という順序になります。</p>
   </div>
 
   <h3>層 2 — 参照音声で寄せる</h3>
@@ -1816,7 +1848,10 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>発話は <code>&lt;d&gt;[Japanese]…&lt;/d&gt;</code> でくくる。</strong>H3 はタグの中を演じ、外は動作として扱うので<strong>ト書きを読み上げなくなる</strong></td><td>§6b</td></tr>
         <tr><td><strong>話者 ID <code>(S1)</code> <code>(S2)</code> を使い、話者と喋り方はタグの外、中は言語と台詞だけ</strong></td><td>§6b</td></tr>
         <tr><td><strong>句読点がペーシングとイントネーションを導く。抑揚が不自然なら、まず読点を打ち直す</strong>(コストゼロ)</td><td>§6b</td></tr>
-        <tr><td>喋り方を言葉で指定する(「低く落ち着いた声で」など)。1 行は約 10 語に収める</td><td>§6b</td></tr>
+        <tr><td>喋り方を言葉で指定する(「低く落ち着いた声で」など)</td><td>§6b</td></tr>
+        <tr><td><strong>「1 行 約 10 語」は英語の目安。実質は時間の制約で、日本語なら約 3.5〜4.5 秒 = かな 20〜27 モーラ(漢字かな交じりで 12〜18 文字)</strong><span class="c c3">要検証(私の換算)</span></td><td>§6b</td></tr>
+        <tr><td><strong>「1 行」は 1 クリップではなく 1 つの発話。</strong>1 クリップに複数の発話を置ける(タイミングマーカーで指定)</td><td>§6b</td></tr>
+        <tr><td><strong>文字数を数えるより、TTS で作った音声の秒数で設計するほうが速くて正確</strong></td><td>§6b</td></tr>
         <tr><td><strong>参照音声は声色だけでなく「喋り方」の参照にもなる。</strong>自然なアクセントの音声を渡せば抑揚も寄る</td><td>§6b</td></tr>
         <tr><td><strong>アクセントを確実に制御したいなら、日本語 TTS で作った音声に差し替える。</strong>Style-BERT-VITS2 / AivisSpeech / VOICEVOX はアクセントを明示的に直せる</td><td>§6b</td></tr>
         <tr><td>読みが揺れる語は<strong>ひらがな・カタカナに開く / 言い換える</strong><span class="c c3">要検証</span></td><td>§6b</td></tr>
