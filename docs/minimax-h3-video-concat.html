@@ -228,6 +228,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s1">まず用語を整える</a></li>
     <li><a href="#s1b">三つの軸は独立しない</a></li>
     <li><a href="#s2">H3 側の制約</a></li>
+    <li><a href="#s2c">どの H3 を使うか</a></li>
     <li><a href="#s2b">1 分をどう割るか</a></li>
     <li><a href="#s3">継ぎ目で壊れるもの</a></li>
     <li><a href="#s4">4 つの選択肢</a></li>
@@ -476,6 +477,102 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
     <p style="margin-bottom:0">さらに面白いのは、継続系ノードが提示する文脈長の選択肢 <code>5 / 22 / 39 / 56</code> が、そのまま k=0,1,2,3 の 17k+5 になっていること。加えて「39 フレーム ≈ 1.625 秒」という記述も 39÷24 = 1.625 でぴったり合います。<strong>つまり継続に使う「のりしろ」も 17 フレーム格子の上に載る</strong>と考えてよさそうです。<span class="c c3">要検証(私の推論)</span> — 実機のノード UI で選択肢を見れば即座に裏が取れます。</p>
   </div>
 </section>
+<section id="s2c">
+  <span class="sec-label">モデル</span>
+  <h2>どの H3 を使うか</h2>
+
+  <p>「H3」と呼ばれるものが増えてきたので、見取り図を作ります。<strong>公式のものと、第三者がオープンウェイトから派生させたものが混ざっている</strong>のが混乱の元です。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:20%">名前</th><th style="width:14%">出所</th><th style="width:30%">中身</th><th>あなたに使えるか</th></tr></thead>
+      <tbody>
+        <tr><td><strong>MiniMax H3</strong>(fl2va / ref2va)</td><td><strong>MiniMax 公式</strong></td><td>オープンウェイト。最大 2K・4〜15 秒・32kHz ステレオ。<strong>fl2va のほうが素の品質は高く、ref2va は参照能力と引き換えに品質を落としている</strong>(§11f)</td><td style="color:var(--accent-ink)"><strong>本命。</strong>参照音声とキャラシートが要るので ref2va 側</td></tr>
+        <tr><td><strong>fl2va + ref2va ハイブリッド</strong></td><td>コミュニティ</td><td>fl2va をベースに、ブロック 25〜49 の <code>adaln_proj</code> だけ ref2va から差し替え(§11f)</td><td style="color:var(--accent-ink)"><strong>有力。</strong>参照能力を保ちつつ品質を上げられる</td></tr>
+        <tr><td>H3 Eros Max</td><td>コミュニティ</td><td>Turbo 加速がマージ済みの主モデル。<strong>約 40GB</strong>(§11e)</td><td>16GB には重い</td></tr>
+        <tr><td><strong>FastH3 Preview v1</strong></td><td><strong>FastVideo / Hao AI Lab ら</strong><br>(MiniMax ではない)</td><td>4 ステップの DMD2 蒸留 + <strong>90% スパースアテンション</strong>。オープンウェイト</td><td style="color:var(--risk)"><strong>今は使えません</strong>(下記)</td></tr>
+        <tr><td><strong>MiniMax H3 Max</strong></td><td><strong>fal</strong><br>(MiniMax ではない)</td><td>H3 のオープンウェイトを fal が自社データで再学習。プロンプト追従性と美的品質を強化</td><td style="color:var(--risk)"><strong>fal 独占のクラウド。ローカル不可</strong></td></tr>
+        <tr><td>量子化版(GGUF / INT8 / NVFP4 ほか)</td><td>コミュニティ</td><td>上記各種の派生。IQ1_S 3.78GiB 〜 Q8_0 33.56GiB(§8)</td><td>16GB では必須の経路</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">出所の整理 — ここが混乱しやすいところです</div>
+    <p style="margin:0"><strong>FastH3 も H3 Max も、MiniMax 自身のリリースではありません。</strong><br>
+    ・<strong>FastH3</strong> は FastVideo チーム(Hao AI Lab @ UCSD)+ Nuva Lab + NVIDIA FastGen チームによる蒸留版(2026-08-27 公開)<br>
+    ・<strong>H3 Max</strong> は <strong>fal</strong> のポストトレーニング版。<strong>MiniMax はその名前のモデルを発表したことがありません</strong> <span class="c c2">一致</span><br>
+    どちらも「H3 のオープンウェイトから第三者が派生させたもの」で、<strong>「MiniMax H3 の最新版」ではありません</strong>。この区別は、ライセンスやサポートを考えるときに効いてきます。</p>
+  </div>
+
+  <h3 style="color:var(--risk)">FastH3 — 速いのですが、今のあなたには使えません</h3>
+  <div class="box warn">
+    <p style="margin:0"><strong>Preview v1 は text-to-video-and-audio(T2VA)のみです。FL2VA(先頭フレーム条件付け)も Ref2VA(参照画像条件付け)も蒸留されていません</strong> <span class="c c2">一致</span>。<br>
+    理由も明快で、<strong>FL2VA は先頭/末尾フレーム条件付けで学習した生徒モデルが要り、Ref2VA は別の参照トランスフォーマーを使うので専用の蒸留チェックポイントが要る</strong>から。<br>
+    <strong>あなたは参照音声で声を固定し、キャラクターシートを渡す構成なので、Ref2VA が必須です。つまり現時点では対象外</strong>ということになります。<br>
+    ただし<strong>「FL2VA と full omni ref(Ref2VA)のサポートは数週間のうちに来る」</strong>とされています。<strong>これは追いかける価値があります。</strong></p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:30%">FastH3 の実測</th><th>値</th></tr></thead>
+      <tbody>
+        <tr><td>公称の高速化</td><td class="num"><strong>単一の NVIDIA Blackwell GPU で最大 14 倍</strong></td></tr>
+        <tr><td>測定条件</td><td><strong>B200</strong> で 1344×768 / 24fps / 音声つき、<strong>15 秒クリップが 47.2 秒</strong>(dense 比 14.38 倍)</td></tr>
+        <tr><td>対応する尺</td><td class="num">5.167〜14.375 秒(24fps)</td></tr>
+        <tr><td>ベースモデル</td><td>MiniMax-H3 は <strong>33B の映像+音声デュアルモダリティ拡散トランスフォーマー</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap"><strong>14 倍は B200(データセンター向け Blackwell)での数字</strong>です。§8 で Sol-Attn について「Blackwell 向けだから 4080 は対象外」と書いて<strong>訂正した</strong>ことがありましたが、<strong>今回は逆に、素直に割り引くべき数字</strong>です。</p>
+
+  <h3>コンシューマ GPU での実測 — VSA ノード経由</h3>
+  <p>FastVideo の <strong>VSA(Video Sparse Attention)</strong>を ComfyUI から使うノード(<code>ComfyUI-MiniMax-H3-FastVideo</code>)があり、<strong>RTX 3090 Ti での実測</strong>が公開されています <span class="c c1">一次</span>。</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:38%">構成(5 秒 / 0.8MP)</th><th style="width:26%">所要時間</th><th>対 base</th></tr></thead>
+      <tbody>
+        <tr><td>ベース H3(20 ステップ)</td><td class="num">8 分 12 秒</td><td class="num">—</td></tr>
+        <tr><td><strong>LoRA + VSA(topk 0.10)</strong></td><td class="num"><strong>49 秒</strong></td><td class="num"><strong>約 10 倍</strong></td></tr>
+        <tr><td>LoRA + VSA(topk 1.0)</td><td class="num">2 分 37 秒</td><td class="num">約 3 倍</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">ただし 16GB には 3 つの壁があります</div>
+    <ol style="margin-bottom:0">
+      <li><strong>VRAM のピークが約 22GB</strong>(0.8MP / 5 秒)。<strong>長い・高解像度のクリップは 24GB も超える</strong>とされています。<strong>16GB では厳しい</strong></li>
+      <li><strong>VSA は「速度の最適化であって、メモリの最適化ではない」</strong>と明記されています。アクティベーションのメモリは減らないので、<strong>すでに VRAM が足りない状況は救えません</strong></li>
+      <li><strong>このノードが対応しているのは FL2VA のみ</strong>。T2VA / Ref2VA / L2VA には対応する FastVideo LoRA がまだ出ていません</li>
+    </ol>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">品質面の副作用が、あなたの最優先課題に当たります</div>
+    <p style="margin:0"><strong>topk を低くすると細部にフリッカーが出て、顔・文字・細い線がフレーム間でずれる</strong>と明記されています <span class="c c1">一次</span>。<br>
+    §8d であなたが挙げた優先事項の 1 番目が「顔と手の破綻」なので、<strong>10 倍が出る topk=0.10 は、まさにその代償を払う設定</strong>ということになります。<strong>ドラフト用と割り切るべき</strong>でしょう。</p>
+  </div>
+
+  <h3>H3 Max(fal)— ローカルでは使えません</h3>
+  <ul>
+    <li><strong>fal が H3 のオープンウェイトを自社データで再学習</strong>し、プロンプト追従性と美的品質を高めて自社ハードで提供しているもの</li>
+    <li><strong>5〜15 秒、最大 768p</strong>、ネイティブステレオ音声。<strong>ベースの H3 と違って 2K ではありません</strong></li>
+    <li><strong>2026-08-26 に fal Research が出荷。5 秒 768p クリップを同期音声つきで 3 秒未満</strong></li>
+    <li><strong>現状は fal 独占</strong>(他プロバイダも追随の噂)。<strong>Magnific で提供されているのは、H3 Max ではなくベースの H3 です</strong></li>
+  </ul>
+  <div class="box">
+    <p style="margin:0"><strong>§8b の「借りる」選択肢としては候補になりえます。</strong> ただし<strong>クラウド API なので、参照音声やキャラシートをどこまで渡せるかは fal 側の仕様次第</strong>です。ローカルの ComfyUI で組んでいるワークフローはそのままでは移せません。</p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">結論 — 今のあなたの選択</div>
+    <p style="margin:0"><strong>ref2va(または fl2va + ref2va ハイブリッド)の量子化版</strong>で進めてください。方針は変わりません。<br>
+    <strong>FastH3 は「数週間のうちに Ref2VA 対応が来る」ので、追いかける価値があります</strong>が、来たとしても <strong>VRAM 22GB という壁と、topk を下げたときの顔のフリッカー</strong>は残ります。<strong>16GB では、当たり探しのドラフト専用</strong>という位置づけが現実的でしょう <span class="c c3">要検証(私の推論)</span>。<br>
+    <strong>速度で先に試すべきは、依然として PDD 加速 LoRA(§11h)</strong>です — あちらは <strong>Ref2VA 版が既にあり</strong>、品質も維持〜向上します。</p>
+  </div>
+</section>
+
 <section id="s2b">
   <span class="sec-label">設計</span>
   <h2>1 分をどう割るか</h2>
@@ -1738,6 +1835,12 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td style="color:var(--risk)"><strong>ClipProj(エンコーダ小型化)は固有名詞が劣化し、英語以外の話し言葉が崩れることがある。</strong>日本語の台詞とは相性が悪い</td><td>§8e</td></tr>
         <tr><td>20 ステップが既定。<strong>25 に上げるとモーション品質が上がる</strong>との報告</td><td>§8d</td></tr>
         <tr><td><strong>FL2VA のほうが素の品質は高い。</strong>Ref2VA は参照能力と引き換えに品質を落としている。参照が要らない場面では FL2VA を選ぶ</td><td>§11f</td></tr>
+        <tr><td><strong>FastH3 も H3 Max も MiniMax 自身のリリースではない。</strong>前者は FastVideo ら、後者は fal のポストトレーニング版</td><td>§2c</td></tr>
+        <tr><td style="color:var(--risk)"><strong>FastH3 Preview v1 は T2VA のみ。Ref2VA も FL2VA も未蒸留</strong>なので、参照を使う構成では現時点で使えない(対応予告あり)</td><td>§2c</td></tr>
+        <tr><td><strong>FastH3 の「14 倍」は B200 での数字。</strong>コンシューマ機の実測は 3090 Ti で約 10 倍(topk 0.10)</td><td>§2c</td></tr>
+        <tr><td style="color:var(--risk)"><strong>VSA は速度の最適化であってメモリの最適化ではない。</strong>VRAM ピーク約 22GB(0.8MP / 5 秒)なので 16GB には厳しい</td><td>§2c</td></tr>
+        <tr><td style="color:var(--risk)"><strong>VSA の topk を下げると細部がフリッカーし、顔・文字・細い線がフレーム間でずれる。</strong>ドラフト用と割り切る</td><td>§2c</td></tr>
+        <tr><td><strong>H3 Max は fal 独占のクラウドで、最大 768p(2K ではない)。</strong>Magnific で使えるのはベースの H3 のほう</td><td>§2c</td></tr>
         <tr><td><strong>肌がテカる(オイリー)のは Turbo LoRA + 二段階アップスケールの副作用。</strong>台詞のクローズアップでは de-oil 系 LoRA を、<strong>アクションでは必ずバイパス</strong>(モーションを壊す)</td><td>§11f</td></tr>
         <tr><td>小さい顔が崩れるなら <strong><code>ComfyUI-H3-FaceRefine</code> で顔だけ作り直す</strong></td><td>§5</td></tr>
         <tr><td>二段階の実測値: <strong>一段目 0.2MP → 二段目 1MP、総 12 ステップ(一段目 6・high sigmas のみ)で 15 秒が RTX 4090 で 5 分ちょっと</strong></td><td>§11f</td></tr>
@@ -2758,6 +2861,15 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <li><a href="https://note.com/seal309midorin/n/nd4744caef27e">リダ — 動画が溶ける原因とぼやけの比較検証(日本語)</a></li>
   </ul>
 
+  <h3>派生モデル(§2c)</h3>
+  <ul>
+    <li><a href="https://haoailab.com/blogs/fasth3-preview/">Hao AI Lab @ UCSD — FastH3 Preview v1</a>(未取得。<strong>14 倍・B200 実測・T2VA のみ</strong>の出典)</li>
+    <li><a href="https://comfyui-wiki.com/en/news/2026-08-28-fasth3-preview">ComfyUI Wiki — FastH3 Preview v1(4 ステップ蒸留)</a>(未取得)</li>
+    <li><a href="https://huggingface.co/FastVideo/FastVideo-FastH3-4-step-Preview-v1-VSA-DataFree">FastVideo / FastH3-4-step-Preview-v1-VSA-DataFree</a> / <a href="https://huggingface.co/FastVideo/FastVideo-FastH3-4-step-Preview-v1-LoRA">同 LoRA 版</a>(未取得)</li>
+    <li><a href="https://github.com/barelymining/ComfyUI-MiniMax-H3-FastVideo">barelymining / ComfyUI-MiniMax-H3-FastVideo</a> <span class="c c1">一次</span> — <strong>VSA ノードの実測(3090 Ti)、VRAM 22GB、topk のフリッカー、FL2VA のみ対応</strong>の出典</li>
+    <li><a href="https://morphic.com/resources/models/minimax-h3-max">morphic — MiniMax H3 Max(fal のポストトレーニング版)</a>(未取得)</li>
+  </ul>
+
   <h3>キャッシュ系アクセラレータ(§8)</h3>
   <ul>
     <li><a href="https://github.com/HELPMEEADICE/TE-Speed-MiniMaxH3-OSS">HELPMEEADICE / TE-Speed-MiniMaxH3-OSS</a> <span class="c c1">一次</span> — <strong>ノード名・全パラメータ・キャッシュ条件・45% の測定条件・patch_model.py</strong> の出典</li>
@@ -2822,8 +2934,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 </section>
 
 <footer>
-  <p>初版 2026-08-30 / 第 17 版 2026-08-30(<strong>キャッシュ系アクセラレータの一族</strong>を §8 に整理。TE-Speed-MiniMaxH3-OSS の全パラメータ(<code>cache_depth</code> 0.75 が約 45%)、TeaCache、FirstBlockCache などを並べ、<strong>共通のダイヤルは「どれだけ深く」「どの区間で」の 2 つ</strong>であること、<strong>EasyCache の教訓が一族全体に横展開できる</strong>こと、<strong>TE-Speed はモデルファイル本体にパッチを当てる</strong>点、<strong>全員 PDD と併用不可</strong>である点を記載)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① §9 の実験結果の反映、② 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ PDD が 16GB で動くかの確認(動けばキャッシュ系は不要)。</p>
+  <p>初版 2026-08-30 / 第 18 版 2026-08-30(<strong>§2c「どの H3 を使うか」を新設</strong>。公式・コミュニティ・第三者派生が混ざってきたので見取り図を作成。<strong>FastH3 も H3 Max も MiniMax 自身のリリースではない</strong>こと、<strong>FastH3 Preview v1 は T2VA のみで Ref2VA は未蒸留</strong>のため現構成では使えないこと、<strong>14 倍は B200 の数字</strong>でコンシューマ実測は 3090 Ti で約 10 倍であること、<strong>VSA は VRAM を減らさず 22GB がピーク</strong>で 16GB には厳しいこと、<strong>topk を下げると顔がフリッカーする</strong>ことを記載。H3 Max は fal 独占・最大 768p)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① §9 の実験結果の反映、② 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ <strong>FastH3 の Ref2VA 対応が出たら再評価</strong>。</p>
 </footer>
 
 </main>
