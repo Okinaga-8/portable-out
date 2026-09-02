@@ -100,3 +100,7 @@ muted neutral color grade, shallow depth of field, 35mm film look, 24fps.
 - MiniMax 系は英語プロンプトが最も安定するため本文は英語。日本語入力も通るが、カメラ用語の解釈精度が落ちる。
 - ComfyUI の MiniMax API ノードにはネガティブプロンプト欄が無いため、除外したい要素（＝袋の中身）は
   上記のとおり肯定文の構図条件で潰している。
+
+---
+
+R2V（参照画像方式）版は `minimax-h3-paper-bag-r2v.md` を参照。
