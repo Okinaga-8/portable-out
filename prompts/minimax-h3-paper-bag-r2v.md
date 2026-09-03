@@ -131,3 +131,107 @@ field, realistic skin texture, 24fps.
 | しゃがまず前かがみになる | `lowers herself into a deep crouch` → `squats all the way down, knees fully bent, hips low near her heels` |
 | 紙袋の中が映る | `The lens stays level with the rim` → `The camera stays at floor level, looking slightly up at her` に変更 |
 | 紙袋の形が安定しない | `a plain brown kraft paper bag with twisted paper handles` のように形状語を1つ足す |
+
+---
+
+# 続きのシーン（クリップ3・4） — 「おもちゃのヘビを取り出して観察する」
+
+元シーン:
+3. 女性が紙袋の中から、子供のおもちゃのヘビを引っ張り出す。
+4. 引っ張り出したヘビを、手を動かしながら黙って観察する。
+
+## このカット固有の方針
+
+- **最大のリスクは「本物のヘビ」になること。** おもちゃであることを
+  ①材質（`soft rubber` / `hollow plastic`）
+  ②造形（`cartoonish painted face`）
+  ③動き（`limp and lifeless, moves only from her hand`）
+  の3方向から縛る。1つだけだと生きたヘビとして自走する。
+- **「黙って」は明示しないと喋る。** 動画生成モデルは放っておくと口を動かすので
+  `her lips stay closed and she says nothing` を必ず入れる。
+- おもちゃは参照画像に写っていないので、**色・長さ・質感を具体的に固定**してクリップ間で揃える。
+- 姿勢はクリップ2から継続（しゃがんだまま）。
+
+## クリップ3（6秒 / 紙袋からヘビを引っ張り出す）
+
+参照は **Ref A（バストアップ）**。
+
+```
+The woman from the reference image, wearing exactly the same clothes and hairstyle
+as the reference, alone in a quiet apartment with a wooden floor, crouching and
+holding a plain brown kraft paper bag against her chest with one hand. Live-action
+cinematic footage, close shot from a three-quarter angle that keeps her hands on the
+bag and her whole face in frame. She reaches into the bag with her other hand and
+slowly pulls out a children's toy snake, about forty centimetres long, made of soft
+bright green rubber with a yellow belly and a cartoonish painted face with a red
+mouth. The toy is completely limp and lifeless: it bends and sways only from the
+movement of her hand as she draws it out and lifts it clear of the bag, hanging down
+from her fingers like a piece of rubber hose. Her lips stay closed and she says
+nothing. The camera holds a steady three-quarter close framing, tilting up just
+enough to follow the toy as she raises it, and the lens stays level with the rim of
+the bag so only the outer paper of the bag faces camera. Soft natural window light,
+muted neutral color grade, shallow depth of field, realistic skin texture, 24fps.
+```
+
+## クリップ4（6〜10秒 / 手を動かしながら黙って観察）
+
+参照は **Ref A（バストアップ）**。
+
+```
+The woman from the reference image, wearing exactly the same clothes and hairstyle
+as the reference, alone in a quiet apartment with a wooden floor, crouching and
+holding up a children's toy snake in front of her, about forty centimetres long,
+made of soft bright green rubber with a yellow belly and a cartoonish painted face.
+Live-action cinematic footage, close shot from a three-quarter angle that keeps both
+of her hands and her whole face in frame. She studies the toy in silence, turning it
+slowly over in her hands, rotating it to see the other side, letting it dangle and
+swing from her fingers, lifting it closer to her eyes and then holding it further
+away, running her fingertips along its rubber body. The toy stays limp and lifeless,
+bending and swinging only from her own hand movements. Her lips stay closed and she
+says nothing; her face is calm and unreadable, her eyes tracking the toy, her head
+tilting slightly. The camera is almost static with subtle handheld micro-movement and
+stays in the close shot for the entire take. Soft natural window light, muted neutral
+color grade, shallow depth of field, realistic skin texture, 24fps.
+```
+
+## 1クリップ版（10秒 / 取り出し〜観察を通しで）
+
+```
+The woman from the reference images, wearing exactly the same clothes and hairstyle
+as the reference, alone in a quiet apartment with a wooden floor, crouching and
+holding a plain brown kraft paper bag against her chest with one hand. Live-action
+cinematic footage, one continuous take, close shot from a three-quarter angle that
+keeps her hands and her whole face in frame. She reaches into the bag and slowly
+pulls out a children's toy snake, about forty centimetres long, made of soft bright
+green rubber with a yellow belly and a cartoonish painted face with a red mouth,
+lifting it clear of the bag where it hangs limply from her fingers. She lowers the
+bag out of frame and takes the toy in both hands, then studies it in silence: turning
+it slowly over, rotating it to see the other side, letting it dangle and swing,
+lifting it closer to her eyes and then holding it further away. The toy stays limp
+and lifeless, bending and swinging only from the movement of her hands. Her lips stay
+closed and she says nothing; her face is calm and unreadable, her eyes tracking the
+toy. The camera stays in the close framing for the whole take with subtle handheld
+micro-movement. Soft natural window light, muted neutral color grade, shallow depth
+of field, realistic skin texture, 24fps.
+```
+
+## おもちゃの参照画像を足す選択肢
+
+ノードが**物体の参照画像**に対応している場合、Ref A / Ref B に加えて
+**Ref C: おもちゃのヘビ単体の写真（白背景）** を渡すと、色・造形がクリップ間で完全に揃う。
+
+- 利点: 「本物のヘビ化」がほぼ完全に止まる。プロンプト側の材質描写を減らせる。
+- 注意: ノードによっては Ref C を「2人目の被写体」と解釈して人物が増えることがある。
+  その場合は Ref C を外し、プロンプトの材質描写だけで縛る。
+
+## このカットの崩れと対処
+
+| 症状 | 対処 |
+| --- | --- |
+| 本物のヘビになる／自分でうねる・鎌首をもたげる | `hollow rubber toy` を追加し、`its body stays completely still except when her hand moves it` を末尾に足す。それでも駄目なら Ref C（おもちゃ単体写真）を投入 |
+| 女性が喋る／口が動く | `her lips stay closed and she says nothing` を文の**前半**へ移動。`silent, no dialogue` も併記 |
+| ヘビが手から消える／落ちる | `holding it firmly in both hands` に固定し、`dangle` を削る |
+| ヘビの色・長さがクリップ間で変わる | 数値と色を全クリップで**同一文字列**にする（`about forty centimetres long, bright green with a yellow belly`）。または Ref C を使う |
+| 女性が驚く・怖がる表情になる | `calm and unreadable, no strong expression, she is simply examining it` を追加 |
+| カメラが勝手に引く | `the camera stays in the close shot for the entire take` を残す。Director 系なら `[Static shot]` |
+| 紙袋の中が映ってしまう | クリップ3の `the lens stays level with the rim of the bag` を維持。不要なら削ってよい（ヘビが出た後は中身が論点ではないため） |
