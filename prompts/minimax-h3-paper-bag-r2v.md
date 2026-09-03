@@ -235,3 +235,211 @@ of field, realistic skin texture, 24fps.
 | 女性が驚く・怖がる表情になる | `calm and unreadable, no strong expression, she is simply examining it` を追加 |
 | カメラが勝手に引く | `the camera stays in the close shot for the entire take` を残す。Director 系なら `[Static shot]` |
 | 紙袋の中が映ってしまう | クリップ3の `the lens stays level with the rim of the bag` を維持。不要なら削ってよい（ヘビが出た後は中身が論点ではないため） |
+
+---
+
+# 着替えのシーン — 2つのアプローチ
+
+同じドラマ上のビート（脱ぐ → 床から拾う → 身につける）を、
+**版A: 靴下に置き換え（斜め全身を維持）** と
+**版B: 上半身フレーム＋フレーム外動作** の2通りで書いたもの。
+
+| | 版A（靴下） | 版B（上半身フレーム） |
+| --- | --- | --- |
+| カメラ | 斜め全身・固定（元の指定どおり） | 腰から上・固定（全身は捨てる） |
+| 主参照 | **Ref B（立ち姿・全身）** | **Ref A（バストアップ）** ※全身参照は画角を引かせるので使わない |
+| 難所 | 足と手の描画崩れ、片足バランス | カメラが勝手に引いて全身になる |
+| 衣類の指定 | 具体的に指定する | **一切名前を出さない**（後述） |
+
+---
+
+## 版A: 靴下バージョン（斜め全身・固定カメラ）
+
+### クリップ5（6秒 / 片方の靴下を脱ぐ）
+
+```
+The woman from the reference image, wearing exactly the same clothes and hairstyle
+as the reference, alone in a quiet, sparsely furnished apartment with a wooden floor
+and a plain wall behind her. Live-action cinematic footage, filmed in full body from
+a three-quarter oblique angle at chest height. She stands still, then bends forward
+at the waist and reaches down with both hands to her left foot, hooking her fingers
+into the cuff of a white cotton crew sock and peeling it down over her heel and off
+her toes. She straightens back up holding the sock in one hand, then opens her
+fingers and lets it drop to the wooden floor beside her bare left foot. The movement
+is unhurried and slightly off balance, with small natural corrections of her weight.
+The camera is locked off on a tripod and holds the identical three-quarter full-body
+framing for the entire shot. Soft natural window light from the left, muted neutral
+color grade, shallow depth of field, realistic skin texture, 24fps.
+```
+
+### クリップ6（6秒 / もう片方の靴下を脱ぐ）
+
+```
+The woman from the reference image, wearing exactly the same clothes and hairstyle
+as the reference, alone in the same quiet apartment with a wooden floor, standing
+barefoot on her left foot with one white cotton crew sock already lying on the floor
+beside her. Live-action cinematic footage, filmed in full body from a three-quarter
+oblique angle at chest height. She bends forward at the waist again and reaches down
+with both hands to her right foot, hooking her fingers into the cuff of the second
+white cotton crew sock and peeling it down over her heel and off her toes. She
+straightens back up holding it, then lets it fall to the floor next to the first one.
+Her weight sways slightly and she corrects her balance naturally. The camera is
+locked off on a tripod and holds the identical three-quarter full-body framing for
+the entire shot. Soft natural window light from the left, muted neutral color grade,
+shallow depth of field, realistic skin texture, 24fps.
+```
+
+### クリップ7（6〜10秒 / 床の靴下を拾って履く）
+
+拾う靴下は**色を変える**と「履き替えた」ことが画で読める。
+
+```
+The woman from the reference image, wearing exactly the same clothes and hairstyle
+as the reference, standing barefoot on the wooden floor of the same quiet apartment.
+Live-action cinematic footage, filmed in full body from a three-quarter oblique angle
+at chest height. She bends down and picks up a single grey wool sock lying on the
+floor near her feet, then straightens up and stretches its mouth open with both
+hands. She leans forward, raises her right heel and balances on the toes of that
+foot, guides the sock over her toes and pulls it up over her heel and around her
+ankle, then straightens up and settles her weight down onto the foot. Unhurried,
+slightly clumsy, with small natural balance corrections. The camera is locked off on
+a tripod and holds the identical three-quarter full-body framing for the entire shot.
+Soft natural window light from the left, muted neutral color grade, shallow depth of
+field, realistic skin texture, 24fps.
+```
+
+### 版A・1クリップ版（10秒）
+
+3ビートを10秒に詰めると動作が早回しになりやすい。**2ビートに削るほうが確実**
+（両方脱ぐ→片方履く、ではなく「片方脱ぐ→拾って履く」）。以下は3ビート版。
+
+```
+The woman from the reference images, wearing exactly the same clothes and hairstyle
+as the reference, alone in a quiet, sparsely furnished apartment with a wooden floor.
+Live-action cinematic footage, one continuous take, filmed in full body from a
+three-quarter oblique angle at chest height. She stands still, then bends forward and
+peels a white cotton crew sock off her left foot and drops it on the floor, then
+bends again and peels the second white sock off her right foot and drops it beside
+the first. She then picks up a single grey wool sock from the floor, stretches its
+mouth open with both hands, leans forward and pulls it over the toes and heel of her
+right foot, and straightens up settling her weight onto it. Unhurried and slightly
+clumsy, with small natural balance corrections throughout. The camera is locked off
+on a tripod and holds the identical three-quarter full-body framing for the entire
+shot. Soft natural window light from the left, muted neutral color grade, shallow
+depth of field, realistic skin texture, 24fps.
+```
+
+### 版Aの崩れと対処
+
+| 症状 | 対処 |
+| --- | --- |
+| 足の指・手の指が破綻する | 最大の難所。1080P必須。`her bare foot clearly visible, five toes` などと足を強調するのは**逆効果**（注目されて余計に崩れる）。むしろ足の描写を減らし、`peeling the sock off her foot` だけに留めるほうが安定する |
+| 靴下が消える／手の中で溶ける | `a white cotton crew sock` の材質語を保持し、床に落とす動作を `opens her fingers and lets it drop` と分解して書く |
+| 途中で座り込む | `standing` を文の前半に置き、`she stays standing throughout` を末尾に追加 |
+| 片足立ちで崩壊する | クリップ7の `raises her right heel and balances on the toes of that foot` を `sits down on a chair` 前提に変えるか、`bends forward` 主体の動作に統一する |
+| 靴下の色が読めない | 床が木目なので白は読める。暗い床なら `a bright white sock` / `a bright red sock` に変更 |
+| 「拾って履いた」が伝わらない | 脱ぐ靴下と履く靴下の色を必ず変える（white → grey / white → striped） |
+
+---
+
+## 版B: 上半身フレーム＋フレーム外動作
+
+### 設計の要点
+
+- **衣類の名前を一切書かない。** これが最重要。脱ぐ対象を名指しすると、モデルは
+  「それを見せなければ」と判断して画角を引いたり、フレーム内に描画したりする。
+  **フレームの中にあるものだけを描写する**（肩・腕・肘・重心・表情）。
+- 参照は **Ref A（バストアップ）のみ**。立ち姿の全身参照を渡すと画角が引っ張られる。
+- 「腰から下でやっている」ことは、**重心移動と片足バランス**で観客に伝わる。
+- カメラ指示は否定形（`never tilt down`）より、**下端の位置を肯定形で固定**するほうが効く。
+
+### クリップB-1（6秒）
+
+```
+The woman from the reference image, wearing exactly the same clothes and hairstyle
+as the reference, alone in a quiet, sparsely furnished apartment with a plain wall
+behind her. Live-action cinematic footage, a locked-off medium shot from a
+three-quarter oblique angle, framing her from the waist up with the bottom edge of
+frame at her waistline. She stands still, then looks down and her shoulders roll
+forward as both arms reach straight down and her hands pass below the bottom edge of
+the frame. Her elbows move in small steady arcs and her upper body dips slightly as
+she works with her hands out of view. She shifts her weight from one foot to the
+other, her torso swaying and correcting as she briefly balances, then settles. She
+straightens back up, her empty hands returning into frame, and smooths the hem of her
+top. Her lips stay closed and she says nothing. The camera is locked off on a tripod
+and holds the identical waist-up framing for the entire shot, the bottom edge of
+frame staying at her waistline. Soft natural window light from the left, muted
+neutral color grade, shallow depth of field, realistic skin texture, 24fps.
+```
+
+### クリップB-2（6秒）
+
+同じ動作の反復に見えないよう、**壁に片手をついて支える**動きで差をつける。
+
+```
+The woman from the reference image, wearing exactly the same clothes and hairstyle
+as the reference, alone in the same quiet apartment with a plain wall behind her.
+Live-action cinematic footage, a locked-off medium shot from a three-quarter oblique
+angle, framing her from the waist up with the bottom edge of frame at her waistline.
+She reaches out and steadies herself with one hand flat against the wall, looks down,
+and lowers her other arm straight down until her hand passes below the bottom edge of
+the frame. Her shoulder drops and rotates in small movements as she works out of
+view, her weight lifting onto one leg so her whole torso tilts and corrects. She
+brings her hand back up into frame, takes her palm off the wall and straightens up,
+exhaling. Her lips stay closed and she says nothing. The camera is locked off on a
+tripod and holds the identical waist-up framing for the entire shot, the bottom edge
+of frame staying at her waistline. Soft natural window light from the left, muted
+neutral color grade, shallow depth of field, realistic skin texture, 24fps.
+```
+
+### クリップB-3（6〜10秒 / 床から拾って身につける）
+
+```
+The woman from the reference image, wearing exactly the same clothes and hairstyle
+as the reference, alone in the same quiet apartment with a plain wall behind her.
+Live-action cinematic footage, a locked-off medium shot from a three-quarter oblique
+angle, framing her from the waist up with the bottom edge of frame at her waistline.
+She looks down at the floor, then bends forward and down until her head and shoulders
+drop out of the bottom of the frame for a moment. She rises back up into frame, her
+hands staying below the bottom edge, her forearms tensing as she works out of view.
+Her weight lifts onto one leg and her torso tilts and corrects, then lifts onto the
+other leg and corrects again. Finally she straightens up to her full height, her
+empty hands returning into frame, and smooths the hem of her top with both hands. Her
+lips stay closed and she says nothing. The camera is locked off on a tripod and holds
+the identical waist-up framing for the entire shot, the bottom edge of frame staying
+at her waistline. Soft natural window light from the left, muted neutral color grade,
+shallow depth of field, realistic skin texture, 24fps.
+```
+
+### 版B・1クリップ版（10秒）
+
+```
+The woman from the reference image, wearing exactly the same clothes and hairstyle
+as the reference, alone in a quiet, sparsely furnished apartment with a plain wall
+behind her. Live-action cinematic footage, one continuous take, a locked-off medium
+shot from a three-quarter oblique angle, framing her from the waist up with the
+bottom edge of frame at her waistline. She stands still, then looks down and both
+arms reach straight down until her hands pass below the bottom edge of the frame; her
+elbows move in small arcs and she shifts her weight from one foot to the other,
+swaying and correcting her balance. She steadies herself with one hand against the
+wall and repeats the movement, her shoulder dropping and rotating out of view. Then
+she bends forward and down until her head drops out of the bottom of the frame for a
+moment, rises back into frame with her hands still below the edge, and her weight
+lifts onto one leg and then the other as her forearms tense. Finally she straightens
+up to her full height, her empty hands returning into frame, and smooths the hem of
+her top. Her lips stay closed and she says nothing. The camera is locked off on a
+tripod and holds the identical waist-up framing for the entire shot, the bottom edge
+of frame staying at her waistline. Soft natural window light from the left, muted
+neutral color grade, shallow depth of field, realistic skin texture, 24fps.
+```
+
+### 版Bの崩れと対処
+
+| 症状 | 対処 |
+| --- | --- |
+| カメラが引いて全身になる | 参照から Ref B（立ち姿・全身）を外し Ref A のみにする。`the bottom edge of frame staying at her waistline` を文頭にも重ねる。Director 系なら `[Static shot]` |
+| モデルが勝手に衣類を描く | プロンプト内に衣類の名詞が残っていないか確認する。`hem of her top` 以外の衣類語は全部消す |
+| 手がフレーム外に出ず、宙で動く | `her hands pass below the bottom edge of the frame` を動作ごとに毎回書く。1回だけだと戻ってくる |
+| 何をしているか伝わらない | 重心移動の記述を増やす（`her weight lifts onto one leg and her torso tilts and corrects`）。これが唯一の手がかりになる |
+| フレームアウトしたまま戻らない | `rises back up into frame` `straightens up to her full height` を明示 |
+| 喋りだす | `her lips stay closed and she says nothing` を前半へ |
