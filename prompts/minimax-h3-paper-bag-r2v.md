@@ -443,3 +443,88 @@ neutral color grade, shallow depth of field, realistic skin texture, 24fps.
 | 何をしているか伝わらない | 重心移動の記述を増やす（`her weight lifts onto one leg and her torso tilts and corrects`）。これが唯一の手がかりになる |
 | フレームアウトしたまま戻らない | `rises back up into frame` `straightens up to her full height` を明示 |
 | 喋りだす | `her lips stay closed and she says nothing` を前半へ |
+
+---
+
+# テーブルのシーン — サラミ
+
+構図: テーブルに座った女性、斜め方向からの固定・胸から上のミディアムショット。
+主参照は **Ref A（バストアップ）**。
+
+小道具はサラミ。参照画像に写っていないので、**寸法・色・質感を全クリップで同一文字列に固定**する:
+`a thick dry-cured salami sausage, deep red with a pale dusty white rind, firm and rigid`
+
+## クリップ8（6〜10秒 / 一口食べて味わう）
+
+```
+The woman from the reference image, wearing exactly the same clothes and hairstyle
+as the reference, sitting at a plain wooden table in a quiet, sparsely furnished
+apartment. Live-action cinematic footage, a locked-off medium shot from a
+three-quarter oblique angle, framing her from the chest up with the edge of the table
+across the bottom of frame. She holds a thick dry-cured salami sausage in both hands,
+deep red with a pale dusty white rind, firm and rigid. She raises it to her mouth and
+bites a piece off the end, then lowers the salami back down to the table and chews
+slowly. Her eyes close for a moment, her eyebrows lift and her cheeks round as she
+savours the taste, and she nods slightly and breaks into a satisfied, contented
+smile. The camera is locked off on a tripod and holds the identical framing for the
+entire shot. Soft natural window light from the left, muted neutral color grade,
+shallow depth of field, realistic skin texture, 24fps.
+```
+
+## クリップ9（6秒 / 横咥え・両端がはみ出る・イタズラっぽい表情）
+
+要点は3つ。
+1. **「口より長い」ことを比較で明示**する。寸法だけ書いても口の中に収めてしまう。
+2. **`like a dog holding a stick crosswise`** という比喩が最も効く。既知の絵として理解される。
+3. **両手をテーブルに下ろさせる**。手の行き先を指定しないと、手が消えるか画面外で溶ける。
+
+```
+The woman from the reference image, wearing exactly the same clothes and hairstyle
+as the reference, sitting at a plain wooden table in the same quiet apartment.
+Live-action cinematic footage, a locked-off medium shot from a three-quarter oblique
+angle, framing her from the chest up. She lifts a thick dry-cured salami sausage,
+deep red with a pale dusty white rind, firm and rigid, turns it sideways and grips it
+crosswise between her teeth, like a dog holding a stick in its mouth. The salami is
+far longer than her mouth is wide, so both of its ends stick out well past the
+corners of her lips on either side of her face. She lowers both hands flat onto the
+table and holds the salami still, clamped between her teeth. She turns her face
+towards the lens, her eyes widening and brightening, her eyebrows lifting and the
+corners of her mouth pulling back into a mischievous grin around the salami. The
+camera is locked off on a tripod and holds the identical framing for the entire shot.
+Soft natural window light from the left, muted neutral color grade, shallow depth of
+field, realistic skin texture, 24fps.
+```
+
+## 1クリップ版（10秒 / 味わう〜横咥え）
+
+```
+The woman from the reference image, wearing exactly the same clothes and hairstyle
+as the reference, sitting at a plain wooden table in a quiet, sparsely furnished
+apartment. Live-action cinematic footage, one continuous take, a locked-off medium
+shot from a three-quarter oblique angle, framing her from the chest up with the edge
+of the table across the bottom of frame. She holds a thick dry-cured salami sausage
+in both hands, deep red with a pale dusty white rind, firm and rigid. She raises it,
+bites a piece off the end and chews slowly, her eyes closing for a moment and her
+eyebrows lifting into a satisfied, contented smile as she savours the taste. Then she
+turns the salami sideways and grips it crosswise between her teeth, like a dog
+holding a stick in its mouth; it is far longer than her mouth is wide, so both ends
+stick out well past the corners of her lips on either side of her face. She lowers
+both hands flat onto the table and turns her face towards the lens, her eyes widening
+and her mouth pulling back into a mischievous grin around the salami. The camera is
+locked off on a tripod and holds the identical framing for the entire shot. Soft
+natural window light from the left, muted neutral color grade, shallow depth of
+field, realistic skin texture, 24fps.
+```
+
+## このシーンの崩れと対処
+
+| 症状 | 対処 |
+| --- | --- |
+| 口元・歯が破綻する | 最大の難所。**これ以上寄らない**（胸から上のミディアムを維持）。1080P 必須。`her teeth` を主語にした描写は増やさない — 注目させると崩れる |
+| サラミが口に収まってしまう | `far longer than her mouth is wide` と `like a dog holding a stick` の両方を残す。それでも駄目なら `a 30 cm long salami` と数値を足す |
+| サラミがゴムのように曲がる | `firm and rigid` `dry-cured` を保持し、`it stays perfectly straight and does not bend` を末尾に追加 |
+| 咥えたまま食べ進める／飲み込む | `holds the salami still, clamped between her teeth` を明示。`chews` の語をクリップ9からは完全に消す |
+| 手が消える／溶ける | `lowers both hands flat onto the table` のように**手の最終位置を必ず指定**する |
+| 表情が「イタズラっぽく」ならない | `mischievous` 単体は弱い。`eyes widening and brightening` `eyebrows lifting` `corners of her mouth pulling back` と**筋肉の動きに分解**して書く |
+| サラミの色・太さがクリップ間で変わる | 全クリップで同一文字列を使う。ノードが物体参照に対応していれば、サラミ単体の白背景写真を Ref C として追加 |
+| カメラが寄る／引く | `the camera is locked off on a tripod and holds the identical framing` を維持。Director 系なら `[Static shot]` |
