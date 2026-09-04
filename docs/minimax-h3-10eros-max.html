@@ -314,6 +314,8 @@
   <div class="specstrip">
     <span>GPU <b>RTX 4080 / VRAM 16 GB (Ada, SM 8.9)</b></span>
     <span>RAM <b>64 GB</b></span>
+    <span>CUDA <b>13</b></span>
+    <span>主用途 <b>Ref2VA（FL2VA も併用）</b></span>
     <span>調査日 <b>2026-09-04</b></span>
   </div>
 </header>
@@ -356,10 +358,15 @@
     </div>
     <div class="key">
       <div class="kn">16GB の本命</div>
-      <p><strong>GGUF Q4_K_M（約 11.6 GB）</strong>＋ ComfyUI-GGUF。既存の H3 が INT8 ConvRot（約 21 GB）で回っているなら、10Eros-Max も INT8 ConvRot 版で同条件が成立する。</p>
+      <p><strong>beta2 ref2va の GGUF Q4_K_M（約 11.6 GB）</strong>＋ ComfyUI-GGUF。Turbo が焼き込まれていない版なので、いまの「Turbo で下書き → 外して本番」がそのまま通る。</p>
     </div>
   </div>
   <p style="margin-top:1.2rem">つまり「同じ環境で試したい」という見立ては当たっています。作業としては <em>ComfyUI の入れ直しでも、環境の作り直しでもなく、モデルファイルを 1 本増やしてローダーの参照先を切り替えるだけ</em> です。既存の H3 ファイルは消さずに残してください。同一シード・同一プロンプトで A/B できることが、このモデルを試す一番の価値なので。</p>
+
+  <div class="panel stop">
+    <h4>ただし、モデルより先に確認してほしいことが 1 つ</h4>
+    <p><b>FL2VA と Ref2VA は Turbo LoRA を共有しません。</b>別モデルなので、LoRA も別物です。Ref2VA 用は <code>minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors</code> ただ 1 つ。もし Ref2VA の生成に FL2VA 用の Turbo LoRA（<code>…fl2v…</code> / <code>larryvrh</code> 系 / <code>lightx2v 8step</code> など）を当てていたなら、<b>10Eros-Max 以前に、そこが品質を落としている可能性があります。</b>今夜いちばん最初に見てください。詳細は <a href="#s7">07</a>。</p>
+  </div>
 </section>
 
 <!-- ============ 02 ============ -->
@@ -385,12 +392,19 @@
   <h3>「チェックポイントを差し替える」ではなく「diffusion model を差し替える」</h3>
   <p>SD1.5 や SDXL の感覚だと 1 個の checkpoint に全部入っていますが、H3 は <b>DiT（本体）＋ text encoder ＋ video VAE ＋ audio VAE の 4 点セット</b>で、ComfyUI 上でも別々のローダーで読みます。差し替え対象はこのうち DiT だけです。</p>
 
-  <h3>モード名：FL2VA と Ref2VA</h3>
+  <h3>モード名：FL2VA と Ref2VA、そして「hybrid」</h3>
   <ul>
-    <li><b>FL2VA</b>（first-and-last-frame）— 画像 0 枚なら T2V、1 枚なら I2V、2 枚なら始点＋終点指定。<b>ふだん画像 1 枚から動かしているなら、使っているのはこちら。</b></li>
+    <li><b>FL2VA</b>（first-and-last-frame）— 画像 0 枚なら T2V、1 枚なら I2V、2 枚なら始点＋終点指定。</li>
     <li><b>Ref2VA</b>（omni-reference）— 画像 9 枚・動画 3 本・音声 3 本まで参照として渡せるモード。キャラや声を寄せたいとき用。VRAM 的にはこちらの方が重い。</li>
   </ul>
-  <p>10Eros-Max は両方に版があるので、<b>ふだん使っているモード側を落とす</b>のが正解です。両方落とすと約 24 GB になります。</p>
+  <p><b>この 2 つは別モデルです。</b>DiT ファイルも別なら、Turbo LoRA も別。そして設計上、<b>Ref2VA は FL2VA より素の画質・音質が明確に落ちます</b>（参照条件付けができる代わりの対価）。これは H3 の既知の性質で、あなたが主に Ref2VA を使っているなら、<b>10Eros-Max が謳う「顔の一貫性の向上」はまさにそこに効く可能性があります。</b>相性は良さそうです。</p>
+
+  <h3>hybrid とは何か <span class="chip warn">使い方に制約あり</span></h3>
+  <p>この Ref2VA の品質差を埋めるために、コミュニティは <b>FL2VA をベースに、50 ブロックのうち一部の <code>adaln_proj</code> だけを Ref2VA から取ってくる</b>マージを作っています。これが「hybrid」。10Eros-Max の <code>TURBO-hybrid</code> 系もこの系譜で、<b>1 ファイルで参照モードと t2va の両方を賄えます</b>。両モードを使うあなたには効率が良い形です。</p>
+  <div class="panel flag">
+    <h4>hybrid を i2v モードで使わないこと</h4>
+    <p>hybrid 系は <b>参照（ref2va）形式か t2va 形式で使う</b>もので、i2v モードでは使わない、という注意が付いています。<b>画像 1 枚を渡す場合も、<code>first_frame</code> ではなく参照画像として ref2va 形式で渡します。</b>ここを間違えると「なぜか品質が出ない」になります。</p>
+  </div>
 
   <h3>「作風が少し異なる」の中身 <span class="chip neutral">補足</span></h3>
   <p>10Eros-Max の差分として挙がっているのは、静止画的な「画風」よりも <b>動きの性格</b> です。具体的には <b>顔の一貫性の向上</b> と <b>弾むような、反応の速いモーション</b>。ダンスなど動きの大きい題材に向く、という評価です。逆に言うと、静かなカットで A/B しても差が見えにくい可能性があります。比較用のプロンプトは動きのあるものにしてください。</p>
@@ -465,8 +479,12 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
       <p>出た内容を <a href="#s10">10 環境メモ</a> に貼るか、そのままチャットに貼ってください。これがあると以降の判断がぶれません。</p>
     </li>
     <li>
+      <b>Turbo LoRA のファイル名を確認する</b> <span class="chip bad">最優先</span>
+      <p>Ref2VA のワークフローの LoRA ローダーを開き、<b>ファイル名に <code>ref2v</code> が入っているか</b>を見ます。入っていなければ FL2VA 用を当てています。その場合は <code>minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors</code> に差し替え、<b>NFE 4 / shift video 12・audio 3</b> に合わせて 1 本回してください。<b>ここが直るだけで印象が変わる可能性があります。</b>詳細は <a href="#s7">07</a>。</p>
+    </li>
+    <li>
       <b>いま使っている DiT ファイル名を確認する</b>
-      <p>ワークフローの「Load Diffusion Model」ノードで選ばれているファイル名を見ます。ここに <code>fl2va</code> と入っていれば FL2VA、<code>ref2va</code> なら Ref2VA。<b>同じモード側の 10Eros-Max を落とします。</b> <code>pruned</code> が付いているかも控えてください（Turbo LoRA の選択に効きます）。</p>
+      <p>「Load Diffusion Model」ノードで選ばれているファイル名を見ます。<code>ref2va</code> / <code>fl2va</code> のどちらか、<code>pruned</code> が付くか、を控えます。Ref2VA 側を主に使うので、<b>まず落とすのは 10Eros-Max の ref2va 版</b>です。</p>
     </li>
     <li>
       <b>空きディスクを確認する</b>
@@ -507,91 +525,112 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
 <section id="s5">
   <div class="seclabel">05</div>
   <h2 class="sec">ダウンロード候補</h2>
-  <p class="lede">10Eros-Max の配布はミラーが多く、命名も揃っていません。16GB 判定つきで整理しました。<b>この表から 1 行だけ選びます。</b></p>
+  <p class="lede">配布が版ごとに分かれていて、命名も揃っていません。<b>まず「どの世代か」を決めてから、形式を選びます。</b>ここを混ぜると比較の意味がなくなります。</p>
 
+  <h3>世代の系譜</h3>
   <div class="tablewrap wide">
   <table>
-    <caption>10Eros-Max：形式別</caption>
-    <thead>
-      <tr>
-        <th>配布元</th><th>形式</th><th class="num">サイズ</th><th>モード</th><th>16GB</th><th>備考</th>
-      </tr>
-    </thead>
+    <caption>10Eros-Max の版</caption>
+    <thead><tr><th>版</th><th>Turbo</th><th>モード</th><th>16GB で入手できる形</th><th>位置づけ</th></tr></thead>
     <tbody>
       <tr class="pick">
-        <td>Abiray/10Eros-Max-fl2va-Beta2-GGUF</td>
-        <td class="fn">GGUF Q4_K_M</td><td class="num">≈11.6 GB</td><td>FL2VA</td>
-        <td><span class="chip ok">本命</span></td>
-        <td>ComfyUI-GGUF 必須。作者推奨の既定値</td>
+        <td><b>beta2</b></td><td><span class="chip ok">焼き込みなし</span></td>
+        <td>fl2va / ref2va <b>別ファイル</b></td>
+        <td>GGUF Q3〜Q8（Abiray）、NVFP4</td>
+        <td><b>非焼き込みの本命。</b>いまの運用がそのまま通る</td>
       </tr>
       <tr>
-        <td>Abiray/10Eros-Max-ref2va-Beta2-GGUF</td>
-        <td class="fn">GGUF Q4_K_M</td><td class="num">≈11.6 GB</td><td>Ref2VA</td>
-        <td><span class="chip ok">本命</span></td>
-        <td>参照入力を使う運用ならこちら</td>
+        <td>test4 pruned</td><td><span class="chip ok">焼き込みなし</span></td><td>fl2va</td>
+        <td>GGUF Q3〜Q8（Abiray 無印リポジトリ）</td>
+        <td>fl2va 用の別系統。専用 Turbo LoRA が t8star から出ている</td>
       </tr>
       <tr>
-        <td>Abiray（同上）</td>
-        <td class="fn">GGUF Q5_K_M</td><td class="num">≈14.1 GB</td><td>両モード有</td>
-        <td><span class="chip warn">ぎりぎり</span></td>
-        <td>画質寄り。TE と同時常駐すると厳しい</td>
+        <td>beta3</td><td><span class="chip warn">焼き込みあり</span></td><td>実質 t2v のみ</td>
+        <td>W4A8 <b>11.68 GB</b>（berryber09）</td>
+        <td>作者が「やや壊れている」と述べている版。<b>r2v 用途では優先度低</b></td>
       </tr>
       <tr>
-        <td>Abiray（同上）</td>
-        <td class="fn">GGUF Q3_K_M</td><td class="num">≈8.9 GB</td><td>両モード有</td>
-        <td><span class="chip ok">余裕</span></td>
-        <td>OOM 時の逃げ道。画質は落ちる</td>
-      </tr>
-      <tr>
-        <td>Abiray（同上）</td>
-        <td class="fn">GGUF Q6_K / Q8_0</td><td class="num">≈16.7 / 21.6 GB</td><td>両モード有</td>
-        <td><span class="chip bad">重い</span></td>
-        <td>16GB では offload 前提。GGUF の利点が薄れる</td>
-      </tr>
-      <tr>
-        <td>DmitryDB/MiniMax-H3-10Eros-Max-Quants</td>
-        <td class="fn">INT8 ConvRot</td><td class="num">20.94 GB</td><td>FL2VA</td>
-        <td><span class="chip warn">条件付</span></td>
-        <td><b>既存 H3 が INT8 で回っているなら同条件。</b>カスタムノード不要</td>
-      </tr>
-      <tr>
-        <td>DmitryDB（同上）</td>
-        <td class="fn">INT8 ConvRot Lean</td><td class="num">21.91 GB</td><td>FL2VA</td>
-        <td><span class="chip warn">条件付</span></td>
-        <td>一部を bf16 で残した高品質寄り</td>
-      </tr>
-      <tr>
-        <td>DmitryDB（同上）</td>
-        <td class="fn">NVFP4 / NVFP4-HQ</td><td class="num">10.86 / 13.60 GB</td><td>FL2VA</td>
-        <td><span class="chip unknown">要検証</span></td>
-        <td>サイズは理想的だが Ada で動くか不明。<a href="#s9">09-Q1</a></td>
-      </tr>
-      <tr>
-        <td>TenStrip/10Eros-Max（本家）</td>
-        <td class="fn">INT8 ConvRot<br>TURBO-hybrid beta4</td><td class="num">≈21 GB</td><td>全モード</td>
-        <td><span class="chip warn">条件付</span></td>
-        <td><b>Turbo が焼き込み済み</b>。Turbo LoRA を重ねない</td>
-      </tr>
-      <tr>
-        <td>TenStrip/10Eros-Max（本家）</td>
-        <td class="fn">bf16</td><td class="num">40.2 GB</td><td>全モード</td>
-        <td><span class="chip bad">不可</span></td>
-        <td>16GB では非現実的</td>
-      </tr>
-      <tr>
-        <td>DmitryDB/…-10Eros-Max-DT-sQKV</td>
-        <td class="fn">INT8 DT-sQKV</td><td class="num">21.00 GB</td><td>FL2VA</td>
-        <td><span class="chip bad">避ける</span></td>
-        <td><b>ComfyUI 本体へのパッチが必要。</b>今回は触らない</td>
+        <td><b>beta4</b></td><td><span class="chip warn">焼き込みあり</span></td><td>ref + t2va の <b>hybrid 1 本</b></td>
+        <td>INT8 ConvRot 約 19.5〜21 GB（GGUF は見当たらず）</td>
+        <td><b>作者の現行本命。非 Turbo 版は作られていない</b></td>
       </tr>
     </tbody>
   </table>
   </div>
-  <p class="tnote">サイズは配布ページの表示値。ミラー（cicalooo、CornLogic、disguisequence ほか）にも同名ファイルがありますが、素性のはっきりした上記 2 つ（Abiray / DmitryDB）を優先してください。Civitai 側には「H3 Eros Max - beta4」として同系が上がっています。</p>
+  <p class="tnote">beta4 について作者は「非 Turbo 版は出来が悪いので作っていない」と述べています。つまり <b>beta4 で「Turbo を外した状態」を試すことはできません</b>。beta3 の config を土台に LoRA を新しいものへ差し替え、Turbo を consensus merge して ref/t2va ハイブリッド Turbo を構成した、という作り。6〜8 step で映像・参照・モーションとも良好、euler/simple もしくは LCM/simple 6〜8 step、とされています。</p>
+
+  <h3>ファイル選択（Ref2VA 主用途の場合）</h3>
+  <div class="tablewrap wide">
+  <table>
+    <caption>落とす候補</caption>
+    <thead>
+      <tr><th class="num">優先</th><th>配布元 / 版</th><th>形式</th><th class="num">サイズ</th><th>16GB</th><th>備考</th></tr>
+    </thead>
+    <tbody>
+      <tr class="pick">
+        <td class="num">1</td>
+        <td>Abiray/10Eros-Max-<b>ref2va</b>-Beta2-GGUF</td>
+        <td class="fn">GGUF Q4_K_M</td><td class="num">≈11.6 GB</td>
+        <td><span class="chip ok">本命</span></td>
+        <td>非焼き込み。<b>Turbo LoRA は今のまま使える</b>。ComfyUI-GGUF 必須</td>
+      </tr>
+      <tr>
+        <td class="num">2</td>
+        <td>TenStrip/10Eros-Max <b>beta4</b></td>
+        <td class="fn">TURBO-hybrid<br>INT8 ConvRot</td><td class="num">≈19.5〜21 GB</td>
+        <td><span class="chip warn">offload 前提</span></td>
+        <td>焼き込み。<b>Turbo LoRA は外す</b>。ref+t2va を 1 本で賄える。i2v では使わない</td>
+      </tr>
+      <tr>
+        <td class="num">3</td>
+        <td>Abiray/10Eros-Max-<b>fl2va</b>-Beta2-GGUF</td>
+        <td class="fn">GGUF Q4_K_M</td><td class="num">≈11.6 GB</td>
+        <td><span class="chip ok">余裕</span></td>
+        <td>FL2VA も使うなら。beta2 で揃うので ref2va 版と比較しやすい</td>
+      </tr>
+      <tr>
+        <td class="num">4</td>
+        <td>berryber09/…-turbo-hybrid-<b>beta3</b>-w4a8</td>
+        <td class="fn">W4A8 ConvRot</td><td class="num">11.68 GB</td>
+        <td><span class="chip ok">サイズ良</span></td>
+        <td>焼き込みを 11.7 GB で試せる唯一の道。ただし beta3 は実質 t2v</td>
+      </tr>
+      <tr>
+        <td class="num">—</td>
+        <td>Abiray（各リポジトリ）</td>
+        <td class="fn">GGUF Q3_K_M / Q5_K_M</td><td class="num">≈8.9 / 14.1 GB</td>
+        <td><span class="chip neutral">調整用</span></td>
+        <td>Q3 は OOM 時の逃げ道、Q5 は画質寄りでぎりぎり</td>
+      </tr>
+      <tr>
+        <td class="num">—</td>
+        <td>DmitryDB/…-10Eros-Max-Quants</td>
+        <td class="fn">INT8 ConvRot / NVFP4</td><td class="num">20.94 / 10.86〜13.60 GB</td>
+        <td><span class="chip unknown">FL2VA のみ</span></td>
+        <td>Ref2VA 版なし。NVFP4 は Ada で動くか不明（<a href="#s9">09-Q1</a>）</td>
+      </tr>
+      <tr>
+        <td class="num">×</td>
+        <td>DmitryDB/…-DT-sQKV</td>
+        <td class="fn">INT8 DT-sQKV</td><td class="num">21.00 GB</td>
+        <td><span class="chip bad">避ける</span></td>
+        <td>ComfyUI 本体へのパッチが必要</td>
+      </tr>
+      <tr>
+        <td class="num">×</td>
+        <td>TenStrip 本家 bf16</td>
+        <td class="fn">bf16</td><td class="num">37.5〜40 GB</td>
+        <td><span class="chip bad">不可</span></td>
+        <td>16GB では非現実的</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tnote">W4A8 版は ComfyUI ≥ 0.31.0 の native W4A8 ローダー（UNETLoader convrot）で読める、と配布側が明記しています（再構成誤差 relL2 ≈ 0.073、SNR ≈ 22.8 dB、検証 65 件パス）。ミラー（cicalooo、CornLogic、disguisequence、sakamakismile ほか）にも同名ファイルがありますが、素性のはっきりした上記を優先してください。</p>
 
   <div class="panel">
-    <h4>迷ったら</h4>
-    <p><b>Abiray の GGUF Q4_K_M、自分がふだん使っているモード（FL2VA か Ref2VA）の方。</b> 11.6 GB なら VRAM にほぼ丸ごと載り、offload の往復が減って体感が素直になります。INT8 版は「既存 H3 と完全に同じ土俵で比べたい」場合の選択肢です。</p>
+    <h4>今夜の 1 本目</h4>
+    <p><b>優先 1（Abiray ref2va Beta2 GGUF Q4_K_M、約 11.6 GB）。</b>いまの Turbo LoRA 運用を変えずに DiT だけ差し替えられるので、<b>10Eros-Max そのものの差だけ</b>を見られます。beta4 は変数が 3 つ同時に動くので、2 本目以降に。</p>
   </div>
 </section>
 
@@ -650,7 +689,7 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
     <tbody>
       <tr><td>CFG</td><td class="num">1.0</td><td>H3 系は一貫してこれ</td></tr>
       <tr><td>sampler / scheduler</td><td class="fn">euler / simple<br>または res_multistep</td><td>10Eros-Max beta4 の作者記述は euler/simple</td></tr>
-      <tr><td>sigma shift</td><td class="num">video 12 / audio 3</td><td>audio 6 は音量が上がるが小さい音が潰れる</td></tr>
+      <tr><td>sigma shift</td><td class="num">video 12 / audio 3<br>（768p 学習の LoRA は 6 / 3）</td><td><b>使う Turbo LoRA の学習解像度で変わる。</b>audio 6 は音量が上がるが小さい音が潰れる</td></tr>
       <tr><td>steps（本番）</td><td class="num">20〜32</td><td>MiniMax 公式は 30〜50 推奨。20 は速度との妥協点</td></tr>
       <tr><td>steps（10Eros-Max beta4）</td><td class="num">6〜8</td><td>作者記述。TURBO 版は蒸留済みのため少ステップ前提</td></tr>
       <tr><td>steps（Turbo LoRA 併用）</td><td class="num">4〜8</td><td>4 step が最速（実測 3.44×）。品質の快適域は 6〜8</td></tr>
@@ -660,16 +699,61 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
   </table>
   </div>
 
+  <h3>Turbo の扱い — ここが今回の肝</h3>
+
   <div class="panel stop">
-    <h4>Turbo LoRA の落とし穴 — 3 つ</h4>
-    <ul>
-      <li><b>ファイル名に <code>TURBO</code> が入る 10Eros-Max には、Turbo LoRA を重ねない。</b>すでに蒸留が焼き込まれています。二重掛けになります。</li>
-      <li><b>pruned 版には pruned 用の Turbo LoRA を。</b>フル版向け LoRA（larryvrh 等 744 MB）と pruned 用（drbaph/Abiray 等 592 MB）は別物です。10Eros-Max の GGUF は pruned 由来なので pruned 用を選びます。</li>
-      <li><b>Turbo は音を確実に劣化させます。</b>複数の実測レポートで一致しています。運用は「Turbo で下書き → 気に入ったシードだけ Turbo なしで本番」が定石。</li>
-    </ul>
+    <h4>FL2VA 用と Ref2VA 用の Turbo LoRA は別物</h4>
+    <p>FL2VA と Ref2VA は別モデルなので、Turbo LoRA も共有しません。<b>Ref2VA 用は <code>minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors</code> ただ 1 つ</b>で、4-step 版しか存在しません（544p 学習、shift 12/3、推奨 NFE 4）。FL2VA 側には 8-step 版も 768p 版もありますが、Ref2VA には無いので、<b>そちらを流用してはいけません。</b></p>
   </div>
 
-  <p>10Eros-Max 専用に変換された 4-step / 8-step の Turbo LoRA も存在します（t8star、約 795 MB / 1.96 GB、INT8 ConvRot）。ただし一部は「dual-clock サンプラーが必要、もしくは 8〜10 step で使うこと」と注記されています。<b>初回はまず Turbo なしで素の挙動を見てください。</b>変数を増やすと A/B の意味がなくなります。</p>
+  <div class="tablewrap">
+  <table>
+    <caption>モード別 Turbo LoRA（lightx2v / ModelTC 公式）</caption>
+    <thead><tr><th>モード</th><th>ファイル</th><th class="num">推奨 NFE</th><th class="num">学習解像度</th><th class="num">shift (video/audio)</th></tr></thead>
+    <tbody>
+      <tr class="pick"><td><b>Ref2VA</b></td><td class="fn">minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16</td><td class="num">4</td><td class="num">544p</td><td class="num">12 / 3</td></tr>
+      <tr><td>FL2VA / T2VA</td><td class="fn">minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16</td><td class="num">8 / 4</td><td class="num">544p</td><td class="num">12 / 3</td></tr>
+      <tr><td>FL2VA / T2VA</td><td class="fn">minimax_h3_fl2v_turbo_8step_v1.0_768p_comfyui_bf16</td><td class="num">8</td><td class="num">768p</td><td class="num">6 / 3</td></tr>
+      <tr><td>FL2VA / T2VA</td><td class="fn">minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16</td><td class="num">4</td><td class="num">768p</td><td class="num">6 / 3</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tnote"><b>step 数だけ変えても駄目です。</b>20 step 用のノイズスケジュールは 4 step では成立しません。LoRA を替えたら、NFE と shift をその LoRA の行に合わせてください。ModelTC は Ref2VA 用のワークフロー JSON（<code>video_minimax_h3_ref2v_lightx2v_turbo.json</code>、既定 960×544 / 0.5 MP）を配布しているので、そこから始めるのが確実です。</p>
+
+  <div class="panel flag">
+    <h4>Ref2VA 固有：参照画像のリサイズ方針</h4>
+    <p>蒸留学習では <code>ref_image_size</code> の <b><code>match</code></b>（参照画像の面積を目標キャンバスに合わせ、アスペクト比は保持、拡大はしない）を使っています。<b>Turbo LoRA を使うなら <code>match</code> を選ぶ</b>のが公式の推奨です。既定が <code>diffusers</code>（短辺 2048 固定）になっていると、学習時と条件がずれます。</p>
+  </div>
+
+  <h3>焼き込み版と非焼き込み版、どちらも試す価値はあるか</h3>
+  <p><b>あります。ただし「焼き込みの有無」だけの比較にはなりません。</b>10Eros-Max では、非焼き込み＝beta2、焼き込み＝beta4 と<b>世代も違えばモード構成も違う</b>ので、A/B すると 3 つの変数が同時に動きます。そのうえで、両者は用途が分かれます。</p>
+  <div class="tablewrap wide">
+  <table>
+    <caption>beta2（非焼き込み）と beta4（焼き込み hybrid）</caption>
+    <thead><tr><th></th><th>beta2 · 非焼き込み</th><th>beta4 · TURBO-hybrid</th></tr></thead>
+    <tbody>
+      <tr><td>Turbo の付け外し</td><td><span class="chip ok">できる</span>強度も調整可</td><td><span class="chip bad">できない</span>焼き込み済み</td></tr>
+      <tr><td>音の最終品質</td><td>Turbo を外して本番が打てる</td><td>Turbo 由来の劣化が上限として残る</td></tr>
+      <tr><td>両モード運用</td><td>fl2va / ref2va で <b>2 ファイル（約 23 GB）</b></td><td><b>1 ファイルで ref + t2va</b></td></tr>
+      <tr><td class="num">16GB 適性</td><td>GGUF Q4_K_M 11.6 GB。素直に載る</td><td>INT8 19.5〜21 GB。offload 前提</td></tr>
+      <tr><td>作者の推し</td><td>—</td><td><b>現行の本命</b>（非 Turbo 版を作っていない）</td></tr>
+      <tr><td>step</td><td>Turbo 4（ref2va）／ 素で 20〜32</td><td>6〜8（euler/simple、または LCM/simple）</td></tr>
+      <tr><td>使い所</td><td>音が要る本番、A/B の基準</td><td>数を打つ下書き、両モードを 1 本で回したいとき</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p><b>順序としては beta2 が先です。</b>いまの運用（base ＋ Turbo LoRA、外して本番）をそのまま維持でき、変数が「モデルだけ」に絞れます。beta4 はそのあと、<b>Turbo LoRA を外した状態で</b>、step を 6〜8 に、必要なら sampler を LCM/simple にして試してください。<b>そして beta4 は i2v 形式で使わないこと</b>（<a href="#s2">02</a>）。</p>
+
+  <p>ほかに、10Eros-Max の <code>test4 pruned</code> 系専用に変換された Turbo LoRA も存在します（t8star、約 795 MB / 1.96 GB、INT8 ConvRot）。ただし一部は「dual-clock サンプラーが必要、もしくは 8〜10 step で使うこと」と注記されています。<b>これは 3 本目以降の話</b>で、最初から手を出すと切り分けが効かなくなります。</p>
+
+  <div class="panel">
+    <h4>変わらない原則</h4>
+    <ul>
+      <li><b>pruned 版には pruned 用の Turbo LoRA を。</b>フル版向け（larryvrh 等 744 MB）と pruned 用（drbaph/Abiray 等 592 MB）は別物です。10Eros-Max の GGUF は pruned 由来。</li>
+      <li><b>Turbo は音を確実に劣化させる。</b>複数の実測レポートで一致。「Turbo で下書き → 気に入ったシードだけ Turbo なしで本番」が定石。</li>
+      <li><b>Turbo は VRAM を減らさない。</b>OOM 対策にはなりません。</li>
+    </ul>
+  </div>
 
   <h3>加速手段の当たり外れ</h3>
   <div class="tablewrap">
@@ -711,8 +795,10 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
 
   <div class="panel flag">
     <h4>4080 での期待値（推定）</h4>
-    <p>上の表から外挿すると、<b>0.4〜0.6 MP・5 秒・8 step で 2〜5 分程度</b>が最初の当たりでしょう。これより桁が違って遅い場合、まず疑うのは順に <b>CUDA バージョン</b>、<b>attention バックエンド</b>、<b>不要な <code>--lowvram</code></b> です。モデルの選択より先にここを見てください。この推定値の当否も <a href="#s11">11</a> で確かめたい点のひとつです。</p>
+    <p>上の表から外挿すると、<b>0.4〜0.6 MP・5 秒・8 step で 2〜5 分程度</b>が最初の当たりでしょう。<b>CUDA は 13 で済んでいる</b>ので、上の 5080 の行（約 300 秒 @1 MP）が現実的な参照点になります。</p>
+    <p>これより桁が違って遅い場合、残る容疑者は順に <b>attention バックエンド</b>（<code>--use-ck-attention</code> を試す）、<b>不要な <code>--lowvram</code></b>、<b>Ref2VA そのものの重さ</b>（参照画像の枚数を減らす）、そして <b>Turbo LoRA のモード違い</b>（<a href="#s7">07</a>）です。この推定値の当否は <a href="#s11">11</a> で確かめたい点のひとつ。</p>
   </div>
+  <p class="tnote"><b>Ref2VA は T2V に比べて VRAM も時間も明確に重い</b>という報告が複数あります。参照画像の枚数がそのまま効くので、A/B のときは枚数も揃えてください。</p>
 </section>
 
 <!-- ============ 09 ============ -->
@@ -725,52 +811,59 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
   <ul>
     <li>10Eros-Max は H3 アーキテクチャを完全に保持し、block 0–31 の fused QKV のみ改変。<b>DmitryDB の量子化版はカスタムノードも本体パッチも不要</b>と明記。</li>
     <li>text encoder は Qwen3-VL-32B。10Eros-Max でも変わらない。</li>
+    <li><b>FL2VA と Ref2VA は別モデルで、Turbo LoRA を共有しない。</b>Ref2VA 用は 4-step v0.1 の 1 種類のみ。</li>
+    <li><b>beta4 には非 Turbo 版が存在しない。</b>作者が「非 Turbo 版は出来が悪い」として作っていない。</li>
+    <li><b>hybrid 系は i2v モードで使わない。</b>参照（ref2va）形式か t2va 形式で使う。</li>
+    <li>Ref2VA は設計上、FL2VA より素の画質・音質が落ちる。VRAM も時間も重い。</li>
     <li>audio VAE は fp32 必須（fp16 で A/V ズレ）。</li>
-    <li>ComfyUI は 0.30.0 以降が必要（音声サンプラー修正が 2026-08-06 に入っている）。</li>
+    <li>ComfyUI は 0.30.0 以降が必要（音声サンプラー修正が 2026-08-06 に入っている）。W4A8 は 0.31.0 以降。</li>
     <li>DT-sQKV 版は本体パッチが必要。</li>
-    <li>Turbo LoRA は音を劣化させる。VRAM は減らさない。</li>
+    <li>Turbo LoRA は音を劣化させる。VRAM は減らさない。step だけ変えても成立せず、shift も合わせる必要がある。</li>
     <li>NVFP4 の<b>ネイティブ演算</b>は Blackwell（SM 10.0）世代の機能で、Ada（SM 8.9）にはない。</li>
+    <li><span class="chip ok">回答済</span> CUDA は 13。<b>4080 系で最も効いた既知の改善策は、すでに適用済み。</b></li>
+    <li><span class="chip ok">回答済</span> 使用モードは FL2VA / Ref2VA 両方、主に Ref2VA。Turbo LoRA を使用中。</li>
   </ul>
 
   <h3>要検証 <span class="chip unknown">実機でしか分からない</span></h3>
-  <div class="tablewrap">
+  <div class="tablewrap wide">
   <table>
-    <caption>今夜、答えを出したい 6 つ</caption>
+    <caption>今夜、答えを出したい 6 つ（上ほど優先）</caption>
     <thead><tr><th class="num">#</th><th>問い</th><th>確かめ方</th></tr></thead>
     <tbody>
-      <tr>
+      <tr class="pick">
         <td class="num">Q1</td>
-        <td><b>NVFP4 版（10.86 / 13.60 GB）は 4080 で動くか。</b>動くならサイズ的に理想。ただし Ada にネイティブ FP4 演算はなく、ロード時に展開されて逆に VRAM を食う可能性がある</td>
-        <td>他が済んでから、余力があれば 13.60 GB を落として 1 本回す。ピーク VRAM を見れば展開の有無が分かる</td>
+        <td><b>いま Ref2VA に当てている Turbo LoRA のファイル名は何か。</b><code>ref2v</code> が入っていなければ、モード違いの LoRA を当てていることになる。<b>10Eros-Max 以前の問題として最優先</b></td>
+        <td>ワークフローの LoRA ローダーを見る。違っていたら <code>minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16</code> に差し替え、NFE 4 / shift 12・3 に合わせて 1 本回す</td>
       </tr>
       <tr>
         <td class="num">Q2</td>
-        <td>いま入っている DiT は FL2VA か Ref2VA か、pruned か</td>
-        <td>手順 01・02。落とすファイルがこれで決まる</td>
+        <td>既存 H3 の現在の生成時間とピーク VRAM（同一条件）</td>
+        <td>A/B の基準線。<b>10Eros-Max を入れる前に 1 本測っておく</b>。Q1 の修正前後で 2 本取れるとなお良い</td>
       </tr>
       <tr>
         <td class="num">Q3</td>
+        <td>参照画像のリサイズ方針が <code>match</code> になっているか</td>
+        <td>Ref2VA の参照入力側の設定。Turbo LoRA の学習時と揃える</td>
+      </tr>
+      <tr>
+        <td class="num">Q4</td>
         <td>GGUF は <code>models/unet</code> と <code>models/diffusion_models</code> のどちらに置くべきか</td>
         <td>unet に置いてノードのプルダウンを見る。出なければ移動</td>
       </tr>
       <tr>
-        <td class="num">Q4</td>
-        <td>既存 H3 の現在の生成時間（同一条件）</td>
-        <td>A/B の基準線。<b>10Eros-Max を入れる前に 1 本測っておく</b></td>
-      </tr>
-      <tr>
         <td class="num">Q5</td>
-        <td>CUDA / PyTorch のバージョン。CUDA 13 に上げる価値があるか</td>
-        <td>手順 01 の出力。Q4 の実測と併せて判断</td>
+        <td><b>beta4 の TURBO-hybrid は、ComfyUI の Ref2VA 条件付けでそのまま動くか。</b>「ref/t2va hybrid」と説明されているが、実際のノード構成での挙動は未確認</td>
+        <td>2 本目以降。Turbo LoRA を外し、euler/simple 6〜8 step、参照形式で 1 本</td>
       </tr>
       <tr>
         <td class="num">Q6</td>
-        <td>10Eros-Max の「弾むモーション」は、あなたの題材で実際に差として出るか</td>
-        <td>同一シード A/B。動きの大きい題材で 4〜6 本</td>
+        <td>10Eros-Max の「顔の一貫性」「弾むモーション」は、あなたの題材で実際に差として出るか</td>
+        <td>同一シード A/B。動きの大きい題材で 4〜6 本。参照画像の枚数も揃える</td>
       </tr>
     </tbody>
   </table>
   </div>
+  <p class="tnote">優先度を落とした問い：NVFP4 版が Ada で動くか（Ref2VA 版が無く FL2VA 専用のため、主用途からは外れる）。beta4 INT8 の正確なサイズ（配布ページで 19.53 GB と 21 GB の両方の記載を確認。落とす直前に現物を見る）。</p>
 </section>
 
 <!-- ============ 10 ============ -->
@@ -833,8 +926,15 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
         <label class="field"><span>フレーム</span><input type="number" id="f-frames" placeholder="120"></label>
         <label class="field"><span>steps</span><input type="number" id="f-steps" placeholder="8"></label>
         <label class="field"><span>Turbo</span>
-          <select id="f-turbo"><option>なし</option><option>あり</option><option>焼き込み済</option></select>
+          <select id="f-turbo">
+            <option>なし</option>
+            <option>ref2v 4step v0.1</option>
+            <option>fl2v 系</option>
+            <option>焼き込み済 (beta4)</option>
+            <option>その他</option>
+          </select>
         </label>
+        <label class="field"><span>shift (v/a)</span><input type="text" id="f-shift" placeholder="12/3"></label>
         <label class="field"><span>時間 (秒)</span><input type="number" id="f-time" placeholder="240"></label>
         <label class="field"><span>ピークVRAM GB</span><input type="number" step="0.1" id="f-vram" placeholder="13.4"></label>
         <label class="field"><span>seed</span><input type="text" id="f-seed" placeholder="424242"></label>
@@ -851,7 +951,7 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
       <table id="log-table">
         <thead><tr>
           <th>モデル</th><th>量子化</th><th>モード</th><th>解像度</th><th class="num">fr</th><th class="num">step</th>
-          <th>Turbo</th><th class="num">秒</th><th class="num">VRAM</th><th>seed</th><th>メモ</th><th></th>
+          <th>Turbo</th><th class="num">shift</th><th class="num">秒</th><th class="num">VRAM</th><th>seed</th><th>メモ</th><th></th>
         </tr></thead>
         <tbody id="log-body"></tbody>
       </table>
@@ -883,7 +983,12 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
     <li><a href="https://huggingface.co/TenStrip/10Eros-Max">TenStrip/10Eros-Max</a> — 本家</li>
     <li><a href="https://huggingface.co/DmitryDB/MiniMax-H3-10Eros-Max-Quants">DmitryDB/MiniMax-H3-10Eros-Max-Quants</a> — INT8 / NVFP4、カスタムノード不要</li>
     <li><a href="https://huggingface.co/Abiray/10Eros-Max-fl2va-Beta2-GGUF">Abiray/10Eros-Max-fl2va-Beta2-GGUF</a> — GGUF（FL2VA）</li>
-    <li><a href="https://huggingface.co/Abiray/10Eros-Max-ref2va-Beta2-GGUF">Abiray/10Eros-Max-ref2va-Beta2-GGUF</a> — GGUF（Ref2VA）</li>
+    <li><a href="https://huggingface.co/Abiray/10Eros-Max-ref2va-Beta2-GGUF">Abiray/10Eros-Max-ref2va-Beta2-GGUF</a> — GGUF（Ref2VA・非 Turbo）</li>
+    <li><a href="https://github.com/ModelTC/Minimax-H3-Turbo">ModelTC/Minimax-H3-Turbo</a> — <b>Turbo LoRA の公式仕様。</b>モード別ファイル・NFE・shift・参照画像リサイズ方針、Ref2VA ワークフロー JSON</li>
+    <li><a href="https://huggingface.co/lightx2v/Minimax-h3-Turbo">lightx2v/Minimax-h3-Turbo</a> — Turbo LoRA の配布元</li>
+    <li><a href="https://huggingface.co/berryber09/10Eros-Max-h3-turbo-hybrid-beta3-w4a8">berryber09/10Eros-Max-h3-turbo-hybrid-beta3-w4a8</a> — 焼き込み版の W4A8（11.68 GB）</li>
+    <li><a href="https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader">scottmudge/ComfyUI_MinimaxH3HybridLoader</a> — hybrid の仕組みと使用上の注意</li>
+    <li><a href="https://huggingface.co/Abiray/10Eros-Max-GGUF">Abiray/10Eros-Max-GGUF</a> — test4 pruned 由来の GGUF（FL2VA 系）</li>
     <li><a href="https://huggingface.co/Comfy-Org/MiniMax-H3">Comfy-Org/MiniMax-H3</a> — 公式再パッケージ（TE・VAE の入手元）</li>
     <li><a href="https://docs.comfy.org/tutorials/video/minimax/minimax-h3">ComfyUI 公式チュートリアル（MiniMax H3）</a></li>
     <li><a href="https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui">ComfyUI blog · H3 Day-0 Support</a></li>
@@ -910,15 +1015,19 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
 
   var CHECKS = [
     ["c1","tools/h3_env_check.py を実行して現状を吐き出した"],
-    ["c2","いま使っている DiT のファイル名を確認した（FL2VA / Ref2VA / pruned）"],
-    ["c3","空きディスクを 20 GB 以上確保した"],
-    ["c4","【基準線】10Eros-Max を入れる前に、既存 H3 で 1 本測った"],
-    ["c5","ComfyUI-GGUF を導入した（GGUF を選ぶ場合）"],
-    ["c6","10Eros-Max を 1 本だけダウンロードした"],
-    ["c7","ワークフローを複製し、DiT ローダーだけ差し替えた"],
-    ["c8","低解像度・短尺で 1 本、落ちずに完走した"],
-    ["c9","同一シードで A/B を 4 本以上回した"],
-    ["c10","実測ログに記録した"]
+    ["c2","【最優先】Ref2VA の Turbo LoRA に ref2v が入っているか確認した"],
+    ["c2b","（違っていた場合）ref2v 用に差し替え、NFE 4 / shift 12・3 に合わせた"],
+    ["c3","参照画像のリサイズ方針を match にした"],
+    ["c4","いま使っている DiT のファイル名を確認した（ref2va / fl2va / pruned）"],
+    ["c5","空きディスクを 20 GB 以上確保した"],
+    ["c6","【基準線】10Eros-Max を入れる前に、既存 H3 で 1 本測った"],
+    ["c7","ComfyUI-GGUF を導入した"],
+    ["c8","10Eros-Max beta2 ref2va GGUF Q4_K_M を落とした"],
+    ["c9","ワークフローを複製し、DiT ローダーだけ差し替えた"],
+    ["c10","低解像度・短尺で 1 本、落ちずに完走した"],
+    ["c11","同一シードで A/B を 4 本以上回した"],
+    ["c12","実測ログに記録した"],
+    ["c13","（2 本目）beta4 TURBO-hybrid を Turbo LoRA なし・6〜8 step で試した"]
   ];
 
   var db = null;
@@ -1009,6 +1118,7 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
       frames: $("f-frames").value,
       steps: $("f-steps").value,
       turbo: $("f-turbo").value,
+      shift: $("f-shift").value,
       time_sec: $("f-time").value,
       peak_vram_gb: $("f-vram").value,
       seed: $("f-seed").value,
@@ -1016,7 +1126,7 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
     };
   }
   function clearRunForm(){
-    ["f-quant","f-res","f-frames","f-steps","f-time","f-vram","f-seed","f-note"].forEach(function(id){
+    ["f-quant","f-res","f-frames","f-steps","f-shift","f-time","f-vram","f-seed","f-note"].forEach(function(id){
       var el = $(id); if(el) el.value = "";
     });
   }
@@ -1046,6 +1156,7 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
       tr.appendChild(cell(d.frames, "num"));
       tr.appendChild(cell(d.steps, "num"));
       tr.appendChild(cell(d.turbo));
+      tr.appendChild(cell(d.shift, "num"));
       tr.appendChild(cell(d.time_sec, "num"));
       tr.appendChild(cell(d.peak_vram_gb, "num"));
       tr.appendChild(cell(d.seed, "num"));
