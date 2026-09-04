@@ -528,3 +528,102 @@ field, realistic skin texture, 24fps.
 | 表情が「イタズラっぽく」ならない | `mischievous` 単体は弱い。`eyes widening and brightening` `eyebrows lifting` `corners of her mouth pulling back` と**筋肉の動きに分解**して書く |
 | サラミの色・太さがクリップ間で変わる | 全クリップで同一文字列を使う。ノードが物体参照に対応していれば、サラミ単体の白背景写真を Ref C として追加 |
 | カメラが寄る／引く | `the camera is locked off on a tripod and holds the identical framing` を維持。Director 系なら `[Static shot]` |
+
+---
+
+# トラブルシュート: 紙袋が開かない（実写確認済み）
+
+## 症状
+
+クリップ1〜2の1クリップ版で生成したところ、**袋を開けずに外観をじっと眺めるだけ**の映像になった。
+拾う動作は正常に生成された。
+
+## 原因
+
+隠蔽の記述が開封動作を押し潰していた。
+
+1. **開ける動作が書かれていなかった。** `She looks down into the bag` の1節だけで、
+   手で開く動作の記述がゼロ。モデルは「袋を見る」だけを実行した。
+2. **`crumpled rim`（くしゃくしゃの口）** と書いたため、袋が最初から最後まで
+   「閉じた物体」として解釈された。
+3. **隠蔽の記述が3文あった** — `only the crumpled outer paper faces camera` /
+   `the opening is angled away from the lens` / `its inside in deep shadow`。
+   モデルはこれを最優先タスクと判断し、`inside in deep shadow` を満たす
+   最も簡単な方法として**袋を開けないこと**を選んだ。
+
+## 修正の原則
+
+**隠蔽は「記述」ではなく「カメラ位置」で行う。**
+レンズを袋の口より低く置いて煽り気味に構えれば、中は物理的に見えない。
+隠蔽の記述が1文で済むので、残りの語数を全部「開ける動作」に使える。
+
+| 前 | 後 | 理由 |
+| --- | --- | --- |
+| `by its crumpled rim` | `by its folded-over top` | 「折り畳まれている」＝開く余地がある状態にする |
+| （開封動作なし） | `takes the folded top in both hands and pulls the two sides apart, unrolling the folded paper` | 両手の具体動作に分解。手と物体の相互作用は学習データが厚い |
+| 隠蔽の記述3文 | カメラ位置1文のみ | 語数の奪い合いをやめる |
+| `its inside in deep shadow` | `stands fully open` | 「閉じたままにして隠す」逃げ道を塞ぐ |
+| 順序が曖昧 | `First / Then / Then / Finally` | 16秒級では順序の明示が必須 |
+| — | `the paper crackling and springing outwards` | 紙の変形の手がかり。開く動きの物理が安定する |
+
+## 修正版クリップ2b（10秒 / 開封＋のぞき込みのみ）
+
+拾うクリップは既に成功しているので**引き直さない**。その最終フレームを I2V の初期画像にするか、
+Ref A で本クリップだけを生成して繋ぐ。
+
+```
+The woman from the reference image, wearing exactly the same clothes and hairstyle as
+the reference, crouching on the wooden floor of a quiet apartment, holding a plain
+brown kraft paper bag in front of her chest with its top folded over. Live-action
+cinematic footage. The camera is low, just below the level of the bag and tilted
+slightly up towards her face, so the bag is seen from underneath and her whole face
+stays visible above its rim. First she takes the folded top of the bag in both hands
+and pulls the two sides apart, unrolling the folded paper and widening the mouth of
+the bag until it stands fully open, the paper crackling and springing outwards. Then
+she leans her head forward and down over the open mouth of the bag and looks inside,
+her eyes moving as they focus on something at the bottom. Her eyes narrow sharply,
+her brows draw together and her lips press thin into an angry, disgusted expression.
+Then her shoulders drop as she exhales and her mouth curves into a small, tired,
+resigned smile. She keeps her lips closed and says nothing. The camera holds this low
+angle for the entire shot. Soft natural window light from the left, muted neutral
+color grade, shallow depth of field, realistic skin texture, 24fps.
+```
+
+## 修正版・16秒ワンテイク（拾う〜開封〜表情）
+
+カメラがしゃがみ込みに合わせて**寄りながら下降**し、最後に袋の下に着く。
+
+```
+The woman from the reference images, wearing exactly the same clothes and hairstyle as
+the reference, alone in a quiet, sparsely furnished apartment with a wooden floor.
+Live-action cinematic footage, one continuous unhurried take. First she stands, seen in
+full body from a three-quarter oblique angle, then slowly bends her knees and lowers
+herself into a deep crouch, reaching down and picking up a plain brown kraft paper bag
+from the floor by its folded-over top. Then, as she brings the bag up in front of her
+chest, the camera pushes in and sinks down with her, ending just below the level of the
+bag and tilted slightly up, so the bag is seen from underneath and her whole face stays
+visible above its rim. Then she takes the folded top of the bag in both hands and pulls
+the two sides apart, unrolling the folded paper and widening the mouth of the bag until
+it stands fully open, the paper crackling and springing outwards. Then she leans her
+head forward and down over the open mouth of the bag and looks inside, her eyes moving
+as they focus on something at the bottom. Finally her eyes narrow sharply, her brows
+draw together into an angry, disgusted expression, and then her shoulders drop as she
+exhales and her mouth curves into a small, tired, resigned smile. She keeps her lips
+closed and says nothing. Soft natural window light from the left, muted neutral color
+grade, shallow depth of field, realistic skin texture, 24fps.
+```
+
+16秒で5動作は破綻リスクが高い。まず10秒の分割版で通し、どうしても1本にしたい場合のみ使う。
+
+## それでも開かない場合
+
+**袋を開けた状態の静止画を1枚用意し、I2V の初期フレームにする。**
+開封済みの状態から始めれば、モデルは「開ける」を実行する必要がなくなり、
+のぞき込みと表情変化だけに専念できる。
+
+## 一般化できる教訓
+
+**「見せない」制約と「動作させる」指示が同じ対象に同時にかかると、
+モデルは動作を捨てて制約を取る。**
+隠したいものがあるときは、隠蔽をプロンプトの語数で表現せず、
+カメラの位置・高さ・画角で物理的に成立させること。
