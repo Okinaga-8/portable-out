@@ -479,12 +479,13 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
       <p>出た内容を <a href="#s10">10 環境メモ</a> に貼るか、そのままチャットに貼ってください。これがあると以降の判断がぶれません。</p>
     </li>
     <li>
-      <b>Turbo LoRA のファイル名を確認する</b> <span class="chip bad">最優先</span>
-      <p>Ref2VA のワークフローの LoRA ローダーを開き、<b>ファイル名に <code>ref2v</code> が入っているか</b>を見ます。入っていなければ FL2VA 用を当てています。その場合は <code>minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors</code> に差し替え、<b>NFE 4 / shift video 12・audio 3</b> に合わせて 1 本回してください。<b>ここが直るだけで印象が変わる可能性があります。</b>詳細は <a href="#s7">07</a>。</p>
+      <b>DiT は確認済み</b> <span class="chip ok">回答済</span>
+      <p><code>minimax_h3_ref2va_pruned_int8_convrot.safetensors</code>（Comfy-Org 公式、19.53 GB）。<b>Ref2VA / pruned / INT8 ConvRot。</b>19.53 GB が 16 GB で回っているということは、すでに offload が効いた状態で成立しています。10Eros-Max の GGUF Q4_K_M（11.6 GB）は<b>これより軽い</b>ので、載らない心配はありません。</p>
     </li>
     <li>
-      <b>いま使っている DiT ファイル名を確認する</b>
-      <p>「Load Diffusion Model」ノードで選ばれているファイル名を見ます。<code>ref2va</code> / <code>fl2va</code> のどちらか、<code>pruned</code> が付くか、を控えます。Ref2VA 側を主に使うので、<b>まず落とすのは 10Eros-Max の ref2va 版</b>です。</p>
+      <b>Turbo LoRA が本当にあるか確認する</b> <span class="chip bad">最優先</span>
+      <p>見る場所は 2 つ。<b>① <code>ComfyUI/models/loras/</code> の中身</b>（何が入っているか）と、<b>② ワークフローに LoRA ローダーのノードが実際にあるか</b>（「Load LoRA」「LoraLoaderModelOnly」など）。DiT を読む「Load Diffusion Model」ノードとは別のノードです。</p>
+      <p><b>そして pruned なので、Full 向けの Turbo LoRA を当てていても AdaLN 部分は効いていません</b>（<a href="#s7">07</a>）。pruned Ref2VA での高速化は <b>PDD-Acc 経路</b>が唯一まともな道です。</p>
     </li>
     <li>
       <b>空きディスクを確認する</b>
@@ -706,19 +707,45 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
     <p>FL2VA と Ref2VA は別モデルなので、Turbo LoRA も共有しません。<b>Ref2VA 用は <code>minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors</code> ただ 1 つ</b>で、4-step 版しか存在しません（544p 学習、shift 12/3、推奨 NFE 4）。FL2VA 側には 8-step 版も 768p 版もありますが、Ref2VA には無いので、<b>そちらを流用してはいけません。</b></p>
   </div>
 
-  <div class="tablewrap">
+  <div class="tablewrap wide">
   <table>
     <caption>モード別 Turbo LoRA（lightx2v / ModelTC 公式）</caption>
-    <thead><tr><th>モード</th><th>ファイル</th><th class="num">推奨 NFE</th><th class="num">学習解像度</th><th class="num">shift (video/audio)</th></tr></thead>
+    <thead><tr><th>モード</th><th>ファイル</th><th>対象</th><th class="num">推奨 NFE</th><th class="num">学習解像度</th><th class="num">shift (v/a)</th></tr></thead>
     <tbody>
-      <tr class="pick"><td><b>Ref2VA</b></td><td class="fn">minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16</td><td class="num">4</td><td class="num">544p</td><td class="num">12 / 3</td></tr>
-      <tr><td>FL2VA / T2VA</td><td class="fn">minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16</td><td class="num">8 / 4</td><td class="num">544p</td><td class="num">12 / 3</td></tr>
-      <tr><td>FL2VA / T2VA</td><td class="fn">minimax_h3_fl2v_turbo_8step_v1.0_768p_comfyui_bf16</td><td class="num">8</td><td class="num">768p</td><td class="num">6 / 3</td></tr>
-      <tr><td>FL2VA / T2VA</td><td class="fn">minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16</td><td class="num">4</td><td class="num">768p</td><td class="num">6 / 3</td></tr>
+      <tr><td><b>Ref2VA</b></td><td class="fn">minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16</td><td><span class="chip bad">Full のみ</span></td><td class="num">4</td><td class="num">544p</td><td class="num">12 / 3</td></tr>
+      <tr><td>FL2VA / T2VA</td><td class="fn">minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16</td><td><span class="chip neutral">Full</span></td><td class="num">8 / 4</td><td class="num">544p</td><td class="num">12 / 3</td></tr>
+      <tr><td>FL2VA / T2VA</td><td class="fn">minimax_h3_fl2v_turbo_8step_v1.0_768p_comfyui_bf16</td><td><span class="chip neutral">Full</span></td><td class="num">8</td><td class="num">768p</td><td class="num">6 / 3</td></tr>
+      <tr><td>FL2VA / T2VA</td><td class="fn">drbaph / Abiray の <code>…pruned_comfyui</code> 各種</td><td><span class="chip ok">Pruned 用</span></td><td class="num">4</td><td class="num">544p</td><td class="num">12 / 3</td></tr>
     </tbody>
   </table>
   </div>
-  <p class="tnote"><b>step 数だけ変えても駄目です。</b>20 step 用のノイズスケジュールは 4 step では成立しません。LoRA を替えたら、NFE と shift をその LoRA の行に合わせてください。ModelTC は Ref2VA 用のワークフロー JSON（<code>video_minimax_h3_ref2v_lightx2v_turbo.json</code>、既定 960×544 / 0.5 MP）を配布しているので、そこから始めるのが確実です。</p>
+  <p class="tnote"><b>step 数だけ変えても駄目です。</b>20 step 用のノイズスケジュールは 4 step では成立しません。LoRA を替えたら、NFE と shift をその LoRA の行に合わせてください。</p>
+
+  <div class="panel stop">
+    <h4>pruned チェックポイントには、Full 向け Turbo LoRA が効かない</h4>
+    <p>理由ははっきりしています。<b>元の Turbo LoRA は 2688 次元の AdaLN ブランチを対象にしていますが、pruned モデルは 8 次元の <code>adaln_t_table</code> ＋ブロックごとの projection という別構造</b>なので、AdaLN の行列をそのまま当てられません。pruned 用の変換版は、<b>blocks.0〜49 の AdaLN projection 50 組と <code>final_layer.adaln_proj.linear</code> 1 組を削除して</b>作られており、配布側も「部分互換であって、元の LoRA と同じ挙動を期待してはいけない」と明記しています。</p>
+    <p><b>そして pruned 用の変換版は FL2VA 側にしか存在しません。</b>Ref2VA 用は Full 向けの 1 本きりです。<b>pruned Ref2VA を使っている場合、通常の LoRA ローダーで Turbo を当てても AdaLN 部分は効いていません。</b></p>
+  </div>
+
+  <h3>pruned Ref2VA での唯一の高速化経路：PDD-Acc</h3>
+  <p>この行き止まりを抜ける道が 1 つあります。<a href="https://github.com/Jalen-Brunson/ComfyUI-MiniMax-H3-PDD-Acc">ComfyUI-MiniMax-H3-PDD-Acc</a> は、alibaba-pai 公式の 8-step PDD（Parallel Decoding Distillation）LoRA を ComfyUI で使うためのノードで、<b>pruned チェックポイント向けの adaln LoRA モジュール rebase を実装しています</b>。加えて、通常の LoRA ローダーが黙って落としてしまう「head bank」（32 個の per-interval final-layer 投影コピー）も読み込みます。</p>
+  <div class="tablewrap">
+  <table>
+    <caption>PDD-Acc の要件と設定</caption>
+    <thead><tr><th>項目</th><th>値</th></tr></thead>
+    <tbody>
+      <tr><td>LoRA</td><td class="fn">alibaba-pai / MiniMax-H3-Ref2VA-Acc-8Step.safetensors（1.28 GB）</td></tr>
+      <tr><td>ノード</td><td class="fn">ComfyUI-MiniMax-H3-PDD-Acc（Apache-2.0）</td></tr>
+      <tr><td>ComfyUI</td><td class="num"><b>v0.33.0 以降が必須</b></td></tr>
+      <tr><td>ペア</td><td>Ref2VA PDD は <b>ref2va の UNET と</b>（FL2VA PDD と混ぜない）</td></tr>
+      <tr><td>sampler / CFG</td><td class="num">euler / <b>CFG 1.0</b>（PDD は no-CFG）</td></tr>
+      <tr><td>SigmaShift</td><td class="num">12 / 3</td></tr>
+      <tr><td>NFE</td><td class="num">4 / 6 / 8</td></tr>
+      <tr><td>禁止</td><td><b>他の distill LoRA（Turbo）や step-cache 系と併用しない</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tnote">すぐ試せるワークフロー JSON があります：StefanFalkok の <code>Minimax H3 Ref2V (with PDD-Acc 8-Steps Turbo Nodes).json</code>。ModelTC 側の <code>video_minimax_h3_ref2v_lightx2v_turbo.json</code>（既定 960×544 / 0.5 MP）は Full 向け LoRA が前提なので、pruned で使うならこちらではなく PDD 側から始めてください。</p>
 
   <div class="panel flag">
     <h4>Ref2VA 固有：参照画像のリサイズ方針</h4>
@@ -821,7 +848,10 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
     <li>Turbo LoRA は音を劣化させる。VRAM は減らさない。step だけ変えても成立せず、shift も合わせる必要がある。</li>
     <li>NVFP4 の<b>ネイティブ演算</b>は Blackwell（SM 10.0）世代の機能で、Ada（SM 8.9）にはない。</li>
     <li><span class="chip ok">回答済</span> CUDA は 13。<b>4080 系で最も効いた既知の改善策は、すでに適用済み。</b></li>
-    <li><span class="chip ok">回答済</span> 使用モードは FL2VA / Ref2VA 両方、主に Ref2VA。Turbo LoRA を使用中。</li>
+    <li><span class="chip ok">回答済</span> 使用モードは FL2VA / Ref2VA 両方、主に Ref2VA。</li>
+    <li><span class="chip ok">回答済</span> DiT は <code>minimax_h3_ref2va_pruned_int8_convrot.safetensors</code>（Ref2VA / <b>pruned</b> / INT8 ConvRot / 19.53 GB）。</li>
+    <li><b>pruned には Full 向け Turbo LoRA が効かない。</b>AdaLN の構造が別（2688 次元 vs 8 次元 <code>adaln_t_table</code>）。pruned 用変換版は FL2VA 側にしか無い。</li>
+    <li><b>pruned Ref2VA の高速化は PDD-Acc 経路のみ。</b>ComfyUI v0.33.0 以降が必須。</li>
   </ul>
 
   <h3>要検証 <span class="chip unknown">実機でしか分からない</span></h3>
@@ -832,8 +862,8 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
     <tbody>
       <tr class="pick">
         <td class="num">Q1</td>
-        <td><b>いま Ref2VA に当てている Turbo LoRA のファイル名は何か。</b><code>ref2v</code> が入っていなければ、モード違いの LoRA を当てていることになる。<b>10Eros-Max 以前の問題として最優先</b></td>
-        <td>ワークフローの LoRA ローダーを見る。違っていたら <code>minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16</code> に差し替え、NFE 4 / shift 12・3 に合わせて 1 本回す</td>
+        <td><b>そもそも Turbo LoRA を当てているのか。当てているなら何か。</b>DiT が pruned なので、Full 向けを当てていた場合は AdaLN 部分が効いていない。<b>10Eros-Max 以前の問題として最優先</b></td>
+        <td><code>ComfyUI/models/loras/</code> の中身と、ワークフローの LoRA ローダーノードの有無を見る</td>
       </tr>
       <tr>
         <td class="num">Q2</td>
@@ -842,8 +872,8 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
       </tr>
       <tr>
         <td class="num">Q3</td>
-        <td>参照画像のリサイズ方針が <code>match</code> になっているか</td>
-        <td>Ref2VA の参照入力側の設定。Turbo LoRA の学習時と揃える</td>
+        <td><b>ComfyUI のバージョンは 0.33.0 以降か。</b>PDD-Acc 経路の可否がこれで決まる</td>
+        <td>手順 01 の出力。0.33.0 未満なら、Turbo を諦めて素の 20〜32 step で回すか、ComfyUI を上げるかの判断になる</td>
       </tr>
       <tr>
         <td class="num">Q4</td>
@@ -984,6 +1014,9 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
     <li><a href="https://huggingface.co/DmitryDB/MiniMax-H3-10Eros-Max-Quants">DmitryDB/MiniMax-H3-10Eros-Max-Quants</a> — INT8 / NVFP4、カスタムノード不要</li>
     <li><a href="https://huggingface.co/Abiray/10Eros-Max-fl2va-Beta2-GGUF">Abiray/10Eros-Max-fl2va-Beta2-GGUF</a> — GGUF（FL2VA）</li>
     <li><a href="https://huggingface.co/Abiray/10Eros-Max-ref2va-Beta2-GGUF">Abiray/10Eros-Max-ref2va-Beta2-GGUF</a> — GGUF（Ref2VA・非 Turbo）</li>
+    <li><a href="https://github.com/Jalen-Brunson/ComfyUI-MiniMax-H3-PDD-Acc">ComfyUI-MiniMax-H3-PDD-Acc</a> — <b>pruned チェックポイント向けの adaln rebase。</b>pruned Ref2VA の高速化経路</li>
+    <li><a href="https://huggingface.co/alibaba-pai/MiniMax-H3-Acc-LoRAs">alibaba-pai/MiniMax-H3-Acc-LoRAs</a> — 公式 PDD 8-step LoRA（Ref2VA 版あり）</li>
+    <li><a href="https://huggingface.co/drbaph/MiniMax-H3-Turbo-Lora-ComfyUI">drbaph/MiniMax-H3-Turbo-Lora-ComfyUI</a> — pruned 用変換 LoRA と、AdaLN 非互換の技術的説明（FL2VA のみ）</li>
     <li><a href="https://github.com/ModelTC/Minimax-H3-Turbo">ModelTC/Minimax-H3-Turbo</a> — <b>Turbo LoRA の公式仕様。</b>モード別ファイル・NFE・shift・参照画像リサイズ方針、Ref2VA ワークフロー JSON</li>
     <li><a href="https://huggingface.co/lightx2v/Minimax-h3-Turbo">lightx2v/Minimax-h3-Turbo</a> — Turbo LoRA の配布元</li>
     <li><a href="https://huggingface.co/berryber09/10Eros-Max-h3-turbo-hybrid-beta3-w4a8">berryber09/10Eros-Max-h3-turbo-hybrid-beta3-w4a8</a> — 焼き込み版の W4A8（11.68 GB）</li>
@@ -1015,10 +1048,9 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
 
   var CHECKS = [
     ["c1","tools/h3_env_check.py を実行して現状を吐き出した"],
-    ["c2","【最優先】Ref2VA の Turbo LoRA に ref2v が入っているか確認した"],
-    ["c2b","（違っていた場合）ref2v 用に差し替え、NFE 4 / shift 12・3 に合わせた"],
+    ["c2","【最優先】models/loras/ の中身と、ワークフロー内の LoRA ノードの有無を確認した"],
+    ["c2b","ComfyUI のバージョンが 0.33.0 以上か確認した（PDD-Acc 可否の分かれ目）"],
     ["c3","参照画像のリサイズ方針を match にした"],
-    ["c4","いま使っている DiT のファイル名を確認した（ref2va / fl2va / pruned）"],
     ["c5","空きディスクを 20 GB 以上確保した"],
     ["c6","【基準線】10Eros-Max を入れる前に、既存 H3 で 1 本測った"],
     ["c7","ComfyUI-GGUF を導入した"],
