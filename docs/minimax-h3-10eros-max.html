@@ -225,6 +225,7 @@
   .panel{border:1px solid var(--line);background:var(--surface);padding:1.1rem 1.2rem;margin:1.2rem 0}
   .panel.flag{border-left:3px solid var(--warn)}
   .panel.stop{border-left:3px solid var(--bad)}
+  .panel.good{border-left:3px solid var(--ok)}
   .panel h4{
     font-family:var(--f-display);font-size:.7rem;letter-spacing:.13em;text-transform:uppercase;
     margin:0 0 .5rem;color:var(--muted);font-weight:700;
@@ -308,15 +309,15 @@
 <div class="shell">
 
 <header class="mast">
-  <div class="eyebrow"><span class="dot"></span>ComfyUI · MiniMax H3 系 <span class="dot"></span>RTX 4080 16GB</div>
+  <div class="eyebrow"><span class="dot"></span>ComfyUI · MiniMax H3 系 <span class="dot"></span>RTX 4080 16GB <span class="dot"></span>実測済み</div>
   <h1>10Eros-Max ベンチシート</h1>
-  <p class="standfirst">いま動いている MiniMax H3 環境に、10Eros-Max を並べて置いて比べるための作業シート。何を落とすか、16GB に載るか、何を実測するかまで。</p>
+  <p class="standfirst">検討シートだったものを、実測の結果で書き直したもの。<b>結論は beta4 INT8 を採用。</b>GGUF は測って捨て、W4A8 は測る前に見送った。その理由と、beta4 の正しい回し方と、この環境で分かった VRAM の癖まで。</p>
   <div class="specstrip">
-    <span>GPU <b>RTX 4080 / VRAM 16 GB (Ada, SM 8.9)</b></span>
+    <span>GPU <b>RTX 4080 / 16,376 MiB (Ada, SM 8.9)</b></span>
     <span>RAM <b>64 GB</b></span>
-    <span>CUDA <b>13</b></span>
-    <span>主用途 <b>Ref2VA（FL2VA も併用）</b></span>
-    <span>調査日 <b>2026-09-04</b></span>
+    <span>ComfyUI <b>0.33.1</b></span>
+    <span>主用途 <b>Ref2VA</b></span>
+    <span>実測日 <b>2026-09-05 / 06</b></span>
   </div>
 </header>
 
@@ -326,14 +327,14 @@
   <h2>目次</h2>
   <ol>
     <li><a href="#s1"><span class="n">01</span>先に結論</a></li>
-    <li><a href="#s2"><span class="n">02</span>用語の整理と訂正</a></li>
-    <li><a href="#s3"><span class="n">03</span>何を差し替えるのか</a></li>
-    <li><a href="#s4"><span class="n">04</span>帰宅後の手順</a></li>
-    <li><a href="#s5"><span class="n">05</span>ダウンロード候補</a></li>
-    <li><a href="#s6"><span class="n">06</span>16GB に載るのか</a></li>
-    <li><a href="#s7"><span class="n">07</span>設定レシピ</a></li>
-    <li><a href="#s8"><span class="n">08</span>速度の目安</a></li>
-    <li><a href="#s9"><span class="n">09</span>確定と要検証</a></li>
+    <li><a href="#s2"><span class="n">02</span>速度と VRAM</a></li>
+    <li><a href="#s3"><span class="n">03</span>絵と音</a></li>
+    <li><a href="#s4"><span class="n">04</span>beta4 の回し方</a></li>
+    <li><a href="#s5"><span class="n">05</span>捨てた道と撤回した記述</a></li>
+    <li><a href="#s6"><span class="n">06</span>VRAM の読み方</a></li>
+    <li><a href="#s7"><span class="n">07</span>計測の作法</a></li>
+    <li><a href="#s8"><span class="n">08</span>見送ったもの</a></li>
+    <li><a href="#s9"><span class="n">09</span>用語の整理</a></li>
     <li><a href="#s10"><span class="n">10</span>環境メモ</a></li>
     <li><a href="#s11"><span class="n">11</span>実測ログ</a></li>
     <li><a href="#s12"><span class="n">12</span>ライセンス</a></li>
@@ -349,31 +350,432 @@
   <h2 class="sec">先に結論</h2>
   <div class="keys wide">
     <div class="key">
-      <div class="kn">同じ環境で動く</div>
-      <p>10Eros-Max は <strong>MiniMax H3 のファインチューン</strong>。H3 の全 50 ブロックをそのまま保持し、block 0–31 の fused QKV だけを差し替えた派生。ComfyUI 本体・text encoder・VAE・ワークフローは今のまま使える。</p>
+      <div class="kn">beta4 INT8 を採用</div>
+      <p><strong>0.4 MP · 5 秒で base より約 13% 速く、VRAM は 300〜670 MiB 少ない。</strong>本番画質（1.0 MP · 10 秒）では差が 2.6% まで縮んで実質互角。速度は理由にならないが、遅くもならない。</p>
     </div>
     <div class="key">
-      <div class="kn">落とすのは 1 ファイル</div>
-      <p>追加ダウンロードは <strong>diffusion model 1 本だけ</strong>。約 12 GB（GGUF Q4_K_M）〜 21 GB（INT8）。15.7 GB の text encoder も 5 GB の VAE も、落とし直す必要はない。</p>
+      <div class="kn">サイズではなく形式で選ぶ</div>
+      <p>11.6 GB の GGUF は 19.53 GiB の INT8 より <strong>1.8〜2.6 倍遅く、VRAM はむしろ増えた</strong>。Dynamic VRAM の経路から降りるため。<strong>「標準ローダーが読む safetensors か」が唯一の選定基準。</strong></p>
     </div>
     <div class="key">
-      <div class="kn">16GB の本命</div>
-      <p><strong>beta2 ref2va の GGUF Q4_K_M（約 11.6 GB）</strong>＋ ComfyUI-GGUF。Turbo が焼き込まれていない版なので、いまの「Turbo で下書き → 外して本番」がそのまま通る。</p>
+      <div class="kn">選ぶ理由は作風</div>
+      <p>同一 seed で <strong>SSIM Y 0.699</strong>。同じシーンで seed だけ変えた場合が 0.683 なので、<strong>モデルを替えるのは seed を替えるのと同じくらい絵が変わる</strong>。数字ではなく、出た絵と声で決める話。</p>
     </div>
   </div>
-  <p style="margin-top:1.2rem">つまり「同じ環境で試したい」という見立ては当たっています。作業としては <em>ComfyUI の入れ直しでも、環境の作り直しでもなく、モデルファイルを 1 本増やしてローダーの参照先を切り替えるだけ</em> です。既存の H3 ファイルは消さずに残してください。同一シード・同一プロンプトで A/B できることが、このモデルを試す一番の価値なので。</p>
 
-  <div class="panel stop">
-    <h4>ただし、モデルより先に確認してほしいことが 1 つ</h4>
-    <p><b>FL2VA と Ref2VA は Turbo LoRA を共有しません。</b>別モデルなので、LoRA も別物です。Ref2VA 用は <code>minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors</code> ただ 1 つ。もし Ref2VA の生成に FL2VA 用の Turbo LoRA（<code>…fl2v…</code> / <code>larryvrh</code> 系 / <code>lightx2v 8step</code> など）を当てていたなら、<b>10Eros-Max 以前に、そこが品質を落としている可能性があります。</b>今夜いちばん最初に見てください。詳細は <a href="#s7">07</a>。</p>
+  <div class="tablewrap wide" style="margin-top:1.2rem">
+  <table>
+    <caption>採否</caption>
+    <thead><tr><th>候補</th><th>形式・サイズ</th><th>判定</th><th>理由</th></tr></thead>
+    <tbody>
+      <tr class="pick">
+        <td><b>beta4 TURBO-hybrid</b></td>
+        <td class="fn">INT8 ConvRot<br>20,967,637,320 bytes</td>
+        <td><span class="chip ok">採用</span></td>
+        <td>Dynamic VRAM に乗る。速く、VRAM も少ない。turbo 焼き込みで LoRA 不要</td>
+      </tr>
+      <tr>
+        <td>beta2 ref2va GGUF</td>
+        <td class="fn">GGUF Q4_K_M<br>11.6 GB</td>
+        <td><span class="chip bad">実測して却下</span></td>
+        <td>Dynamic VRAM に乗らず、従来の部分ロードに落ちる。1.8〜2.6 倍遅い（<a href="#s5">05</a>）</td>
+      </tr>
+      <tr>
+        <td>beta4 W4A8</td>
+        <td class="fn">W4A8<br>12,538,134,464 bytes</td>
+        <td><span class="chip neutral">見送り</span></td>
+        <td>得られるはずの余裕に行き先がない。未取得・未検証（<a href="#s8">08</a>）</td>
+      </tr>
+      <tr>
+        <td>H3 base（従来）</td>
+        <td class="fn">INT8 ConvRot<br>19.53 GiB</td>
+        <td><span class="chip neutral">残す</span></td>
+        <td>比較の基準線。消さない</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="panel good">
+    <h4>採用したファイル</h4>
+    <p><code>10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot.safetensors</code> を
+    <code>models/diffusion_models/</code> へ。<b>標準の「拡散モデルを読み込む」で読めます。</b>GGUF ノードは要りません。</p>
+    <p>回し方は base と違います。<b>Turbo LoRA を外す・euler / simple・6 step</b>。詳細は <a href="#s4">04</a>。</p>
   </div>
 </section>
 
 <!-- ============ 02 ============ -->
 <section id="s2">
   <div class="seclabel">02</div>
-  <h2 class="sec">用語の整理と、1 点だけ訂正</h2>
-  <p class="lede">呼び方が紛らわしいところがあるので、先に固めておきます。</p>
+  <h2 class="sec">速度と VRAM</h2>
+  <p class="lede">すべて同一セッション内で連続計測。<b>両側に暖機を 1 本ずつ入れて、19.5 GiB のモデルロードを計測から外してあります。</b>それぞれのモデルを、それぞれの正しい設定で回した比較です。</p>
+
+  <div class="tablewrap wide">
+  <table>
+    <caption>0.4 MP · 5 秒（864 × 480 / 124 フレーム）</caption>
+    <thead><tr><th></th><th>H3 base</th><th>10Eros-Max beta4</th></tr></thead>
+    <tbody>
+      <tr><td>設定</td><td>turbo LoRA / res_multistep / 6 step</td><td>turbo 焼き込み / <b>euler</b> / 6 step</td></tr>
+      <tr><td>生成時間</td><td class="num">55.79 / 59.54 秒</td><td class="num"><b>49.08 / 49.18 秒</b></td></tr>
+      <tr><td>s/it</td><td class="num">6.09〜6.89</td><td class="num"><b>5.29〜5.46</b></td></tr>
+      <tr><td>ピーク VRAM</td><td class="num">15,554〜15,792 MiB</td><td class="num"><b>15,116〜15,252 MiB</b></td></tr>
+      <tr><td>ロード経路</td><td class="fn">19995MB Staged. 208 patches</td><td class="fn"><b>19995MB Staged. 0 patches</b></td></tr>
+      <tr><td>温度</td><td class="num">72〜73 C</td><td class="num">74 C</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tnote"><b>約 13% 速く、VRAM は 300〜670 MiB 少ない。</b><code>0 patches attached</code> が、turbo LoRA を正しく外せている証拠です（base 側は 208）。</p>
+
+  <div class="tablewrap wide">
+  <table>
+    <caption>1.0 MP · 10 秒（1376 × 768 / 243 フレーム / 10.125 秒）— 本番画質</caption>
+    <thead><tr><th></th><th>H3 base</th><th>10Eros-Max beta4</th></tr></thead>
+    <tbody>
+      <tr><td>合計時間</td><td class="num">403.85 秒</td><td class="num"><b>401.20 秒</b></td></tr>
+      <tr><td>s/it</td><td class="num">56.88 / 57.09</td><td class="num"><b>55.44 / 55.55</b></td></tr>
+      <tr><td>ピーク VRAM</td><td class="num">14,220 MiB</td><td class="num">15,238 MiB</td></tr>
+      <tr><td>サンプリング中 VRAM</td><td class="num">13,404〜13,476 MiB</td><td class="num">13,066〜13,115 MiB</td></tr>
+      <tr><td>温度</td><td class="num">79 C</td><td class="num">79 C</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tnote">ピーク VRAM の差はテキストエンコーダを再ステージしたかどうかの差で、モデルの性質ではありません（<a href="#s6">06</a>）。<b>両方とも OOM なし。</b></p>
+
+  <div class="panel flag">
+    <h4>beta4 の速度優位は高解像度で縮む</h4>
+    <p>0.4 MP · 5 秒では <b>−13%</b>、1.0 MP · 10 秒では <b>−2.6%</b>、総時間では 401.20 対 403.85 で<b>実質互角</b>。turbo LoRA の 208 patches は 1 ステップあたり固定のオーバーヘッドなので、長いシーケンスのアテンション量に対して相対的に小さくなる、と読めます。</p>
+    <p><b>本番画質で beta4 を選ぶ理由は速度ではなく作風です。</b></p>
+  </div>
+
+  <h3>step は 6。8 は買わない</h3>
+  <p>作者は「euler/simple 6〜8 step」と言っているので両方測りました（n=3）。</p>
+  <div class="tablewrap wide">
+  <table>
+    <caption>beta4 · 6 step 対 8 step（0.4 MP · 5 秒）</caption>
+    <thead><tr><th></th><th class="num">6 step</th><th class="num">8 step</th></tr></thead>
+    <tbody>
+      <tr><td>生成時間（seed 29 / 30 / 31）</td><td class="num"><b>53.04 / 58.53 / 52.68 秒</b></td><td class="num">65.18 / 65.01 / 64.61 秒</td></tr>
+      <tr><td>s/it</td><td class="num">5.82〜5.91</td><td class="num">5.85〜5.90</td></tr>
+      <tr><td>ピーク VRAM</td><td class="num">14,942〜15,471 MiB</td><td class="num">14,804〜15,222 MiB</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tnote"><b>s/it が 6 と 8 で変わらない</b>ので、8 step のコストは単純に 2 ステップ分（<code>2 × 5.9 ≈ 11.8 秒</code>）。実測差 <b>+11.9 秒（+22%）</b>と一致します。そして base の 6 step が 55.8〜59.5 秒なので、<b>beta4 を 8 step で回すと base より 10〜16% 遅くなり、選ぶ意味が消えます。</b></p>
+
+  <div class="panel">
+    <h4>絶対値は信用しない。ペアを信用する</h4>
+    <p>同じ beta4・同じ 6 step でも、セッション内で 49.1 秒の回と 53.0 秒の回があります（<b>±10% 程度は動く</b>）。<b>だから鉄則は「比較する 2 条件を連続して測る」</b>で、絶対秒数を別の日の数字と突き合わせない。<a href="#s7">07</a> にその実例があります。</p>
+  </div>
+</section>
+
+<!-- ============ 03 ============ -->
+<section id="s3">
+  <div class="seclabel">03</div>
+  <h2 class="sec">絵と音</h2>
+  <p class="lede"><b>SSIM は「どちらが良いか」を言いません。「どれだけ違うか」しか言いません。</b>だから、まずものさしを揃えます。</p>
+
+  <div class="tablewrap wide">
+  <table>
+    <caption>SSIM Y（1.000 が同一）— 同一シーン・同一ワークフローで測ったものさし</caption>
+    <thead><tr><th>何と何を比べたか</th><th class="num">SSIM Y</th><th>読み方</th></tr></thead>
+    <tbody>
+      <tr class="pick"><td><b>同一 seed・同一設定を 2 回</b></td><td class="num"><b>1.000000</b></td><td>このパイプラインは完全に決定的。差が出たら本当に条件の差</td></tr>
+      <tr><td>beta4 · 6 step 対 8 step</td><td class="num">0.701 / 0.804 / 0.836</td><td>seed 依存が激しい。8 step が一貫して良いわけではない</td></tr>
+      <tr><td><b>beta4 対 base</b>（0.4 MP、同一 seed）</td><td class="num"><b>0.699 / 0.695</b></td><td>下の行とほぼ同じ = <b>seed を替えるのと同程度に絵が変わる</b></td></tr>
+      <tr><td>base 同士、seed だけ変更</td><td class="num">0.683</td><td>本件で使うべきものさし</td></tr>
+      <tr><td><b>beta4 対 base</b>（1.0 MP、同一 seed）</td><td class="num"><b>0.592</b></td><td><b>解像度が上がるほど両者は離れる</b></td></tr>
+      <tr><td>GGUF 対 base（0.4 MP、同一 seed）</td><td class="num">0.745 / 0.750</td><td>beta4 より変化が小さかった。速度で落ちたので不採用</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tnote">アーカイブに残っている「seed 変更 0.393」は<b>別シーンの値なので本件には使えません</b>。ものさしは題材ごとに取り直すこと。</p>
+
+  <h3>音は beta4 のほうが大きく、高域ノイズが少ない</h3>
+  <div class="tablewrap wide">
+  <table>
+    <caption>audio_probe.py の指標</caption>
+    <thead><tr><th>条件</th><th class="num">Peak dB</th><th class="num">RMS dB</th><th class="num">Flat</th><th class="num">Entropy</th><th class="num">HF_ratio</th></tr></thead>
+    <tbody>
+      <tr><td>base · 0.4 MP</td><td class="num">-37.6 / -26.3</td><td class="num">-49.2 / -39.2</td><td class="num">0.00</td><td class="num">0.452 / 0.580</td><td class="num">0.0008</td></tr>
+      <tr class="pick"><td><b>beta4 · 0.4 MP</b></td><td class="num">-24.9 / -21.1</td><td class="num">-36.6 / -32.6</td><td class="num">0.00</td><td class="num">0.613 / 0.663</td><td class="num">0.0002 / 0.0007</td></tr>
+      <tr><td>base · 1.0 MP</td><td class="num">-30.3</td><td class="num">-47.5</td><td class="num">0.00</td><td class="num">0.474</td><td class="num">0.0026</td></tr>
+      <tr class="pick"><td><b>beta4 · 1.0 MP</b></td><td class="num">-26.0</td><td class="num">-37.6</td><td class="num">0.00</td><td class="num">0.601</td><td class="num">0.0003</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tnote"><b>Flat_factor が全条件 0.00 なのでデジタルクリップはありません。</b>1.0 MP では base の HF_ratio が beta4 の約 9 倍で、高域が荒れています。6 step と 8 step の間では音はほぼ同一（Peak -24.9 対 -24.0 / Entropy 0.613 対 0.629）。</p>
+
+  <div class="panel stop">
+    <h4>数値で品質を判定しない</h4>
+    <p>ここまでの表は<b>「違う」と「壊れていない」しか言っていません。</b>良し悪しは実物を見て・聴いて決めます。RMS のピークだけ見て「音は壊れていない」と判断し、実際には割れていた、という失敗が過去にあります。<b>比較画像と動画を必ず現物で確認すること。</b></p>
+    <p class="mono" style="font-size:.78rem">compare/B4_s20260829_top-base_bottom-beta4.png<br>compare/B4s_s20260829_top-6step_bottom-8step.png<br>compare/HQ_1p0MP_10s_top-base_bottom-beta4.png<br>compare/B4_audio_spec.png</p>
+  </div>
+</section>
+
+<!-- ============ 04 ============ -->
+<section id="s4">
+  <div class="seclabel">04</div>
+  <h2 class="sec">beta4 の回し方</h2>
+  <p class="lede">base と 4 か所違います。<b>1 つでも間違えると「なぜか品質が出ない」になります。</b></p>
+
+  <div class="tablewrap wide">
+  <table>
+    <caption>base から変える 4 点</caption>
+    <thead><tr><th>項目</th><th>base（従来）</th><th>beta4</th><th>間違えるとどうなるか</th></tr></thead>
+    <tbody>
+      <tr class="pick"><td>Turbo LoRA</td><td>ref2v_turbo_4step v0.1 を適用</td><td><b>バイパス（Ctrl+B）</b></td><td>蒸留済みモデルに蒸留を二重掛け</td></tr>
+      <tr class="pick"><td>sampler</td><td>res_multistep</td><td><b>euler</b></td><td>作者の想定スケジュールから外れる</td></tr>
+      <tr><td>scheduler</td><td>simple</td><td>simple（同じ）</td><td>—</td></tr>
+      <tr class="pick"><td>steps</td><td>6</td><td><b>6</b>（8 は +22% で割に合わない）</td><td>時間を 22% 損して base より遅くなる</td></tr>
+      <tr class="pick"><td>ローダー</td><td>拡散モデルを読み込む</td><td><b>同じ</b>。ファイル名だけ変更</td><td>GGUF ノードは使わない</td></tr>
+      <tr><td>モード</td><td>Ref2VA</td><td>Ref2VA か t2va。<b>i2v では使わない</b></td><td>画像 1 枚も first_frame でなく参照として渡す</td></tr>
+      <tr><td>CFG / shift</td><td>1.0 / 12・3</td><td>変更なし</td><td>—</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="panel good">
+    <h4>正しく設定できているかは、ログで確かめられる</h4>
+    <p>ComfyUI の起動ログに次の 2 行が出ていれば合っています。</p>
+    <pre><code>Model MiniMaxH3 prepared for dynamic VRAM loading. 19995MB Staged. 0 patches attached.
+[WARNING] unet unexpected: ['adaln_basis', 'adaln_mean']</code></pre>
+    <p><b><code>0 patches attached</code></b> は turbo LoRA が外れている証拠（base だと 208）。<b><code>unet unexpected</code> の警告は正常です</b> — beta4 にだけ余分に入っている 2 本のテンソルで、base 側の必要キーは 932 本すべて揃っています（<a href="#s5">05</a>）。</p>
+  </div>
+
+  <h3>ワークフローの検査</h3>
+  <p>保存済みワークフローが beta4 として妥当かは機械的に確かめられます。<code>scripts/wf_beta4_check.py</code> は上の表を検査項目として持っています。</p>
+  <pre><code>python scripts/wf_beta4_check.py WF.json            # 検査だけ
+python scripts/wf_beta4_check.py WF.json --fix      # step 数と末尾スラッシュを直す
+python scripts/wf_beta4_check.py WF.json --to-beta4 # base 用から WF_beta4.json を作る</code></pre>
+  <p><code>--to-beta4</code> は<b>新しいファイルを書き、元は触りません</b>。保存先の <code>filename_prefix</code> にも <code>_beta4</code> を足すので、beta4 の出力が base の出力に混ざりません。</p>
+
+  <div class="panel flag">
+    <h4>filename_prefix の末尾にスラッシュを付けない</h4>
+    <p>付けると連番が進まず、<b>実行するたびに前の出力を上書きします。</b>これで一度、実測を失っています。<code>--fix</code> が自動で落とします。</p>
+  </div>
+
+  <div class="tool" id="checklist">
+    <div class="tool-hd">
+      <h4>beta4 運用チェックリスト</h4>
+      <span class="status" id="chk-status">読み込み中…</span>
+    </div>
+    <div class="tool-bd" id="chk-list"></div>
+  </div>
+</section>
+
+<!-- ============ 05 ============ -->
+<section id="s5">
+  <div class="seclabel">05</div>
+  <h2 class="sec">捨てた道と、撤回した記述</h2>
+  <p class="lede">このシートの初版が間違っていた点を、実測で分かった順に残します。<b>同じ間違いを次にしないための節です。</b></p>
+
+  <h3>GGUF は「小さいから速い」ではなかった <span class="chip bad">実測して却下</span></h3>
+  <div class="tablewrap wide">
+  <table>
+    <caption>base（19.53 GiB INT8）対 beta2 ref2va GGUF Q4_K_M（11.6 GB）· 0.4 MP · 5 秒 · 6 step</caption>
+    <thead><tr><th></th><th>base</th><th>GGUF Q4_K_M</th></tr></thead>
+    <tbody>
+      <tr><td>生成時間</td><td class="num">53.0〜59.8 秒</td><td class="num"><b>93.7〜137.3 秒</b></td></tr>
+      <tr><td>s/it</td><td class="num">6.1〜6.6</td><td class="num">11.2〜19.3</td></tr>
+      <tr><td>ピーク VRAM</td><td class="num">15,098〜15,776 MiB</td><td class="num"><b>15,873〜15,965 MiB（97.5%）</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p><b>1.8〜2.6 倍遅く、VRAM はむしろ増えました。</b>決め手はファイルサイズではなく、Dynamic VRAM に乗るかどうかです。</p>
+  <pre><code>base : Model MiniMaxH3 prepared for dynamic VRAM loading. 19995MB Staged. 208 patches attached.
+GGUF : Requested to load MiniMaxH3
+       loaded partially; 10957.44 MB usable, 10854.08 MB loaded, 468.31 MB offloaded</code></pre>
+  <ul>
+    <li>19.53 GiB の INT8 が 16 GB で快適に回っていたのは <b>Dynamic VRAM（comfy-aimdo）のおかげ</b></li>
+    <li><b>GGUF はその経路に乗らず、ComfyUI 従来の部分ロードに落ちます</b></li>
+    <li>ファイルを小さくして得たものより、仕組みから降りて失ったもののほうが大きい</li>
+    <li><code>gguf qtypes: F32 (324), Q4_K (208)</code> — 量子化されているのは 208 テンソルだけ。残り 324 は F32。その 208 は turbo LoRA の対象と完全に同じ集合で、毎ステップ bf16 に展開されます</li>
+  </ul>
+  <p class="tnote">サーマルではありません（最大 72 C、4080 のスロットリングは 83 C 前後）。<b>未解明</b>：GGUF の実行が回を追って遅くなることがあった（93.7 → 137.3 秒）。ログ上はオフロード量が減っているのに遅い。VRAM 逼迫（余裕 411 MiB）を疑いますが確証はありません。</p>
+
+  <div class="panel good">
+    <h4>ここから得た選定基準</h4>
+    <p><b>候補は「標準ローダーが読む safetensors か」で選ぶ。サイズは二の次。</b>beta4 INT8 はこの基準で選ばれ、実際に <code>19995MB Staged</code> に乗りました。</p>
+  </div>
+
+  <h3>beta4 は base とほぼ同型 — だから乗った</h3>
+  <p><code>scripts/st_probe.py</code> で safetensors のヘッダだけを読んで比較した結果（20 GB のファイルでも数 MB しか読みません）。</p>
+  <div class="tablewrap wide">
+  <table>
+    <caption>base 対 beta4 のヘッダ差分</caption>
+    <thead><tr><th>項目</th><th>結果</th></tr></thead>
+    <tbody>
+      <tr class="pick"><td>base の 932 テンソル</td><td><b>すべて beta4 に同名・同 shape で存在。shape 不一致 0</b></td></tr>
+      <tr><td>量子化レイアウト</td><td>同一（I8 × 200 = 17.94 GiB ＋ U8 スケール × 200）</td></tr>
+      <tr><td>beta4 だけにあるキー</td><td class="fn">adaln_basis [8, 2688] / adaln_mean [2688] の 2 本のみ</td></tr>
+      <tr><td>dtype が違うキー</td><td>112 本（base の F16 / F32 → beta4 は BF16）</td></tr>
+      <tr><td>メタデータ</td><td class="fn">"H3 LoRA merge (orthogonal=False, global_normalize=True)"<br>"converted_from": "diffusers MiniMax-H3 transformer"</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tnote">余分な 2 本は diffusers 変換の残骸で、ComfyUI は <code>unet unexpected</code> として無視します。<b>必要なキーが全部揃っているので実害はありません。</b></p>
+
+  <div class="panel stop">
+    <h4>撤回：「pruned には Full 向け Turbo LoRA が効かない」「高速化は PDD-Acc のみ」</h4>
+    <p>このシートの初版はそう書いていましたが、<b>この環境の実ファイルには当てはまりません。</b>実測で撤回します。</p>
+    <ul>
+      <li>Turbo LoRA の対象は <b>208 モジュール</b>（<code>blocks.0-49</code> × attn.qkv_proj / attn.out_proj / mlp.fc1 / mlp.fc2 ＋ <code>token_refiner.blocks.0-1</code> × 同 4 種）</li>
+      <li>pruned INT8 DiT と <b>208 / 208 が厳密一致。ミス 0</b></li>
+      <li><b>LoRA 内に adaln 系キーは 0 本</b> → 落ちるものが無い</li>
+      <li>実行ログの <code>208 patches attached</code> とも一致</li>
+    </ul>
+    <p><b>したがって PDD-Acc は「唯一の高速化経路」ではありません。</b>優先度は低いままで構いません。</p>
+  </div>
+
+  <div class="panel flag">
+    <h4>Turbo LoRA を外すと、映像だけ見ても気づけない</h4>
+    <p>GGUF で LoRA の有無を検証したとき、映像の SSIM Y は 0.662 と「seed 違い程度」でしたが、<b>音は Peak -47.3 dB / Entropy 0.327 と明らかに生焼け</b>でした（LoRA ありは -39.2 / 0.437）。<b>LoRA や step の検証では必ず音も測ること。</b></p>
+  </div>
+</section>
+
+<!-- ============ 06 ============ -->
+<section id="s6">
+  <div class="seclabel">06</div>
+  <h2 class="sec">VRAM の読み方</h2>
+  <p class="lede">この環境でいちばん誤解しやすいところ。<b>ピーク VRAM は OOM 接近の指標になりません。</b></p>
+
+  <div class="tablewrap wide">
+  <table>
+    <caption>サンプリング中の VRAM（nvidia-smi 20 秒間隔）</caption>
+    <thead><tr><th>条件</th><th class="num">サンプリング中</th><th class="num">記録されたピーク</th><th>ピークが出る場所</th></tr></thead>
+    <tbody>
+      <tr><td>beta4 · 0.4 MP · 5 秒</td><td class="num">15,1xx〜15,2xx MiB</td><td class="num">15,252 MiB</td><td>サンプリング中</td></tr>
+      <tr class="pick"><td><b>beta4 · 1.0 MP · 10 秒</b></td><td class="num"><b>13,066〜13,115 MiB（80%）</b></td><td class="num">15,238 MiB</td><td><b>テキストエンコード時</b></td></tr>
+      <tr><td>base · 1.0 MP · 10 秒</td><td class="num">13,404〜13,476 MiB（82%）</td><td class="num">14,220 MiB</td><td>テキストエンコード時</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><b>解像度と尺を上げたら、サンプリング中の VRAM が減りました。</b>直感に反しますが理由ははっきりしています。Dynamic VRAM は<b>活性化領域の大きさに合わせて常駐させる重みを減らす</b>ので、重い条件ほど重みが VRAM から降りて活性化に場所を譲ります。</p>
+
+  <div class="panel good">
+    <h4>ここから出る結論</h4>
+    <ul>
+      <li><b>「0.4 MP で 96.3%」は「高解像度で危ない」を意味しない。</b>仕組みが自動で釣り合いを取る</li>
+      <li>1.0 MP（ネイティブ上限 0.98 MP = 1344×768 相当）× 10 秒は <b>base も beta4 も OOM なしで完走</b></li>
+      <li>ピークはテキストエンコーダ（<code>MiniMaxH3TEModel_ 14956MB Staged</code>）を再ステージしたときに出る。<b>DiT の性質ではない</b></li>
+      <li>したがって <b>W4A8 に期待できた「VRAM の逃げ道」という価値は消えます</b>（<a href="#s8">08</a>）</li>
+    </ul>
+  </div>
+
+  <p class="tnote">この挙動は Dynamic VRAM（comfy-aimdo 0.4.13）が有効な場合の話です。起動ログに <code>DynamicVRAM support detected and enabled</code> が出ていることが前提。GGUF のように別経路に落ちるモデルでは成り立ちません（<a href="#s5">05</a>）。</p>
+</section>
+
+<!-- ============ 07 ============ -->
+<section id="s7">
+  <div class="seclabel">07</div>
+  <h2 class="sec">計測の作法</h2>
+  <p class="lede">このシートの数字がなぜ信用できるか、という話。<b>守らないと数字が嘘になる 3 つ</b>と、それを機械で担保する道具。</p>
+
+  <ol class="steps">
+    <li>
+      <b>鉄則 0 — 比較する 2 条件は連続して測る</b>
+      <p>絶対値はセッション内でも ±10% 動きます。<b>別の日の数字と突き合わせない。</b>この鉄則を破って一度ハマりました（下記）。</p>
+    </li>
+    <li>
+      <b>鉄則 1 — 両側に暖機を 1 本ずつ</b>
+      <p>チェックポイントの切り替えには 19.5 GiB のロードが伴います。それを候補側の 1 本目に押し付けると、<b>ありもしない遅さを作ってしまいます。</b></p>
+    </li>
+    <li>
+      <b>鉄則 2 — 音も測る</b>
+      <p>映像だけ見ても、LoRA の抜けや step 不足に気づけないことがあります（<a href="#s5">05</a>）。</p>
+    </li>
+  </ol>
+
+  <div class="panel good">
+    <h4>このパイプラインは完全に決定的だと確認できた</h4>
+    <p>別々の実行・同一 seed・同一設定の 2 本が <b>SSIM Y = 1.000000</b>。<b>A/B の前提が実測で裏づけられました。</b>差が出たら、それは本当に条件の差です。</p>
+  </div>
+
+  <div class="panel flag">
+    <h4>実例：アーカイブの数字と比べて、無い問題を作りかけた</h4>
+    <p>beta4 を 1.0 MP · 10 秒で回して <b>55.5 s/it</b>。アーカイブの Run #10（base、別セッション）が <b>48.23 s/it</b> だったので「高解像度で beta4 が負けている」と読みました。</p>
+    <p><b>実際は違いました。</b>base を同じ条件で連続計測したら <b>57.0 s/it</b>。beta4 のほうが 2.6% 速い。<b>外れていたのは beta4 ではなくアーカイブの数字のほうでした</b>（当時のほうが 18% 速い理由は不明）。</p>
+  </div>
+
+  <div class="panel flag">
+    <h4>実例：計測中の手動操作が 1 本を汚した</h4>
+    <p>6 step の 1 本だけ 98.85 秒（他は 53 秒前後）。原因は<b>計測中に手動で 8188 にプロンプトを投げたこと</b>で、ログに <code>Cancelling pending prompt</code> が残っていました。</p>
+    <ul>
+      <li><b>s/it は正常のまま</b>（5.92）。壊れるのは wall / reported だけ</li>
+      <li><b>絵は無傷</b> — 汚染された回と再計測の回が SSIM Y 1.000000 で一致</li>
+      <li><code>ab_run.py</code> は 1 回の実行ログに <code>got prompt</code> が 2 つ以上、または <code>Cancelling pending prompt</code> があれば <b><code>[!] CONTAMINATED</code></b> と印字し、JSON にも <code>contaminated</code> として残します</li>
+    </ul>
+  </div>
+
+  <h3>道具</h3>
+  <div class="tablewrap wide">
+  <table>
+    <caption>作業フォルダ MiniMaxH3_work（.bat は絶対パス直書きのためリポジトリ外）</caption>
+    <thead><tr><th>ファイル</th><th>中身</th></tr></thead>
+    <tbody>
+      <tr class="pick"><td class="fn">scripts/ab_run.py</td><td><b>API 駆動の A/B ランナー。</b>モデルごとの sampler / step / LoRA 既定値を <code>MODELS</code> 表に持ち、<code>--plan</code> で計画を選ぶ。実行前に ComfyUI へファイルの有無を問い合わせ、割り込みを受けた回を自動検出する</td></tr>
+      <tr><td class="fn">scripts/st_probe.py</td><td>safetensors のヘッダだけ読んで 2 ファイルを差分比較。20 GB でも数 MB しか読まない</td></tr>
+      <tr><td class="fn">scripts/ab_grid.py</td><td>2 本の動画を同じ時刻で上下に並べた 1 枚を作る。左端に参照画像</td></tr>
+      <tr><td class="fn">scripts/wf_beta4_check.py</td><td>保存済みワークフローを beta4 の要件で検査・修正・変換（<a href="#s4">04</a>）</td></tr>
+      <tr><td class="fn">r2v/scripts/audio_probe.py</td><td>Peak / RMS / Flat / Entropy / HF_ratio ＋スペクトログラム</td></tr>
+      <tr><td class="fn">15_download_10eros_beta4.bat</td><td>beta4 INT8 ConvRot / W4A8 の取得。レジューム＆サイズ検証つき</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <pre><code>python scripts/ab_run.py --plan beta4                      # base 対 beta4（両側に暖機）
+python scripts/ab_run.py --plan beta4steps                 # 6 step 対 8 step
+python scripts/ab_run.py --plan solo --model beta4 \
+       --megapixels 1.0 --seconds 10.0 --tag hq            # 本番画質で 1 本
+python scripts/ab_run.py --plan beta4 --dry-run            # 投げずに計画だけ</code></pre>
+</section>
+
+<!-- ============ 08 ============ -->
+<section id="s8">
+  <div class="seclabel">08</div>
+  <h2 class="sec">見送ったもの</h2>
+  <p class="lede">測らずに見送った判断と、その根拠。<b>再浮上する条件も書いておきます。</b></p>
+
+  <h3>W4A8（11.68 GiB） <span class="chip neutral">見送り</span></h3>
+  <div class="tablewrap wide">
+  <table>
+    <caption>期待できたメリットと、その行方</caption>
+    <thead><tr><th>期待</th><th>判定</th><th>理由</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>全部が VRAM に載り切って更に速い</td>
+        <td><span class="chip unknown">唯一生きている</span></td>
+        <td>ただし<b>ステージングが足を引っ張っている証拠がない</b>。19.53 GiB のまま base より速く回っている。「小さくすれば速い」は GGUF で一度否定済み</td>
+      </tr>
+      <tr>
+        <td>VRAM に余裕ができて解像度・尺を上げられる</td>
+        <td><span class="chip bad">消えた</span></td>
+        <td><b>ネイティブ上限 0.98 MP は INT8 のまま到達済み、10 秒尺も実測済み</b>で OOM なし。余らせても行き先がない（<a href="#s6">06</a>）</td>
+      </tr>
+      <tr>
+        <td>ディスク 8 GB の節約</td>
+        <td><span class="chip bad">無意味</span></td>
+        <td>空きが 578 GB ある</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p>対するコストは、<b>4 bit 重みで満足している絵と声が変わるリスク</b>、別アップローダー（<code>berryber09</code>、本家 TenStrip ではない）、この PC で未検証、検証コスト約 30 分。<b>速度で困っていない状況で 4 bit に賭ける理由がありません。</b></p>
+  <p class="tnote"><b>再浮上する条件：</b>より重い条件（1.0 MP を超える解像度、10 秒を超える尺、参照枚数の増加）で実際に OOM したとき。そのときは <code>15_download_10eros_beta4.bat</code> の選択 2 で取得し、<code>--plan beta4w4a8</code> で測ります。</p>
+
+  <h3>その他</h3>
+  <ul>
+    <li><b>beta2 GGUF</b> — 実測して却下（<a href="#s5">05</a>）。<code>ComfyUI-GGUF</code> は導入したまま残してあります</li>
+    <li><b>PDD-Acc</b> — 「pruned Ref2VA の唯一の高速化経路」という前提が撤回されたので優先度は低い（<a href="#s5">05</a>）。turbo LoRA が正しく 208/208 当たっている以上、急ぐ理由がありません</li>
+    <li><b>beta3 W4A8</b> — 作者自身が「やや壊れている」と述べており、実質 t2v。Ref2VA 主用途では対象外</li>
+  </ul>
+</section>
+
+<!-- ============ 09 ============ -->
+<section id="s9">
+  <div class="seclabel">09</div>
+  <h2 class="sec">用語の整理</h2>
+  <p class="lede">呼び方が紛らわしいところ。初版から変わっていない、調べて裏の取れた部分です。</p>
 
   <h3>「10Eros」には別系統が 2 つある <span class="chip warn">混同注意</span></h3>
   <p>同じ作者（TenStrip）が、まったく違うベースモデルに同じブランド名を付けています。検索でヒットしたものをそのまま落とすと、動かないファイルを 20 GB 掴むことになります。</p>
@@ -389,33 +791,7 @@
   </div>
   <p class="tnote">10Eros-Max は「LTX 2.3・Wan 2.2・Krea 2 から性格を移植した H3 派生」と説明されています。名前に LTX 系の血が入っているのはそのためで、動く土台はあくまで H3 です。</p>
 
-  <h3>「チェックポイントを差し替える」ではなく「diffusion model を差し替える」</h3>
-  <p>SD1.5 や SDXL の感覚だと 1 個の checkpoint に全部入っていますが、H3 は <b>DiT（本体）＋ text encoder ＋ video VAE ＋ audio VAE の 4 点セット</b>で、ComfyUI 上でも別々のローダーで読みます。差し替え対象はこのうち DiT だけです。</p>
-
-  <h3>モード名：FL2VA と Ref2VA、そして「hybrid」</h3>
-  <ul>
-    <li><b>FL2VA</b>（first-and-last-frame）— 画像 0 枚なら T2V、1 枚なら I2V、2 枚なら始点＋終点指定。</li>
-    <li><b>Ref2VA</b>（omni-reference）— 画像 9 枚・動画 3 本・音声 3 本まで参照として渡せるモード。キャラや声を寄せたいとき用。VRAM 的にはこちらの方が重い。</li>
-  </ul>
-  <p><b>この 2 つは別モデルです。</b>DiT ファイルも別なら、Turbo LoRA も別。そして設計上、<b>Ref2VA は FL2VA より素の画質・音質が明確に落ちます</b>（参照条件付けができる代わりの対価）。これは H3 の既知の性質で、あなたが主に Ref2VA を使っているなら、<b>10Eros-Max が謳う「顔の一貫性の向上」はまさにそこに効く可能性があります。</b>相性は良さそうです。</p>
-
-  <h3>hybrid とは何か <span class="chip warn">使い方に制約あり</span></h3>
-  <p>この Ref2VA の品質差を埋めるために、コミュニティは <b>FL2VA をベースに、50 ブロックのうち一部の <code>adaln_proj</code> だけを Ref2VA から取ってくる</b>マージを作っています。これが「hybrid」。10Eros-Max の <code>TURBO-hybrid</code> 系もこの系譜で、<b>1 ファイルで参照モードと t2va の両方を賄えます</b>。両モードを使うあなたには効率が良い形です。</p>
-  <div class="panel flag">
-    <h4>hybrid を i2v モードで使わないこと</h4>
-    <p>hybrid 系は <b>参照（ref2va）形式か t2va 形式で使う</b>もので、i2v モードでは使わない、という注意が付いています。<b>画像 1 枚を渡す場合も、<code>first_frame</code> ではなく参照画像として ref2va 形式で渡します。</b>ここを間違えると「なぜか品質が出ない」になります。</p>
-  </div>
-
-  <h3>「作風が少し異なる」の中身 <span class="chip neutral">補足</span></h3>
-  <p>10Eros-Max の差分として挙がっているのは、静止画的な「画風」よりも <b>動きの性格</b> です。具体的には <b>顔の一貫性の向上</b> と <b>弾むような、反応の速いモーション</b>。ダンスなど動きの大きい題材に向く、という評価です。逆に言うと、静かなカットで A/B しても差が見えにくい可能性があります。比較用のプロンプトは動きのあるものにしてください。</p>
-</section>
-
-<!-- ============ 03 ============ -->
-<section id="s3">
-  <div class="seclabel">03</div>
-  <h2 class="sec">何を差し替えるのか</h2>
-  <p class="lede">現状の 4 点セットのうち、色の付いた 1 箱だけが入れ替わります。残りは触りません。</p>
-
+  <h3>差し替えるのは 4 点セットのうち 1 つだけ</h3>
   <div class="pipe wide">
     <div class="pbox">
       <span class="role">Text Encoder</span>
@@ -425,8 +801,8 @@
     <div class="parrow" aria-hidden="true">→</div>
     <div class="pbox swap">
       <span class="role">Diffusion Model ← ここだけ</span>
-      <span class="fname">minimax_h3_*_pruned_int8_convrot.safetensors<br>↓<br>10Eros-Max-*-Q4_K_M.gguf</span>
-      <span class="sz">19.5 GB → 11.6 GB</span>
+      <span class="fname">minimax_h3_ref2va_pruned_int8_convrot.safetensors<br>↓<br>10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot.safetensors</span>
+      <span class="sz">19.53 GiB → 19.53 GiB</span>
     </div>
     <div class="parrow" aria-hidden="true">→</div>
     <div class="pbox">
@@ -440,460 +816,22 @@
       <span class="sz">577 MB · そのまま（fp32 必須）</span>
     </div>
   </div>
-  <p class="pipenote">ファイル名は ComfyUI 公式構成での標準的な組み合わせです。お使いの環境と一致するかは <a href="#s4">04</a> で確認してください。</p>
+  <p class="pipenote">両方 <code>models/diffusion_models/</code> に置き、標準の「拡散モデルを読み込む」で切り替えます。<b>audio VAE を fp16 に落とさないこと</b>（映像と音がズレます）。</p>
 
-  <div class="panel flag">
-    <h4>audio VAE を fp16 に落とさないこと</h4>
-    <p>audio VAE を fp16 化すると映像と音がズレる、という報告が繰り返し出ています。VRAM を削りたくなっても、ここは fp32 のままにしてください。</p>
-  </div>
-
-  <h3>置き場所</h3>
-  <div class="tablewrap">
-  <table>
-    <caption>ComfyUI/models 配下</caption>
-    <thead><tr><th>ファイル</th><th>フォルダ</th><th>読むノード</th></tr></thead>
-    <tbody>
-      <tr><td>10Eros-Max <code>.gguf</code></td><td class="fn">models/unet/</td><td>Unet Loader (GGUF) <span class="chip warn">要確認</span></td></tr>
-      <tr><td>10Eros-Max <code>.safetensors</code>（INT8/NVFP4）</td><td class="fn">models/diffusion_models/</td><td>Load Diffusion Model（標準）</td></tr>
-      <tr><td>text encoder</td><td class="fn">models/text_encoders/</td><td>既存のまま</td></tr>
-      <tr><td>video / audio VAE</td><td class="fn">models/vae/</td><td>既存のまま</td></tr>
-      <tr><td>Turbo LoRA</td><td class="fn">models/loras/</td><td>LoraLoaderModelOnly ほか</td></tr>
-    </tbody>
-  </table>
-  </div>
-  <p class="tnote"><b>要確認：</b>ComfyUI-GGUF の Unet Loader は伝統的に <code>models/unet</code> を見ます。近年の ComfyUI では <code>unet</code> と <code>diffusion_models</code> が同一扱いになっている構成が多いので、まず <code>unet</code> に置き、ノードのプルダウンに出なければ <code>diffusion_models</code> に移す、で確実です。</p>
-</section>
-
-<!-- ============ 04 ============ -->
-<section id="s4">
-  <div class="seclabel">04</div>
-  <h2 class="sec">帰宅後の手順</h2>
-  <p class="lede">上から順に。00〜02 はダウンロードを始める前に済ませてください。ここで得た値が、そのまま <a href="#s5">05</a> の選択を決めます。</p>
-
-  <ol class="steps">
-    <li>
-      <b>現状を吐き出す（5 分）</b>
-      <p>リポジトリの <code>tools/h3_env_check.py</code> を ComfyUI のフォルダを指定して実行すると、GPU・VRAM・ドライバ・ComfyUI のバージョン・models 配下の H3 関連ファイル・空きディスクを Markdown で出力します。</p>
-      <pre><code>git pull
-python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
-      <p>出た内容を <a href="#s10">10 環境メモ</a> に貼るか、そのままチャットに貼ってください。これがあると以降の判断がぶれません。</p>
-    </li>
-    <li>
-      <b>DiT は確認済み</b> <span class="chip ok">回答済</span>
-      <p><code>minimax_h3_ref2va_pruned_int8_convrot.safetensors</code>（Comfy-Org 公式、19.53 GB）。<b>Ref2VA / pruned / INT8 ConvRot。</b>19.53 GB が 16 GB で回っているということは、すでに offload が効いた状態で成立しています。10Eros-Max の GGUF Q4_K_M（11.6 GB）は<b>これより軽い</b>ので、載らない心配はありません。</p>
-    </li>
-    <li>
-      <b>Turbo LoRA が本当にあるか確認する</b> <span class="chip bad">最優先</span>
-      <p>見る場所は 2 つ。<b>① <code>ComfyUI/models/loras/</code> の中身</b>（何が入っているか）と、<b>② ワークフローに LoRA ローダーのノードが実際にあるか</b>（「Load LoRA」「LoraLoaderModelOnly」など）。DiT を読む「Load Diffusion Model」ノードとは別のノードです。</p>
-      <p><b>そして pruned なので、Full 向けの Turbo LoRA を当てていても AdaLN 部分は効いていません</b>（<a href="#s7">07</a>）。pruned Ref2VA での高速化は <b>PDD-Acc 経路</b>が唯一まともな道です。</p>
-    </li>
-    <li>
-      <b>空きディスクを確認する</b>
-      <p>GGUF Q4_K_M なら 12 GB、INT8 なら 22 GB 空けます。ダウンロード中は一時ファイルも要るので、実際は +5 GB 見ておくと安全。</p>
-    </li>
-    <li>
-      <b>ComfyUI-GGUF を入れる（GGUF を選ぶ場合のみ）</b>
-      <p>ComfyUI Manager から <code>ComfyUI-GGUF</code>（city96）を導入 → ComfyUI 再起動。INT8 版で行くなら不要です。</p>
-    </li>
-    <li>
-      <b>モデルを 1 本落とす</b>
-      <p><a href="#s5">05 の表</a>から 1 行だけ選んで落とす。<b>既存の H3 ファイルは消さない。</b></p>
-    </li>
-    <li>
-      <b>いつものワークフローを複製し、ローダーだけ差し替える</b>
-      <p>ワークフローを「名前を付けて保存」で複製 → DiT のローダーだけ 10Eros-Max に向ける（GGUF なら Load Diffusion Model を Unet Loader (GGUF) に置換）。他は一切触らない。</p>
-    </li>
-    <li>
-      <b>まず 1 本、小さく回す</b>
-      <p>低解像度（0.2 MP 前後 = 608×352 など）・短尺（3〜5 秒）・少ステップで 1 本。<b>ここで見るのは画質ではなく「落ちないか」だけ</b>です。OOM が出たら <a href="#s6">06</a> の順に削ります。</p>
-    </li>
-    <li>
-      <b>同一シードで A/B を 4〜6 本</b>
-      <p>既存 H3 と 10Eros-Max で、<b>シード・プロンプト・解像度・ステップを完全に揃えて</b>回します。動きのある題材で。結果と時間・ピーク VRAM を <a href="#s11">11 実測ログ</a> に記録してください。次のチャットはその数字を起点に詰めます。</p>
-    </li>
-  </ol>
-
-  <div class="tool" id="checklist">
-    <div class="tool-hd">
-      <h4>今夜のチェックリスト</h4>
-      <span class="status" id="chk-status">読み込み中…</span>
-    </div>
-    <div class="tool-bd" id="chk-list"></div>
-  </div>
-</section>
-
-<!-- ============ 05 ============ -->
-<section id="s5">
-  <div class="seclabel">05</div>
-  <h2 class="sec">ダウンロード候補</h2>
-  <p class="lede">配布が版ごとに分かれていて、命名も揃っていません。<b>まず「どの世代か」を決めてから、形式を選びます。</b>ここを混ぜると比較の意味がなくなります。</p>
-
-  <h3>世代の系譜</h3>
-  <div class="tablewrap wide">
-  <table>
-    <caption>10Eros-Max の版</caption>
-    <thead><tr><th>版</th><th>Turbo</th><th>モード</th><th>16GB で入手できる形</th><th>位置づけ</th></tr></thead>
-    <tbody>
-      <tr class="pick">
-        <td><b>beta2</b></td><td><span class="chip ok">焼き込みなし</span></td>
-        <td>fl2va / ref2va <b>別ファイル</b></td>
-        <td>GGUF Q3〜Q8（Abiray）、NVFP4</td>
-        <td><b>非焼き込みの本命。</b>いまの運用がそのまま通る</td>
-      </tr>
-      <tr>
-        <td>test4 pruned</td><td><span class="chip ok">焼き込みなし</span></td><td>fl2va</td>
-        <td>GGUF Q3〜Q8（Abiray 無印リポジトリ）</td>
-        <td>fl2va 用の別系統。専用 Turbo LoRA が t8star から出ている</td>
-      </tr>
-      <tr>
-        <td>beta3</td><td><span class="chip warn">焼き込みあり</span></td><td>実質 t2v のみ</td>
-        <td>W4A8 <b>11.68 GB</b>（berryber09）</td>
-        <td>作者が「やや壊れている」と述べている版。<b>r2v 用途では優先度低</b></td>
-      </tr>
-      <tr>
-        <td><b>beta4</b></td><td><span class="chip warn">焼き込みあり</span></td><td>ref + t2va の <b>hybrid 1 本</b></td>
-        <td>INT8 ConvRot 約 19.5〜21 GB（GGUF は見当たらず）</td>
-        <td><b>作者の現行本命。非 Turbo 版は作られていない</b></td>
-      </tr>
-    </tbody>
-  </table>
-  </div>
-  <p class="tnote">beta4 について作者は「非 Turbo 版は出来が悪いので作っていない」と述べています。つまり <b>beta4 で「Turbo を外した状態」を試すことはできません</b>。beta3 の config を土台に LoRA を新しいものへ差し替え、Turbo を consensus merge して ref/t2va ハイブリッド Turbo を構成した、という作り。6〜8 step で映像・参照・モーションとも良好、euler/simple もしくは LCM/simple 6〜8 step、とされています。</p>
-
-  <h3>ファイル選択（Ref2VA 主用途の場合）</h3>
-  <div class="tablewrap wide">
-  <table>
-    <caption>落とす候補</caption>
-    <thead>
-      <tr><th class="num">優先</th><th>配布元 / 版</th><th>形式</th><th class="num">サイズ</th><th>16GB</th><th>備考</th></tr>
-    </thead>
-    <tbody>
-      <tr class="pick">
-        <td class="num">1</td>
-        <td>Abiray/10Eros-Max-<b>ref2va</b>-Beta2-GGUF</td>
-        <td class="fn">GGUF Q4_K_M</td><td class="num">≈11.6 GB</td>
-        <td><span class="chip ok">本命</span></td>
-        <td>非焼き込み。<b>Turbo LoRA は今のまま使える</b>。ComfyUI-GGUF 必須</td>
-      </tr>
-      <tr>
-        <td class="num">2</td>
-        <td>TenStrip/10Eros-Max <b>beta4</b></td>
-        <td class="fn">TURBO-hybrid<br>INT8 ConvRot</td><td class="num">≈19.5〜21 GB</td>
-        <td><span class="chip warn">offload 前提</span></td>
-        <td>焼き込み。<b>Turbo LoRA は外す</b>。ref+t2va を 1 本で賄える。i2v では使わない</td>
-      </tr>
-      <tr>
-        <td class="num">3</td>
-        <td>Abiray/10Eros-Max-<b>fl2va</b>-Beta2-GGUF</td>
-        <td class="fn">GGUF Q4_K_M</td><td class="num">≈11.6 GB</td>
-        <td><span class="chip ok">余裕</span></td>
-        <td>FL2VA も使うなら。beta2 で揃うので ref2va 版と比較しやすい</td>
-      </tr>
-      <tr>
-        <td class="num">4</td>
-        <td>berryber09/…-turbo-hybrid-<b>beta3</b>-w4a8</td>
-        <td class="fn">W4A8 ConvRot</td><td class="num">11.68 GB</td>
-        <td><span class="chip ok">サイズ良</span></td>
-        <td>焼き込みを 11.7 GB で試せる唯一の道。ただし beta3 は実質 t2v</td>
-      </tr>
-      <tr>
-        <td class="num">—</td>
-        <td>Abiray（各リポジトリ）</td>
-        <td class="fn">GGUF Q3_K_M / Q5_K_M</td><td class="num">≈8.9 / 14.1 GB</td>
-        <td><span class="chip neutral">調整用</span></td>
-        <td>Q3 は OOM 時の逃げ道、Q5 は画質寄りでぎりぎり</td>
-      </tr>
-      <tr>
-        <td class="num">—</td>
-        <td>DmitryDB/…-10Eros-Max-Quants</td>
-        <td class="fn">INT8 ConvRot / NVFP4</td><td class="num">20.94 / 10.86〜13.60 GB</td>
-        <td><span class="chip unknown">FL2VA のみ</span></td>
-        <td>Ref2VA 版なし。NVFP4 は Ada で動くか不明（<a href="#s9">09-Q1</a>）</td>
-      </tr>
-      <tr>
-        <td class="num">×</td>
-        <td>DmitryDB/…-DT-sQKV</td>
-        <td class="fn">INT8 DT-sQKV</td><td class="num">21.00 GB</td>
-        <td><span class="chip bad">避ける</span></td>
-        <td>ComfyUI 本体へのパッチが必要</td>
-      </tr>
-      <tr>
-        <td class="num">×</td>
-        <td>TenStrip 本家 bf16</td>
-        <td class="fn">bf16</td><td class="num">37.5〜40 GB</td>
-        <td><span class="chip bad">不可</span></td>
-        <td>16GB では非現実的</td>
-      </tr>
-    </tbody>
-  </table>
-  </div>
-  <p class="tnote">W4A8 版は ComfyUI ≥ 0.31.0 の native W4A8 ローダー（UNETLoader convrot）で読める、と配布側が明記しています（再構成誤差 relL2 ≈ 0.073、SNR ≈ 22.8 dB、検証 65 件パス）。ミラー（cicalooo、CornLogic、disguisequence、sakamakismile ほか）にも同名ファイルがありますが、素性のはっきりした上記を優先してください。</p>
-
-  <div class="panel">
-    <h4>今夜の 1 本目</h4>
-    <p><b>優先 1（Abiray ref2va Beta2 GGUF Q4_K_M、約 11.6 GB）。</b>いまの Turbo LoRA 運用を変えずに DiT だけ差し替えられるので、<b>10Eros-Max そのものの差だけ</b>を見られます。beta4 は変数が 3 つ同時に動くので、2 本目以降に。</p>
-  </div>
-</section>
-
-<!-- ============ 06 ============ -->
-<section id="s6">
-  <div class="seclabel">06</div>
-  <h2 class="sec">16GB に載るのか</h2>
-  <p class="lede">結論から言うと載ります。ただし「4 つ全部を同時に VRAM に置く」わけではない、という前提の理解が要ります。</p>
-
-  <h3>同時常駐はしない</h3>
-  <p>ファイルサイズを単純合計すると 40 GB を超えますが、ComfyUI は <b>text encoder でプロンプトを符号化 → 解放 → DiT でサンプリング → 解放 → VAE でデコード</b> と順番に載せ替えます。ピーク VRAM を決めるのは基本的に <b>DiT ＋ 潜在テンソル</b>です。そのため、GGUF Q4_K_M（11.6 GB）＋ 16 GB は現実的な組み合わせになります。</p>
-  <p><b>64 GB の物理メモリはここで効きます。</b>12 GB 級の実測レポートでは「32 GB でも動くが、64 GB が offload ボトルネックの根本的な解決になる」と明記されています。16 GB VRAM ＋ 64 GB RAM は、この用途としてかなり素直な構成です。</p>
-
-  <div class="tablewrap">
-  <table>
-    <caption>OOM が出たときに削る順番</caption>
-    <thead><tr><th class="num">順</th><th>手</th><th>効き</th><th>失うもの</th></tr></thead>
-    <tbody>
-      <tr><td class="num">1</td><td>解像度を下げる（0.8 MP → 0.4 → 0.2 MP）</td><td>大</td><td>解像度のみ。まずこれ</td></tr>
-      <tr><td class="num">2</td><td>フレーム数（秒数）を減らす</td><td>中</td><td>尺</td></tr>
-      <tr><td class="num">3</td><td>VAE Decode の直前に Clean VRAM ノードを挟む</td><td>中</td><td>なし</td></tr>
-      <tr><td class="num">4</td><td><code>--lowvram</code> で起動</td><td>大</td><td>速度（offload 往復が増える）</td></tr>
-      <tr><td class="num">5</td><td>量子化を 1 段下げる（Q4_K_M → Q3_K_M）</td><td>大</td><td>画質</td></tr>
-      <tr><td class="num">6</td><td>SageAttention を切る</td><td>中</td><td>速度。ただし低 VRAM では切った方が速い例も</td></tr>
-    </tbody>
-  </table>
-  </div>
-  <p class="tnote">報告されている癖：<b>長いクリップの方が VRAM 使用量が少なくなることがある</b>（ComfyUI がモデルを VRAM から追い出すため）。直感に反しますが複数の報告があります。</p>
-
-  <h3>起動オプション</h3>
-  <div class="tablewrap">
-  <table>
-    <caption>ComfyUI 起動フラグ</caption>
-    <thead><tr><th>フラグ</th><th>いつ</th><th>効果</th></tr></thead>
-    <tbody>
-      <tr><td class="fn">--lowvram</td><td>OOM が出たら</td><td>層単位で offload。低 VRAM 環境の定番</td></tr>
-      <tr><td class="fn">--disable-mmap</td><td>Windows で 20 GB 超のファイルを読むとき</td><td>safetensors の読み込みクラッシュ回避。ComfyUI 0.31 以降</td></tr>
-      <tr><td class="fn">--disable-pinned-memory</td><td>生成中に OS ごと固まるとき</td><td>フリーズ報告への対処として挙がっている</td></tr>
-      <tr><td class="fn">--use-ck-attention</td><td>速度が出ないとき</td><td>Comfy Kitchen attention。40/50 系では SageAttention より速いという報告が複数</td></tr>
-    </tbody>
-  </table>
-  </div>
-  <p class="tnote"><b>4080 で最も効いた報告は、実は CUDA のバージョンでした。</b>RTX 4080 SUPER の環境で、CUDA 12.6 → 13 に上げただけで 1 MP・5 秒の生成が 20〜60 分から約 300 秒になった、という報告があります。もし今そこまで遅いなら、モデルより先にこちらを疑う価値があります。</p>
-</section>
-
-<!-- ============ 07 ============ -->
-<section id="s7">
-  <div class="seclabel">07</div>
-  <h2 class="sec">設定レシピ</h2>
-  <p class="lede">H3 系で共通して推されている値。10Eros-Max も土台は H3 なので、まずここから始めて構いません。</p>
-
-  <div class="tablewrap">
-  <table>
-    <caption>基本値</caption>
-    <thead><tr><th>項目</th><th>値</th><th>根拠・注</th></tr></thead>
-    <tbody>
-      <tr><td>CFG</td><td class="num">1.0</td><td>H3 系は一貫してこれ</td></tr>
-      <tr><td>sampler / scheduler</td><td class="fn">euler / simple<br>または res_multistep</td><td>10Eros-Max beta4 の作者記述は euler/simple</td></tr>
-      <tr><td>sigma shift</td><td class="num">video 12 / audio 3<br>（768p 学習の LoRA は 6 / 3）</td><td><b>使う Turbo LoRA の学習解像度で変わる。</b>audio 6 は音量が上がるが小さい音が潰れる</td></tr>
-      <tr><td>steps（本番）</td><td class="num">20〜32</td><td>MiniMax 公式は 30〜50 推奨。20 は速度との妥協点</td></tr>
-      <tr><td>steps（10Eros-Max beta4）</td><td class="num">6〜8</td><td>作者記述。TURBO 版は蒸留済みのため少ステップ前提</td></tr>
-      <tr><td>steps（Turbo LoRA 併用）</td><td class="num">4〜8</td><td>4 step が最速（実測 3.44×）。品質の快適域は 6〜8</td></tr>
-      <tr><td>解像度</td><td class="num">下限 0.2 MP / 実用上限 0.8 MP</td><td>608×352 〜 1216×672。既定は 768p</td></tr>
-      <tr><td>尺 / fps</td><td class="num">最大 15 秒 / 24 fps</td><td>15 秒はキャラ崩れが出るのでセグメント連結推奨</td></tr>
-    </tbody>
-  </table>
-  </div>
-
-  <h3>Turbo の扱い — ここが今回の肝</h3>
-
-  <div class="panel stop">
-    <h4>FL2VA 用と Ref2VA 用の Turbo LoRA は別物</h4>
-    <p>FL2VA と Ref2VA は別モデルなので、Turbo LoRA も共有しません。<b>Ref2VA 用は <code>minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors</code> ただ 1 つ</b>で、4-step 版しか存在しません（544p 学習、shift 12/3、推奨 NFE 4）。FL2VA 側には 8-step 版も 768p 版もありますが、Ref2VA には無いので、<b>そちらを流用してはいけません。</b></p>
-  </div>
-
-  <div class="tablewrap wide">
-  <table>
-    <caption>モード別 Turbo LoRA（lightx2v / ModelTC 公式）</caption>
-    <thead><tr><th>モード</th><th>ファイル</th><th>対象</th><th class="num">推奨 NFE</th><th class="num">学習解像度</th><th class="num">shift (v/a)</th></tr></thead>
-    <tbody>
-      <tr><td><b>Ref2VA</b></td><td class="fn">minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16</td><td><span class="chip bad">Full のみ</span></td><td class="num">4</td><td class="num">544p</td><td class="num">12 / 3</td></tr>
-      <tr><td>FL2VA / T2VA</td><td class="fn">minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16</td><td><span class="chip neutral">Full</span></td><td class="num">8 / 4</td><td class="num">544p</td><td class="num">12 / 3</td></tr>
-      <tr><td>FL2VA / T2VA</td><td class="fn">minimax_h3_fl2v_turbo_8step_v1.0_768p_comfyui_bf16</td><td><span class="chip neutral">Full</span></td><td class="num">8</td><td class="num">768p</td><td class="num">6 / 3</td></tr>
-      <tr><td>FL2VA / T2VA</td><td class="fn">drbaph / Abiray の <code>…pruned_comfyui</code> 各種</td><td><span class="chip ok">Pruned 用</span></td><td class="num">4</td><td class="num">544p</td><td class="num">12 / 3</td></tr>
-    </tbody>
-  </table>
-  </div>
-  <p class="tnote"><b>step 数だけ変えても駄目です。</b>20 step 用のノイズスケジュールは 4 step では成立しません。LoRA を替えたら、NFE と shift をその LoRA の行に合わせてください。</p>
-
-  <div class="panel stop">
-    <h4>pruned チェックポイントには、Full 向け Turbo LoRA が効かない</h4>
-    <p>理由ははっきりしています。<b>元の Turbo LoRA は 2688 次元の AdaLN ブランチを対象にしていますが、pruned モデルは 8 次元の <code>adaln_t_table</code> ＋ブロックごとの projection という別構造</b>なので、AdaLN の行列をそのまま当てられません。pruned 用の変換版は、<b>blocks.0〜49 の AdaLN projection 50 組と <code>final_layer.adaln_proj.linear</code> 1 組を削除して</b>作られており、配布側も「部分互換であって、元の LoRA と同じ挙動を期待してはいけない」と明記しています。</p>
-    <p><b>そして pruned 用の変換版は FL2VA 側にしか存在しません。</b>Ref2VA 用は Full 向けの 1 本きりです。<b>pruned Ref2VA を使っている場合、通常の LoRA ローダーで Turbo を当てても AdaLN 部分は効いていません。</b></p>
-  </div>
-
-  <h3>pruned Ref2VA での唯一の高速化経路：PDD-Acc</h3>
-  <p>この行き止まりを抜ける道が 1 つあります。<a href="https://github.com/Jalen-Brunson/ComfyUI-MiniMax-H3-PDD-Acc">ComfyUI-MiniMax-H3-PDD-Acc</a> は、alibaba-pai 公式の 8-step PDD（Parallel Decoding Distillation）LoRA を ComfyUI で使うためのノードで、<b>pruned チェックポイント向けの adaln LoRA モジュール rebase を実装しています</b>。加えて、通常の LoRA ローダーが黙って落としてしまう「head bank」（32 個の per-interval final-layer 投影コピー）も読み込みます。</p>
-  <div class="tablewrap">
-  <table>
-    <caption>PDD-Acc の要件と設定</caption>
-    <thead><tr><th>項目</th><th>値</th></tr></thead>
-    <tbody>
-      <tr><td>LoRA</td><td class="fn">alibaba-pai / MiniMax-H3-Ref2VA-Acc-8Step.safetensors（1.28 GB）</td></tr>
-      <tr><td>ノード</td><td class="fn">ComfyUI-MiniMax-H3-PDD-Acc（Apache-2.0）</td></tr>
-      <tr><td>ComfyUI</td><td class="num"><b>v0.33.0 以降が必須</b></td></tr>
-      <tr><td>ペア</td><td>Ref2VA PDD は <b>ref2va の UNET と</b>（FL2VA PDD と混ぜない）</td></tr>
-      <tr><td>sampler / CFG</td><td class="num">euler / <b>CFG 1.0</b>（PDD は no-CFG）</td></tr>
-      <tr><td>SigmaShift</td><td class="num">12 / 3</td></tr>
-      <tr><td>NFE</td><td class="num">4 / 6 / 8</td></tr>
-      <tr><td>禁止</td><td><b>他の distill LoRA（Turbo）や step-cache 系と併用しない</b></td></tr>
-    </tbody>
-  </table>
-  </div>
-  <p class="tnote">すぐ試せるワークフロー JSON があります：StefanFalkok の <code>Minimax H3 Ref2V (with PDD-Acc 8-Steps Turbo Nodes).json</code>。ModelTC 側の <code>video_minimax_h3_ref2v_lightx2v_turbo.json</code>（既定 960×544 / 0.5 MP）は Full 向け LoRA が前提なので、pruned で使うならこちらではなく PDD 側から始めてください。</p>
-
-  <div class="panel flag">
-    <h4>Ref2VA 固有：参照画像のリサイズ方針</h4>
-    <p>蒸留学習では <code>ref_image_size</code> の <b><code>match</code></b>（参照画像の面積を目標キャンバスに合わせ、アスペクト比は保持、拡大はしない）を使っています。<b>Turbo LoRA を使うなら <code>match</code> を選ぶ</b>のが公式の推奨です。既定が <code>diffusers</code>（短辺 2048 固定）になっていると、学習時と条件がずれます。</p>
-  </div>
-
-  <h3>焼き込み版と非焼き込み版、どちらも試す価値はあるか</h3>
-  <p><b>あります。ただし「焼き込みの有無」だけの比較にはなりません。</b>10Eros-Max では、非焼き込み＝beta2、焼き込み＝beta4 と<b>世代も違えばモード構成も違う</b>ので、A/B すると 3 つの変数が同時に動きます。そのうえで、両者は用途が分かれます。</p>
-  <div class="tablewrap wide">
-  <table>
-    <caption>beta2（非焼き込み）と beta4（焼き込み hybrid）</caption>
-    <thead><tr><th></th><th>beta2 · 非焼き込み</th><th>beta4 · TURBO-hybrid</th></tr></thead>
-    <tbody>
-      <tr><td>Turbo の付け外し</td><td><span class="chip ok">できる</span>強度も調整可</td><td><span class="chip bad">できない</span>焼き込み済み</td></tr>
-      <tr><td>音の最終品質</td><td>Turbo を外して本番が打てる</td><td>Turbo 由来の劣化が上限として残る</td></tr>
-      <tr><td>両モード運用</td><td>fl2va / ref2va で <b>2 ファイル（約 23 GB）</b></td><td><b>1 ファイルで ref + t2va</b></td></tr>
-      <tr><td class="num">16GB 適性</td><td>GGUF Q4_K_M 11.6 GB。素直に載る</td><td>INT8 19.5〜21 GB。offload 前提</td></tr>
-      <tr><td>作者の推し</td><td>—</td><td><b>現行の本命</b>（非 Turbo 版を作っていない）</td></tr>
-      <tr><td>step</td><td>Turbo 4（ref2va）／ 素で 20〜32</td><td>6〜8（euler/simple、または LCM/simple）</td></tr>
-      <tr><td>使い所</td><td>音が要る本番、A/B の基準</td><td>数を打つ下書き、両モードを 1 本で回したいとき</td></tr>
-    </tbody>
-  </table>
-  </div>
-  <p><b>順序としては beta2 が先です。</b>いまの運用（base ＋ Turbo LoRA、外して本番）をそのまま維持でき、変数が「モデルだけ」に絞れます。beta4 はそのあと、<b>Turbo LoRA を外した状態で</b>、step を 6〜8 に、必要なら sampler を LCM/simple にして試してください。<b>そして beta4 は i2v 形式で使わないこと</b>（<a href="#s2">02</a>）。</p>
-
-  <p>ほかに、10Eros-Max の <code>test4 pruned</code> 系専用に変換された Turbo LoRA も存在します（t8star、約 795 MB / 1.96 GB、INT8 ConvRot）。ただし一部は「dual-clock サンプラーが必要、もしくは 8〜10 step で使うこと」と注記されています。<b>これは 3 本目以降の話</b>で、最初から手を出すと切り分けが効かなくなります。</p>
-
-  <div class="panel">
-    <h4>変わらない原則</h4>
-    <ul>
-      <li><b>pruned 版には pruned 用の Turbo LoRA を。</b>フル版向け（larryvrh 等 744 MB）と pruned 用（drbaph/Abiray 等 592 MB）は別物です。10Eros-Max の GGUF は pruned 由来。</li>
-      <li><b>Turbo は音を確実に劣化させる。</b>複数の実測レポートで一致。「Turbo で下書き → 気に入ったシードだけ Turbo なしで本番」が定石。</li>
-      <li><b>Turbo は VRAM を減らさない。</b>OOM 対策にはなりません。</li>
-    </ul>
-  </div>
-
-  <h3>加速手段の当たり外れ</h3>
-  <div class="tablewrap">
-  <table>
-    <caption>コミュニティの評価</caption>
-    <thead><tr><th>手法</th><th>評価</th><th>注</th></tr></thead>
-    <tbody>
-      <tr><td>sol-attn</td><td><span class="chip ok">推奨</span></td><td>ビット一致が確認された無損失の高速化</td></tr>
-      <tr><td>Comfy Kitchen attention</td><td><span class="chip ok">推奨</span></td><td>40/50 系では Sage より速いという報告が複数（4080 含む）</td></tr>
-      <tr><td>SageAttention</td><td><span class="chip warn">環境次第</span></td><td>速いが VRAM を食う。低 VRAM では逆効果になりうる</td></tr>
-      <tr><td>EasyCache</td><td><span class="chip warn">下書き用</span></td><td>4-step Turbo と組み合わせ不可。20 step では効かない</td></tr>
-      <tr><td>Spectrum</td><td><span class="chip bad">非推奨</span></td><td>非可逆。30〜50 step でないと効かず、音を痛める</td></tr>
-    </tbody>
-  </table>
-  </div>
-</section>
-
-<!-- ============ 08 ============ -->
-<section id="s8">
-  <div class="seclabel">08</div>
-  <h2 class="sec">速度の目安</h2>
-  <p class="lede">4080 ちょうどの数字は少ないので、近い階級の実測を並べます。<b>これは目標値ではなく「桁が合っているか」の物差し</b>として使ってください。</p>
-
-  <div class="tablewrap wide">
-  <table>
-    <caption>コミュニティ実測（H3 ベースモデル、10Eros-Max ではない）</caption>
-    <thead><tr><th>環境</th><th>構成</th><th>条件</th><th class="num">時間</th><th class="num">ピーク VRAM</th></tr></thead>
-    <tbody>
-      <tr class="pick"><td>RTX 5080 16GB</td><td>pruned INT8 + TE NVFP4、8-step Turbo、Sage+Spectrum、<b>CUDA 13</b></td><td>1 MP / 5 秒</td><td class="num">約 300 秒</td><td class="num">—</td></tr>
-      <tr><td>RTX 4080 SUPER 16GB</td><td>同上だが CUDA 12.6</td><td>1 MP / 5 秒</td><td class="num">20〜60 分</td><td class="num">—</td></tr>
-      <tr><td>RTX 4070 12GB</td><td>ベースライン、LoRA なし</td><td>576×832 / 124 フレーム / 20 step</td><td class="num">273 秒</td><td class="num">10.7 GB</td></tr>
-      <tr><td>RTX 4070 12GB</td><td>LightX2V 8-step v1.0</td><td>同上 / 4 step</td><td class="num">79 秒</td><td class="num">10.7 GB</td></tr>
-      <tr><td>RTX 3060 12GB + 64GB</td><td>INT8 convrot、Turbo 4-step + EasyCache</td><td>1280×736 / 5 秒</td><td class="num">420 秒</td><td class="num">—</td></tr>
-      <tr><td>RTX 3060 12GB + 64GB</td><td>INT8 convrot、公式 20 step</td><td>1280×736 / 5 秒</td><td class="num">1006 秒</td><td class="num">—</td></tr>
-    </tbody>
-  </table>
-  </div>
-  <p class="tnote">4070 の行が示すとおり、<b>Turbo を入れてもピーク VRAM はほぼ変わりません</b>（10.66 → 10.66 GB）。Turbo は「VRAM を減らす手」ではなく「時間を減らす手」です。VRAM が足りないときに Turbo を足しても解決しません。</p>
-
-  <div class="panel flag">
-    <h4>4080 での期待値（推定）</h4>
-    <p>上の表から外挿すると、<b>0.4〜0.6 MP・5 秒・8 step で 2〜5 分程度</b>が最初の当たりでしょう。<b>CUDA は 13 で済んでいる</b>ので、上の 5080 の行（約 300 秒 @1 MP）が現実的な参照点になります。</p>
-    <p>これより桁が違って遅い場合、残る容疑者は順に <b>attention バックエンド</b>（<code>--use-ck-attention</code> を試す）、<b>不要な <code>--lowvram</code></b>、<b>Ref2VA そのものの重さ</b>（参照画像の枚数を減らす）、そして <b>Turbo LoRA のモード違い</b>（<a href="#s7">07</a>）です。この推定値の当否は <a href="#s11">11</a> で確かめたい点のひとつ。</p>
-  </div>
-  <p class="tnote"><b>Ref2VA は T2V に比べて VRAM も時間も明確に重い</b>という報告が複数あります。参照画像の枚数がそのまま効くので、A/B のときは枚数も揃えてください。</p>
-</section>
-
-<!-- ============ 09 ============ -->
-<section id="s9">
-  <div class="seclabel">09</div>
-  <h2 class="sec">確定していること／実機で確かめること</h2>
-  <p class="lede">このシートで一番大事な節です。<b>調べて裏が取れたこと</b>と、<b>あなたの機械でしか判定できないこと</b>を分けてあります。次のチャットは右側から始めます。</p>
-
-  <h3>確定 <span class="chip ok">複数ソースで一致</span></h3>
+  <h3>FL2VA / Ref2VA / hybrid</h3>
   <ul>
-    <li>10Eros-Max は H3 アーキテクチャを完全に保持し、block 0–31 の fused QKV のみ改変。<b>DmitryDB の量子化版はカスタムノードも本体パッチも不要</b>と明記。</li>
-    <li>text encoder は Qwen3-VL-32B。10Eros-Max でも変わらない。</li>
-    <li><b>FL2VA と Ref2VA は別モデルで、Turbo LoRA を共有しない。</b>Ref2VA 用は 4-step v0.1 の 1 種類のみ。</li>
-    <li><b>beta4 には非 Turbo 版が存在しない。</b>作者が「非 Turbo 版は出来が悪い」として作っていない。</li>
-    <li><b>hybrid 系は i2v モードで使わない。</b>参照（ref2va）形式か t2va 形式で使う。</li>
-    <li>Ref2VA は設計上、FL2VA より素の画質・音質が落ちる。VRAM も時間も重い。</li>
-    <li>audio VAE は fp32 必須（fp16 で A/V ズレ）。</li>
-    <li>ComfyUI は 0.30.0 以降が必要（音声サンプラー修正が 2026-08-06 に入っている）。W4A8 は 0.31.0 以降。</li>
-    <li>DT-sQKV 版は本体パッチが必要。</li>
-    <li>Turbo LoRA は音を劣化させる。VRAM は減らさない。step だけ変えても成立せず、shift も合わせる必要がある。</li>
-    <li>NVFP4 の<b>ネイティブ演算</b>は Blackwell（SM 10.0）世代の機能で、Ada（SM 8.9）にはない。</li>
-    <li><span class="chip ok">回答済</span> CUDA は 13。<b>4080 系で最も効いた既知の改善策は、すでに適用済み。</b></li>
-    <li><span class="chip ok">回答済</span> 使用モードは FL2VA / Ref2VA 両方、主に Ref2VA。</li>
-    <li><span class="chip ok">回答済</span> DiT は <code>minimax_h3_ref2va_pruned_int8_convrot.safetensors</code>（Ref2VA / <b>pruned</b> / INT8 ConvRot / 19.53 GB）。</li>
-    <li><b>pruned には Full 向け Turbo LoRA が効かない。</b>AdaLN の構造が別（2688 次元 vs 8 次元 <code>adaln_t_table</code>）。pruned 用変換版は FL2VA 側にしか無い。</li>
-    <li><b>pruned Ref2VA の高速化は PDD-Acc 経路のみ。</b>ComfyUI v0.33.0 以降が必須。</li>
+    <li><b>FL2VA</b>（first-and-last-frame）— 画像 0 枚なら T2V、1 枚なら I2V、2 枚なら始点＋終点指定</li>
+    <li><b>Ref2VA</b>（omni-reference）— 画像 9 枚・動画 3 本・音声 3 本まで参照として渡せる。キャラや声を寄せたいとき用。VRAM 的にはこちらが重い</li>
   </ul>
-
-  <h3>要検証 <span class="chip unknown">実機でしか分からない</span></h3>
-  <div class="tablewrap wide">
-  <table>
-    <caption>今夜、答えを出したい 6 つ（上ほど優先）</caption>
-    <thead><tr><th class="num">#</th><th>問い</th><th>確かめ方</th></tr></thead>
-    <tbody>
-      <tr class="pick">
-        <td class="num">Q1</td>
-        <td><b>そもそも Turbo LoRA を当てているのか。当てているなら何か。</b>DiT が pruned なので、Full 向けを当てていた場合は AdaLN 部分が効いていない。<b>10Eros-Max 以前の問題として最優先</b></td>
-        <td><code>ComfyUI/models/loras/</code> の中身と、ワークフローの LoRA ローダーノードの有無を見る</td>
-      </tr>
-      <tr>
-        <td class="num">Q2</td>
-        <td>既存 H3 の現在の生成時間とピーク VRAM（同一条件）</td>
-        <td>A/B の基準線。<b>10Eros-Max を入れる前に 1 本測っておく</b>。Q1 の修正前後で 2 本取れるとなお良い</td>
-      </tr>
-      <tr>
-        <td class="num">Q3</td>
-        <td><b>ComfyUI のバージョンは 0.33.0 以降か。</b>PDD-Acc 経路の可否がこれで決まる</td>
-        <td>手順 01 の出力。0.33.0 未満なら、Turbo を諦めて素の 20〜32 step で回すか、ComfyUI を上げるかの判断になる</td>
-      </tr>
-      <tr>
-        <td class="num">Q4</td>
-        <td>GGUF は <code>models/unet</code> と <code>models/diffusion_models</code> のどちらに置くべきか</td>
-        <td>unet に置いてノードのプルダウンを見る。出なければ移動</td>
-      </tr>
-      <tr>
-        <td class="num">Q5</td>
-        <td><b>beta4 の TURBO-hybrid は、ComfyUI の Ref2VA 条件付けでそのまま動くか。</b>「ref/t2va hybrid」と説明されているが、実際のノード構成での挙動は未確認</td>
-        <td>2 本目以降。Turbo LoRA を外し、euler/simple 6〜8 step、参照形式で 1 本</td>
-      </tr>
-      <tr>
-        <td class="num">Q6</td>
-        <td>10Eros-Max の「顔の一貫性」「弾むモーション」は、あなたの題材で実際に差として出るか</td>
-        <td>同一シード A/B。動きの大きい題材で 4〜6 本。参照画像の枚数も揃える</td>
-      </tr>
-    </tbody>
-  </table>
+  <p><b>この 2 つは別モデルです。</b>DiT ファイルも別なら Turbo LoRA も別。設計上 Ref2VA は FL2VA より素の画質・音質が落ちます（参照条件付けの対価）。10Eros-Max が謳う「顔の一貫性の向上」はまさにそこに効く可能性があります。</p>
+  <p><b>hybrid</b> は、FL2VA をベースに 50 ブロックのうち一部の <code>adaln_proj</code> だけを Ref2VA から取ってくるマージ。<b>1 ファイルで参照モードと t2va の両方を賄えます。</b>beta4 の TURBO-hybrid もこの系譜です。</p>
+  <div class="panel flag">
+    <h4>hybrid を i2v モードで使わないこと</h4>
+    <p>参照（ref2va）形式か t2va 形式で使うもので、i2v モードでは使いません。<b>画像 1 枚を渡す場合も <code>first_frame</code> ではなく参照画像として渡します。</b>ここを間違えると「なぜか品質が出ない」になります。</p>
   </div>
-  <p class="tnote">優先度を落とした問い：NVFP4 版が Ada で動くか（Ref2VA 版が無く FL2VA 専用のため、主用途からは外れる）。beta4 INT8 の正確なサイズ（配布ページで 19.53 GB と 21 GB の両方の記載を確認。落とす直前に現物を見る）。</p>
+
+  <h3>10Eros-Max の「作風」とは何か</h3>
+  <p>差分として挙がっているのは、静止画的な画風よりも <b>動きの性格</b> です。<b>顔の一貫性の向上</b>と<b>弾むような、反応の速いモーション</b>。ダンスなど動きの大きい題材に向く、という評価。<b>逆に、静かなカットで A/B しても差が見えにくい可能性があります。</b>本シートの実測は落ち着いた題材で行っているので、動きの大きい素材ではもっと差が出るかもしれません。</p>
 </section>
 
 <!-- ============ 10 ============ -->
@@ -909,17 +847,17 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
     </div>
     <div class="tool-bd">
       <div class="grid-form">
-        <label class="field"><span>ComfyUI ver</span><input type="text" id="env-comfy" placeholder="0.3x.x"></label>
-        <label class="field"><span>Driver</span><input type="text" id="env-driver" placeholder="5xx.xx"></label>
-        <label class="field"><span>CUDA</span><input type="text" id="env-cuda" placeholder="12.6 / 13.0"></label>
-        <label class="field"><span>PyTorch</span><input type="text" id="env-torch" placeholder="2.x+cuXXX"></label>
-        <label class="field"><span>空きディスク GB</span><input type="number" id="env-disk" placeholder="120"></label>
+        <label class="field"><span>ComfyUI ver</span><input type="text" id="env-comfy" placeholder="0.33.1"></label>
+        <label class="field"><span>Driver</span><input type="text" id="env-driver" placeholder="610.62"></label>
+        <label class="field"><span>CUDA</span><input type="text" id="env-cuda" placeholder="13.0"></label>
+        <label class="field"><span>PyTorch</span><input type="text" id="env-torch" placeholder="2.13.0+cu130"></label>
+        <label class="field"><span>空きディスク GB</span><input type="number" id="env-disk" placeholder="578"></label>
       </div>
       <div class="grid-form" style="margin-top:.6rem">
-        <label class="field" style="grid-column:1/-1"><span>現在の DiT ファイル名</span><input type="text" id="env-dit" placeholder="minimax_h3_fl2va_pruned_int8_convrot.safetensors"></label>
+        <label class="field" style="grid-column:1/-1"><span>現在の DiT ファイル名</span><input type="text" id="env-dit" placeholder="10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot.safetensors"></label>
         <label class="field" style="grid-column:1/-1"><span>text encoder / VAE</span><input type="text" id="env-te" placeholder="qwen3vl_32b_..._nvfp4_awq / video_vae_fp16 / audio_vae_fp32"></label>
-        <label class="field" style="grid-column:1/-1"><span>起動オプション</span><input type="text" id="env-args" placeholder="--lowvram --disable-mmap ..."></label>
-        <label class="field" style="grid-column:1/-1"><span>メモ</span><textarea id="env-note" placeholder="導入済みカスタムノード、気づいたことなど"></textarea></label>
+        <label class="field" style="grid-column:1/-1"><span>起動オプション</span><input type="text" id="env-args" placeholder="--windows-standalone-build --disable-pinned-memory --use-ck-attention"></label>
+        <label class="field" style="grid-column:1/-1"><span>メモ</span><textarea id="env-note" placeholder="comfy-aimdo / comfy-kitchen のバージョン、導入済みカスタムノードなど"></textarea></label>
       </div>
       <div class="btnrow">
         <button type="button" id="env-save">保存</button>
@@ -927,13 +865,15 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
       </div>
     </div>
   </div>
+
+  <p class="tnote">2026-09-06 時点の実機：ComfyUI 0.33.1 / comfy-aimdo 0.4.13 / comfy-kitchen 0.2.31 / torch 2.13.0+cu130 / driver 610.62 / Python 3.13.14 / RTX 4080 16,376 MiB (sm_89) / RAM 64 GB。起動ログに <code>DynamicVRAM support detected and enabled</code> と <code>Using Comfy Kitchen attention</code>。</p>
 </section>
 
 <!-- ============ 11 ============ -->
 <section id="s11">
   <div class="seclabel">11</div>
   <h2 class="sec">実測ログ</h2>
-  <p class="lede">1 本回すたびに 1 行足してください。<b>次に一緒に最適解を詰めるときの材料はここです。</b>感想より、時間とピーク VRAM の数字が効きます。</p>
+  <p class="lede">1 本回すたびに 1 行足してください。<b>感想より、時間・s/it・ピーク VRAM の数字が効きます。</b>並び順は記録 ID の昇順（r01 が最初）。</p>
 
   <div class="tool" id="logtool">
     <div class="tool-hd">
@@ -944,33 +884,34 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
       <div class="grid-form">
         <label class="field"><span>モデル</span>
           <select id="f-model">
+            <option>10Eros-Max beta4</option>
             <option>H3 base（基準線）</option>
-            <option>10Eros-Max</option>
-          </select>
-        </label>
-        <label class="field"><span>量子化</span><input type="text" id="f-quant" placeholder="Q4_K_M / INT8"></label>
-        <label class="field"><span>モード</span>
-          <select id="f-mode"><option>FL2VA</option><option>Ref2VA</option></select>
-        </label>
-        <label class="field"><span>解像度</span><input type="text" id="f-res" placeholder="768x432"></label>
-        <label class="field"><span>フレーム</span><input type="number" id="f-frames" placeholder="120"></label>
-        <label class="field"><span>steps</span><input type="number" id="f-steps" placeholder="8"></label>
-        <label class="field"><span>Turbo</span>
-          <select id="f-turbo">
-            <option>なし</option>
-            <option>ref2v 4step v0.1</option>
-            <option>fl2v 系</option>
-            <option>焼き込み済 (beta4)</option>
             <option>その他</option>
           </select>
         </label>
-        <label class="field"><span>shift (v/a)</span><input type="text" id="f-shift" placeholder="12/3"></label>
-        <label class="field"><span>時間 (秒)</span><input type="number" id="f-time" placeholder="240"></label>
-        <label class="field"><span>ピークVRAM GB</span><input type="number" step="0.1" id="f-vram" placeholder="13.4"></label>
-        <label class="field"><span>seed</span><input type="text" id="f-seed" placeholder="424242"></label>
+        <label class="field"><span>量子化 / 形式</span><input type="text" id="f-quant" placeholder="INT8 ConvRot"></label>
+        <label class="field"><span>モード</span>
+          <select id="f-mode"><option>Ref2VA</option><option>FL2VA</option><option>t2va</option></select>
+        </label>
+        <label class="field"><span>解像度</span><input type="text" id="f-res" placeholder="1376 x 768"></label>
+        <label class="field"><span>フレーム</span><input type="text" id="f-frames" placeholder="243 / 10.125s"></label>
+        <label class="field"><span>steps</span><input type="text" id="f-steps" placeholder="6 simple euler"></label>
+        <label class="field"><span>Turbo</span>
+          <select id="f-turbo">
+            <option>焼き込み済み（0 patches）</option>
+            <option>ref2v 4step v0.1（208 patches）</option>
+            <option>なし</option>
+            <option>その他</option>
+          </select>
+        </label>
+        <label class="field"><span>秒</span><input type="text" id="f-sec" placeholder="401.20"></label>
+        <label class="field"><span>s/it</span><input type="text" id="f-spit" placeholder="55.44 / 55.55"></label>
+        <label class="field"><span>ピーク VRAM MiB</span><input type="text" id="f-vram" placeholder="15238 / 16376"></label>
+        <label class="field"><span>seed</span><input type="text" id="f-seed" placeholder="20260829"></label>
+        <label class="field"><span>日付</span><input type="text" id="f-date" placeholder="2026-09-06"></label>
       </div>
       <div class="grid-form" style="margin-top:.6rem">
-        <label class="field" style="grid-column:1/-1"><span>結果メモ（動き・顔・音・破綻）</span><textarea id="f-note" placeholder="動きは確かに弾む。ただし手の破綻が増えた。音は問題なし。"></textarea></label>
+        <label class="field" style="grid-column:1/-1"><span>結果メモ（動き・顔・音・破綻・ログの気づき）</span><textarea id="f-note" placeholder="0 patches attached を確認。音は割れなし。手の破綻が 1 か所。"></textarea></label>
       </div>
       <div class="btnrow">
         <button type="button" id="log-add">この 1 本を記録</button>
@@ -980,8 +921,9 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
     <div class="tablewrap" style="border-left:none;border-right:none;border-bottom:none;margin:0">
       <table id="log-table">
         <thead><tr>
-          <th>モデル</th><th>量子化</th><th>モード</th><th>解像度</th><th class="num">fr</th><th class="num">step</th>
-          <th>Turbo</th><th class="num">shift</th><th class="num">秒</th><th class="num">VRAM</th><th>seed</th><th>メモ</th><th></th>
+          <th>モデル</th><th>形式</th><th>モード</th><th>解像度</th><th>フレーム</th><th>step</th>
+          <th>Turbo</th><th class="num">秒</th><th class="num">s/it</th><th class="num">ピーク VRAM</th>
+          <th class="num">seed</th><th class="num">日付</th><th>メモ</th><th></th>
         </tr></thead>
         <tbody id="log-body"></tbody>
       </table>
@@ -1006,35 +948,33 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
 <section id="s13">
   <div class="seclabel">13</div>
   <h2 class="sec">出典</h2>
-  <p class="lede">数値の裏取りに使ったもの。次に深掘りするときの入口でもあります。</p>
+  <p class="lede">調査段階で裏取りに使ったもの。<b>本シートの数値そのものは、この PC の実測です。</b></p>
   <ul class="srcs">
-    <li><a href="https://github.com/wildminder/awesome-minimax-H3">wildminder/awesome-minimax-H3</a> — 量子化・LoRA・ノード・ワークフローの網羅リスト。本シートのサイズ表の主出典</li>
-    <li><a href="https://github.com/wildminder/awesome-minimax-H3/blob/main/guides/minimax-h3-performance.md">同 · Performance &amp; Best-Configuration Report</a> — GPU 階級別の実測まとめ。速度表の出典</li>
-    <li><a href="https://huggingface.co/TenStrip/10Eros-Max">TenStrip/10Eros-Max</a> — 本家</li>
-    <li><a href="https://huggingface.co/DmitryDB/MiniMax-H3-10Eros-Max-Quants">DmitryDB/MiniMax-H3-10Eros-Max-Quants</a> — INT8 / NVFP4、カスタムノード不要</li>
-    <li><a href="https://huggingface.co/Abiray/10Eros-Max-fl2va-Beta2-GGUF">Abiray/10Eros-Max-fl2va-Beta2-GGUF</a> — GGUF（FL2VA）</li>
-    <li><a href="https://huggingface.co/Abiray/10Eros-Max-ref2va-Beta2-GGUF">Abiray/10Eros-Max-ref2va-Beta2-GGUF</a> — GGUF（Ref2VA・非 Turbo）</li>
-    <li><a href="https://github.com/Jalen-Brunson/ComfyUI-MiniMax-H3-PDD-Acc">ComfyUI-MiniMax-H3-PDD-Acc</a> — <b>pruned チェックポイント向けの adaln rebase。</b>pruned Ref2VA の高速化経路</li>
-    <li><a href="https://huggingface.co/alibaba-pai/MiniMax-H3-Acc-LoRAs">alibaba-pai/MiniMax-H3-Acc-LoRAs</a> — 公式 PDD 8-step LoRA（Ref2VA 版あり）</li>
-    <li><a href="https://huggingface.co/drbaph/MiniMax-H3-Turbo-Lora-ComfyUI">drbaph/MiniMax-H3-Turbo-Lora-ComfyUI</a> — pruned 用変換 LoRA と、AdaLN 非互換の技術的説明（FL2VA のみ）</li>
-    <li><a href="https://github.com/ModelTC/Minimax-H3-Turbo">ModelTC/Minimax-H3-Turbo</a> — <b>Turbo LoRA の公式仕様。</b>モード別ファイル・NFE・shift・参照画像リサイズ方針、Ref2VA ワークフロー JSON</li>
-    <li><a href="https://huggingface.co/lightx2v/Minimax-h3-Turbo">lightx2v/Minimax-h3-Turbo</a> — Turbo LoRA の配布元</li>
-    <li><a href="https://huggingface.co/berryber09/10Eros-Max-h3-turbo-hybrid-beta3-w4a8">berryber09/10Eros-Max-h3-turbo-hybrid-beta3-w4a8</a> — 焼き込み版の W4A8（11.68 GB）</li>
+    <li><a href="https://huggingface.co/TenStrip/10Eros-Max">TenStrip/10Eros-Max</a> — 本家。<b>採用した beta4 INT8 ConvRot の入手元</b></li>
+    <li><a href="https://github.com/wildminder/awesome-minimax-H3">wildminder/awesome-minimax-H3</a> — 量子化・LoRA・ノード・ワークフローの網羅リスト</li>
+    <li><a href="https://github.com/wildminder/awesome-minimax-H3/blob/main/guides/minimax-h3-performance.md">同 · Performance &amp; Best-Configuration Report</a> — GPU 階級別の実測まとめ</li>
+    <li><a href="https://huggingface.co/Abiray/10Eros-Max-ref2va-Beta2-GGUF">Abiray/10Eros-Max-ref2va-Beta2-GGUF</a> — 実測して却下した GGUF（Ref2VA・非 Turbo）</li>
+    <li><a href="https://huggingface.co/berryber09/10Eros-Max-h3-turbo-hybrid-beta3-w4a8">berryber09/…-turbo-hybrid-beta3-w4a8</a> — W4A8 の配布元（beta4 版も同アカウント）</li>
     <li><a href="https://github.com/scottmudge/ComfyUI_MinimaxH3HybridLoader">scottmudge/ComfyUI_MinimaxH3HybridLoader</a> — hybrid の仕組みと使用上の注意</li>
-    <li><a href="https://huggingface.co/Abiray/10Eros-Max-GGUF">Abiray/10Eros-Max-GGUF</a> — test4 pruned 由来の GGUF（FL2VA 系）</li>
+    <li><a href="https://github.com/ModelTC/Minimax-H3-Turbo">ModelTC/Minimax-H3-Turbo</a> — Turbo LoRA の公式仕様。モード別ファイル・NFE・shift・参照画像リサイズ方針</li>
+    <li><a href="https://huggingface.co/lightx2v/Minimax-h3-Turbo">lightx2v/Minimax-h3-Turbo</a> — Turbo LoRA の配布元</li>
+    <li><a href="https://huggingface.co/drbaph/MiniMax-H3-Turbo-Lora-ComfyUI">drbaph/MiniMax-H3-Turbo-Lora-ComfyUI</a> — pruned 用変換 LoRA と AdaLN 非互換の説明（<b>本環境には当てはまらなかった</b>／<a href="#s5">05</a>）</li>
+    <li><a href="https://github.com/Jalen-Brunson/ComfyUI-MiniMax-H3-PDD-Acc">ComfyUI-MiniMax-H3-PDD-Acc</a> — pruned 向け adaln rebase。優先度は下げた</li>
+    <li><a href="https://huggingface.co/alibaba-pai/MiniMax-H3-Acc-LoRAs">alibaba-pai/MiniMax-H3-Acc-LoRAs</a> — 公式 PDD 8-step LoRA</li>
+    <li><a href="https://huggingface.co/DmitryDB/MiniMax-H3-10Eros-Max-Quants">DmitryDB/MiniMax-H3-10Eros-Max-Quants</a> — INT8 / NVFP4（FL2VA のみ）</li>
     <li><a href="https://huggingface.co/Comfy-Org/MiniMax-H3">Comfy-Org/MiniMax-H3</a> — 公式再パッケージ（TE・VAE の入手元）</li>
+    <li><a href="https://github.com/city96/ComfyUI-GGUF">city96/ComfyUI-GGUF</a> — GGUF ノード。導入済みだが今は使っていない</li>
     <li><a href="https://docs.comfy.org/tutorials/video/minimax/minimax-h3">ComfyUI 公式チュートリアル（MiniMax H3）</a></li>
     <li><a href="https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui">ComfyUI blog · H3 Day-0 Support</a></li>
-    <li><a href="https://github.com/city96/ComfyUI-GGUF">city96/ComfyUI-GGUF</a> — GGUF を使う場合の必須ノード</li>
     <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3">MiniMaxAI/MiniMax-H3</a> — 公式モデルカード・プロンプトガイド</li>
-    <li><a href="https://civitai.com/models/2851079/h3-eros-max">Civitai · H3 Eros Max - beta4</a></li>
-    <li><a href="https://github.com/sepiablue-ai/minimax-h3-turbo-lora-benchmark">sepiablue-ai/minimax-h3-turbo-lora-benchmark</a> — 4070 12GB の実測（速度表の 3〜4 行目）</li>
+    <li><a href="https://civitai.com/models/2851079/h3-eros-max">Civitai · H3 Eros Max - beta4</a> — beta4 の作者記述（euler/simple 6〜8 step）</li>
+    <li><a href="https://github.com/sepiablue-ai/minimax-h3-turbo-lora-benchmark">sepiablue-ai/minimax-h3-turbo-lora-benchmark</a> — 4070 12GB の実測</li>
     <li><a href="https://jo-nike.github.io/h3-turbo-eval/">jo-nike · H3 Turbo Eval grid</a> — 5080 16GB での 25 構成比較</li>
   </ul>
 </section>
 
 <footer class="foot">
-  <p>2026-09-04 時点の調査。10Eros-Max は beta 段階でファイル構成の入れ替わりが速いため、落とす直前に配布ページの現物を確認してください。<br>
+  <p>2026-09-06 実測。10Eros-Max は beta 段階でファイル構成の入れ替わりが速いため、落とす直前に配布ページの現物を確認してください。<br>
   <span class="mono">okinaga-8/portable-out · docs/minimax-h3-10eros-max.html</span></p>
 </footer>
 
@@ -1047,19 +987,17 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
   "use strict";
 
   var CHECKS = [
-    ["c1","tools/h3_env_check.py を実行して現状を吐き出した"],
-    ["c2","【最優先】models/loras/ の中身と、ワークフロー内の LoRA ノードの有無を確認した"],
-    ["c2b","ComfyUI のバージョンが 0.33.0 以上か確認した（PDD-Acc 可否の分かれ目）"],
-    ["c3","参照画像のリサイズ方針を match にした"],
-    ["c5","空きディスクを 20 GB 以上確保した"],
-    ["c6","【基準線】10Eros-Max を入れる前に、既存 H3 で 1 本測った"],
-    ["c7","ComfyUI-GGUF を導入した"],
-    ["c8","10Eros-Max beta2 ref2va GGUF Q4_K_M を落とした"],
-    ["c9","ワークフローを複製し、DiT ローダーだけ差し替えた"],
-    ["c10","低解像度・短尺で 1 本、落ちずに完走した"],
-    ["c11","同一シードで A/B を 4 本以上回した"],
-    ["c12","実測ログに記録した"],
-    ["c13","（2 本目）beta4 TURBO-hybrid を Turbo LoRA なし・6〜8 step で試した"]
+    ["b1","ワークフローの Turbo LoRA をバイパスした（Ctrl+B）"],
+    ["b2","sampler を euler、scheduler を simple、steps を 6 にした"],
+    ["b3","拡散モデルを beta4 の safetensors に切り替えた（GGUF ノードは使わない）"],
+    ["b4","filename_prefix の末尾にスラッシュが無いことを確認した"],
+    ["b5","wf_beta4_check.py を通して 0 problems になった"],
+    ["b6","起動ログに 0 patches attached が出ていることを確認した"],
+    ["b7","起動ログに 19995MB Staged が出ている（Dynamic VRAM に乗っている）"],
+    ["b8","i2v ではなく参照（ref2va）形式か t2va 形式で渡している"],
+    ["b9","本番画質（1.0MP × 10 秒）で 1 本完走させた"],
+    ["b10","出た絵と音を実物で確認した（数値だけで判断しない）"],
+    ["b11","実測ログに 1 行記録した"]
   ];
 
   var db = null;
@@ -1142,7 +1080,7 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
 
   function readRun(){
     return {
-      ts: new Date().toISOString(),
+      date: $("f-date").value || new Date().toISOString().slice(0,10),
       model: $("f-model").value,
       quant: $("f-quant").value,
       mode: $("f-mode").value,
@@ -1150,15 +1088,15 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
       frames: $("f-frames").value,
       steps: $("f-steps").value,
       turbo: $("f-turbo").value,
-      shift: $("f-shift").value,
-      time_sec: $("f-time").value,
-      peak_vram_gb: $("f-vram").value,
+      sec: $("f-sec").value,
+      s_per_it: $("f-spit").value,
+      peak_vram_mib: $("f-vram").value,
       seed: $("f-seed").value,
       note: $("f-note").value
     };
   }
   function clearRunForm(){
-    ["f-quant","f-res","f-frames","f-steps","f-shift","f-time","f-vram","f-seed","f-note"].forEach(function(id){
+    ["f-quant","f-res","f-frames","f-steps","f-sec","f-spit","f-vram","f-seed","f-note"].forEach(function(id){
       var el = $(id); if(el) el.value = "";
     });
   }
@@ -1167,6 +1105,12 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
     if(cls) td.className = cls;
     td.textContent = (v === "" || v == null) ? "—" : v;
     return td;
+  }
+  /* 旧スキーマ（ts / time_sec / peak_vram_gb）で書かれた行も落とさない */
+  function field(d, name, legacy){
+    if(d[name] !== undefined && d[name] !== "") return d[name];
+    if(legacy && d[legacy] !== undefined && d[legacy] !== "") return d[legacy];
+    return "";
   }
   function renderRuns(rows){
     var body = $("log-body");
@@ -1186,12 +1130,13 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
       tr.appendChild(cell(d.mode));
       tr.appendChild(cell(d.res, "num"));
       tr.appendChild(cell(d.frames, "num"));
-      tr.appendChild(cell(d.steps, "num"));
+      tr.appendChild(cell(d.steps));
       tr.appendChild(cell(d.turbo));
-      tr.appendChild(cell(d.shift, "num"));
-      tr.appendChild(cell(d.time_sec, "num"));
-      tr.appendChild(cell(d.peak_vram_gb, "num"));
+      tr.appendChild(cell(field(d, "sec", "time_sec"), "num"));
+      tr.appendChild(cell(d.s_per_it, "num"));
+      tr.appendChild(cell(field(d, "peak_vram_mib", "peak_vram_gb"), "num"));
       tr.appendChild(cell(d.seed, "num"));
+      tr.appendChild(cell(field(d, "date", "ts"), "num"));
       tr.appendChild(cell(d.note));
       var act = document.createElement("td");
       var del = document.createElement("button");
@@ -1213,7 +1158,7 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
         .then(function(){ txt($("log-saved"), "記録しました"); clearRunForm(); })
         .catch(function(){ txt($("log-saved"), "保存に失敗しました。もう一度お試しください"); });
     }else{
-      localRuns.unshift(d);
+      localRuns.push(d);
       lsSet("h3runs", localRuns);
       renderLocalRuns();
       txt($("log-saved"), "このブラウザにのみ記録しました");
@@ -1262,7 +1207,8 @@ python tools/h3_env_check.py --comfy "C:\path\to\ComfyUI"</code></pre>
         txt($("env-status"), "保存済み（共有）");
       }, function(){ txt($("env-status"), "このブラウザにのみ保存"); });
 
-      db.collection("runs").orderBy("ts","desc").limit(200).onSnapshot(function(snap){
+      /* orderBy を付けない = 記録 ID の昇順。ts を持たない行も必ず出る */
+      db.collection("runs").limit(200).onSnapshot(function(snap){
         renderRuns(snap.docs.map(function(doc){ return { id: doc.id, data: doc.data() || {} }; }));
         txt($("log-status"), snap.size + " 件（共有）");
       }, function(){ txt($("log-status"), "このブラウザにのみ保存"); });
