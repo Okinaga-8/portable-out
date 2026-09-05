@@ -1,0 +1,445 @@
+<title>クラウドと PC の受け渡し</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Old+Mincho:wght@600;700&display=swap">
+
+<style>
+  :root{
+    --paper:#e9ebef;
+    --surface:#f8f9fb;
+    --surface-2:#eef0f4;
+    --ink:#161c26;
+    --ink-2:#3b4759;
+    --muted:#5d6878;
+    --line:#c8cfd9;
+    --line-soft:#dde2e9;
+
+    --ai:#2b4570;            /* 藍 — 構造・GitHub */
+    --ai-soft:#dde3ef;
+    --ai-ink:#1c2e4d;
+
+    --keep:#3d6b4a;          /* 残る */
+    --keep-bg:#dfe9e0;
+    --gone:#a8443a;          /* 朱 — 消える・注意 */
+    --gone-bg:#f2dedb;
+
+    --f-head:"Zen Old Mincho","Yu Mincho",serif;
+    --f-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+    --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#0e1219; --surface:#171e29; --surface-2:#1d2531;
+      --ink:#dde3ec; --ink-2:#aeb9c8; --muted:#7e8b9c;
+      --line:#2c3745; --line-soft:#222c39;
+      --ai:#8fb0e0; --ai-soft:#1a2740; --ai-ink:#b9cef0;
+      --keep:#8dbd97; --keep-bg:#1b2d20;
+      --gone:#e2938a; --gone-bg:#361d1a;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0e1219; --surface:#171e29; --surface-2:#1d2531;
+    --ink:#dde3ec; --ink-2:#aeb9c8; --muted:#7e8b9c;
+    --line:#2c3745; --line-soft:#222c39;
+    --ai:#8fb0e0; --ai-soft:#1a2740; --ai-ink:#b9cef0;
+    --keep:#8dbd97; --keep-bg:#1b2d20;
+    --gone:#e2938a; --gone-bg:#361d1a;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--f-body);font-size:16.5px;line-height:1.95;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--ai-soft);color:var(--ai-ink)}
+  a{color:var(--ai);text-underline-offset:3px}
+  a:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
+  code{
+    font-family:var(--f-mono);font-size:.84em;background:var(--surface-2);
+    padding:.12em .4em;border-radius:3px;word-break:break-all;
+  }
+
+  .wrap{max-width:840px;margin:0 auto;padding:0 1.25rem 6rem}
+  .col{max-width:62ch}
+
+  header.top{padding:3.2rem 0 1.6rem;border-bottom:1px solid var(--line);margin-bottom:2.8rem}
+  .kicker{
+    font-family:var(--f-mono);font-size:.74rem;letter-spacing:.14em;
+    color:var(--ai);text-transform:uppercase;
+  }
+  h1{
+    font-family:var(--f-head);font-weight:700;
+    font-size:clamp(1.85rem,4.6vw,2.7rem);line-height:1.35;
+    margin:.55rem 0 .8rem;text-wrap:balance;
+  }
+  .stand{font-size:1.05rem;color:var(--ink-2);margin:0;max-width:58ch}
+
+  section{margin:0 0 3.4rem;scroll-margin-top:1.5rem}
+  h2{
+    font-family:var(--f-head);font-weight:700;font-size:1.45rem;line-height:1.5;
+    margin:0 0 1rem;padding-bottom:.5rem;border-bottom:2px solid var(--ai);
+    display:inline-block;text-wrap:balance;
+  }
+  h3{font-family:var(--f-head);font-weight:600;font-size:1.12rem;margin:2.2rem 0 .6rem}
+  p{margin:0 0 1.15rem}
+  ul,ol{margin:0 0 1.15rem;padding-left:1.4rem}
+  li{margin-bottom:.55rem}
+  li::marker{color:var(--muted)}
+  strong{font-weight:700}
+  .lead{font-size:1.02rem;color:var(--ink-2)}
+
+  figure{
+    margin:2rem 0;padding:1.4rem 1.2rem 1rem;
+    background:var(--surface);border:1px solid var(--line);
+  }
+  figure svg{display:block;width:100%;max-width:100%;height:auto;color:var(--ink)}
+  figcaption{
+    margin-top:1rem;padding-top:.8rem;border-top:1px solid var(--line-soft);
+    font-size:.87rem;color:var(--muted);line-height:1.8;
+  }
+  .svgscroll{overflow-x:auto}
+  figure svg .s-ai{stroke:var(--ai)}
+  figure svg .f-ai{fill:var(--ai)}
+  figure svg .f-gone{fill:var(--gone)}
+  figure svg .f-keep{fill:var(--keep)}
+
+  .note{
+    border-left:3px solid var(--ai);background:var(--surface);
+    padding:1rem 1.2rem;margin:1.6rem 0;
+  }
+  .note.warn{border-left-color:var(--gone)}
+  .note p:last-child{margin-bottom:0}
+  .note .lbl{
+    font-family:var(--f-mono);font-size:.7rem;letter-spacing:.12em;
+    color:var(--muted);text-transform:uppercase;display:block;margin-bottom:.4rem;
+  }
+
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);background:var(--surface);margin:1.6rem 0}
+  table{border-collapse:collapse;width:100%;min-width:520px;font-size:.92rem}
+  th,td{padding:.7rem .9rem;text-align:left;vertical-align:top;border-bottom:1px solid var(--line-soft)}
+  thead th{
+    font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;color:var(--muted);
+    font-weight:500;text-transform:uppercase;border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  tbody tr:last-child td{border-bottom:none}
+  .tag{
+    font-family:var(--f-mono);font-size:.72rem;font-weight:500;
+    padding:.1rem .45rem;border-radius:3px;white-space:nowrap;
+  }
+  .tag.keep{background:var(--keep-bg);color:var(--keep)}
+  .tag.gone{background:var(--gone-bg);color:var(--gone)}
+
+  blockquote{
+    margin:1.2rem 0;padding:1rem 1.2rem;background:var(--ai-soft);
+    border:1px solid var(--line);color:var(--ai-ink);
+    font-size:.97rem;line-height:1.9;
+  }
+  blockquote p{margin:0}
+
+  .qa{
+    font-family:var(--f-mono);font-size:.72rem;letter-spacing:.1em;
+    color:var(--gone);display:block;margin-bottom:.3rem;
+  }
+  footer{border-top:1px solid var(--line);margin-top:2rem;padding-top:1.4rem;font-size:.85rem;color:var(--muted)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="kicker">Claude Code のしくみ</div>
+  <h1>クラウドと PC の受け渡し</h1>
+  <p class="stand">スマホで始めたチャットと、PC で始めたチャットは何が違うのか。<code>portable-out</code> とは何なのか。GitHub はどこに関係しているのか。いつ見返しても分かるように書いたものです。</p>
+</header>
+
+<!-- ===== 大前提 ===== -->
+<section>
+  <h2>大前提：Claude Code は「1 つのフォルダ」しか見ていない</h2>
+  <div class="col">
+    <p>ここが分かると、あとは全部つながります。</p>
+    <p>Claude Code は、<strong>起動したときに決まった 1 つのフォルダの中だけを見て、その中のファイルを読んだり書いたりするアシスタント</strong>です。それ以上でも以下でもありません。</p>
+    <p>スマホで始めたときと PC で始めたときの違いは、<strong>「そのフォルダがどこにあるか」だけ</strong>です。仕組みが違うわけではありません。</p>
+  </div>
+</section>
+
+<!-- ===== Q1 portable-out とは ===== -->
+<section>
+  <span class="qa">Q1</span>
+  <h2><code>portable-out</code> とは何か</h2>
+  <div class="col">
+    <p><strong>あなたが GitHub に作った、フォルダ 1 個分の置き場所です。</strong>正式には「リポジトリ」と呼びます。</p>
+    <p>正式な名前は <code>Okinaga-8/portable-out</code>。スラッシュの前があなたのアカウント名、後ろがそのフォルダにつけた名前です。2026 年 7 月に作られていて、説明文には「<em>code drop-box</em>（成果物の受け渡し箱）」と書いてあります。</p>
+    <p>中身は、いまのところこんなものです。</p>
+    <ul>
+      <li><code>README.md</code> … 説明書き</li>
+      <li><code>WORKFLOW.md</code> … 使い方の手順</li>
+      <li><code>docs/</code> … 資料（このページもここに入っています）</li>
+      <li><code>tools/</code> … 実行できる小さなプログラム</li>
+    </ul>
+    <p>つまり <strong>「特別な何か」ではなく、ただのフォルダ</strong>です。ただし置いてある場所が、あなたの PC ではなく <strong>GitHub というインターネット上の保管庫</strong>だ、というのが唯一のポイントです。</p>
+  </div>
+
+  <div class="note">
+    <span class="lbl">GitHub とは</span>
+    <p>ファイルを預かって、<strong>いつ・誰が・どこを変えたかを全部記録してくれる保管庫</strong>です。世界中のプログラマが使っていますが、あなたのように「複数の場所から同じフォルダを触りたい」人にとっては、<strong>要するに履歴つきのオンライン倉庫</strong>だと思えば十分です。</p>
+  </div>
+</section>
+
+<!-- ===== Q2 使い捨てパソコン ===== -->
+<section>
+  <span class="qa">Q2</span>
+  <h2>「クラウド上の使い捨てパソコン」とは何か</h2>
+  <div class="col">
+    <p>スマホやブラウザから Claude Code のチャットを始めると、その瞬間に <strong>インターネットの向こう側で、あなた専用の小さなパソコンが 1 台起動します。</strong></p>
+    <p>本物のパソコンと同じように、OS が入っていて、プログラムを動かせて、インターネットにもつながります。ただし <strong>画面もキーボードもなく、私だけが使います。</strong></p>
+    <p>そのパソコンは、起動した直後に <strong>GitHub から <code>portable-out</code> をまるごとコピーして</strong>、自分の中に置きます。私が「作業フォルダ」として見ているのは、この<strong>コピー</strong>です。</p>
+    <p>そして名前のとおり <strong>使い捨て</strong>です。チャットが終わって時間が経つと、<strong>そのパソコンごと丸ごと捨てられます。</strong>中にあったものは全部消えます。</p>
+  </div>
+
+  <figure>
+    <div class="svgscroll">
+    <svg viewBox="0 0 800 250" role="img" aria-label="スマホでチャットを始めると、クラウドに使い捨てのパソコンが起動し、GitHub からコピーを受け取って作業し、結果を GitHub に送り返してから、パソコンごと消える">
+      <defs>
+        <marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <polygon points="0,0 10,5 0,10" fill="currentColor"></polygon>
+        </marker>
+      </defs>
+
+      <!-- GitHub -->
+      <rect x="310" y="8" width="180" height="50" rx="4" fill="none" stroke="currentColor" stroke-width="2"></rect>
+      <text x="400" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor">GitHub</text>
+      <text x="400" y="48" text-anchor="middle" font-size="11.5" fill="currentColor">ずっと存在する</text>
+
+      <!-- arrows -->
+      <polyline points="350,58 350,80 160,80 160,96" fill="none" stroke="currentColor" stroke-width="1.6" marker-end="url(#ar1)"></polyline>
+      <polyline points="560,96 560,80 450,80 450,58" fill="none" stroke="currentColor" stroke-width="1.6" marker-end="url(#ar1)"></polyline>
+
+      <!-- disposable container -->
+      <rect x="50" y="100" width="620" height="100" rx="6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="7 5"></rect>
+      <text x="360" y="126" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor">クラウドの使い捨てパソコン ─ チャットの間だけ存在する</text>
+
+      <text x="160" y="170" text-anchor="middle" font-size="12" fill="currentColor">① コピーが置かれる</text>
+      <text x="360" y="170" text-anchor="middle" font-size="12" fill="currentColor">② 私が作業する</text>
+      <text x="560" y="170" text-anchor="middle" font-size="12" fill="currentColor">③ GitHub に送り返す</text>
+
+      <!-- disposal -->
+      <line x1="672" y1="150" x2="696" y2="150" stroke="currentColor" stroke-width="1.6" marker-end="url(#ar1)"></line>
+      <text x="730" y="146" text-anchor="middle" font-size="24" font-weight="700" class="f-gone">✕</text>
+      <text x="730" y="172" text-anchor="middle" font-size="12" font-weight="700" class="f-gone">消える</text>
+
+      <text x="360" y="228" text-anchor="middle" font-size="12" class="f-gone">③ で送り返さなかったものは、ここで一緒に消えてしまう</text>
+    </svg>
+    </div>
+    <figcaption>スマホで始めたチャットの一生。パソコンは点線の枠の間だけ存在し、最後に丸ごと捨てられる。だから <strong>③ の「送り返す」が抜けると、作ったものは残らない</strong>。私が毎回「プッシュしました」と報告するのは、この ③ が終わったという意味です。</figcaption>
+  </figure>
+
+  <div class="col">
+    <p>逆に言えば、この使い捨てパソコンには <strong>あなたの PC のファイルは 1 つも入っていません。</strong>だから私は <code>C:\ComfyUI</code> の中身を見ることができず、「フォルダの中身を貼ってください」と何度もお願いすることになります。意地悪をしているわけではなく、<strong>物理的に見えない</strong>のです。</p>
+  </div>
+</section>
+
+<!-- ===== Q3 関係 ===== -->
+<section>
+  <span class="qa">Q3</span>
+  <h2><code>portable-out</code> と GitHub の関係</h2>
+  <div class="col">
+    <p>一言でいうと <strong>「原本と写し」</strong>です。</p>
+    <p><strong>原本は GitHub にあります。</strong>クラウドの使い捨てパソコンにあるのも、あなたの PC にあるのも、どちらも<strong>写し（コピー）</strong>です。3 つの場所に同じフォルダがあるように見えますが、正式なものは GitHub のものだけ、と考えてください。</p>
+  </div>
+
+  <figure>
+    <div class="svgscroll">
+    <svg viewBox="0 0 760 430" role="img" aria-label="GitHub にある portable-out が原本で、クラウドの使い捨てパソコンとあなたの PC がそれぞれ写しを持つ。写しは取り寄せと送り返しで原本と同期する">
+      <defs>
+        <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <polygon points="0,0 10,5 0,10" fill="currentColor"></polygon>
+        </marker>
+      </defs>
+
+      <!-- original -->
+      <rect x="255" y="20" width="250" height="96" rx="4" fill="none" class="s-ai" stroke-width="2.5"></rect>
+      <text x="380" y="48" text-anchor="middle" font-size="15" font-weight="700" class="f-ai">GitHub</text>
+      <text x="380" y="70" text-anchor="middle" font-size="12" font-family="IBM Plex Mono, monospace" class="f-ai">Okinaga-8 / portable-out</text>
+      <text x="380" y="98" text-anchor="middle" font-size="12.5" font-weight="700" class="f-ai">原本 ─ ずっと残る</text>
+
+      <!-- connectors -->
+      <polyline points="330,116 330,180 160,180 160,264" fill="none" stroke="currentColor" stroke-width="1.6"
+                marker-start="url(#ar2)" marker-end="url(#ar2)"></polyline>
+      <polyline points="430,116 430,180 600,180 600,264" fill="none" stroke="currentColor" stroke-width="1.6"
+                marker-start="url(#ar2)" marker-end="url(#ar2)"></polyline>
+
+      <text x="176" y="214" font-size="11.5" fill="currentColor">↓ 写しを取り寄せる</text>
+      <text x="176" y="234" font-size="11.5" fill="currentColor">↑ 変更を送り返す</text>
+      <text x="584" y="214" text-anchor="end" font-size="11.5" fill="currentColor">写しを取り寄せる ↓</text>
+      <text x="584" y="234" text-anchor="end" font-size="11.5" fill="currentColor">変更を送り返す ↑</text>
+
+      <!-- cloud copy -->
+      <rect x="30" y="270" width="300" height="140" rx="4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="7 5"></rect>
+      <text x="180" y="296" text-anchor="middle" font-size="13" font-weight="700" fill="currentColor">クラウドの使い捨てパソコン</text>
+      <text x="180" y="316" text-anchor="middle" font-size="11.5" fill="currentColor">スマホ・ブラウザで始めたとき</text>
+      <rect x="55" y="330" width="250" height="34" rx="3" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+      <text x="180" y="352" text-anchor="middle" font-size="12" font-family="IBM Plex Mono, monospace" fill="currentColor">portable-out の写し</text>
+      <text x="180" y="390" text-anchor="middle" font-size="12" font-weight="700" class="f-gone">チャットが終わると消える</text>
+
+      <!-- pc copy -->
+      <rect x="430" y="270" width="300" height="140" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"></rect>
+      <text x="580" y="296" text-anchor="middle" font-size="13" font-weight="700" fill="currentColor">あなたの PC</text>
+      <text x="580" y="316" text-anchor="middle" font-size="11.5" fill="currentColor">デスクトップアプリで始めたとき</text>
+      <rect x="455" y="330" width="250" height="34" rx="3" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+      <text x="580" y="352" text-anchor="middle" font-size="12" font-family="IBM Plex Mono, monospace" fill="currentColor">portable-out の写し</text>
+      <text x="580" y="390" text-anchor="middle" font-size="12" font-weight="700" class="f-keep">消えない</text>
+    </svg>
+    </div>
+    <figcaption>GitHub の原本を中心に、2 つの写しがぶら下がっている形。<strong>写し同士は直接つながっていません。</strong>クラウド側で作ったものが PC に届くのは、いったん原本を経由するからです。点線の枠は「一時的なもの」を表しています。</figcaption>
+  </figure>
+
+  <div class="col">
+    <p>ここが <strong>Google ドキュメントとの一番の違い</strong>です。Google ドキュメントは全員が原本を直接いじりますが、この仕組みでは <strong>各自が写しを持って手元で作業し、区切りのいいところでまとめて原本に送り返します。</strong></p>
+    <p>面倒に見えますが、利点があります。<strong>いつ・どこを・なぜ変えたかが全部記録に残る</strong>ので、あとから「あの時どうしたんだっけ」を追えますし、間違えても元に戻せます。</p>
+  </div>
+
+  <h3>覚える操作は 3 つだけ</h3>
+  <div class="col">
+    <p>専門用語が出てきますが、意味はこれだけです。</p>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>用語</th><th>やっていること</th><th>言い換えると</th></tr></thead>
+      <tbody>
+        <tr><td><code>clone</code>（クローン）</td><td>原本を、はじめて手元にコピーする</td><td>取り寄せる（初回だけ）</td></tr>
+        <tr><td><code>pull</code>（プル）</td><td>手元の写しを、原本の最新に合わせる</td><td>受け取る</td></tr>
+        <tr><td><code>commit</code> / <code>push</code></td><td>手元で変えたところを、原本に反映する</td><td>発送する</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="col">
+    <p><code>commit</code> が「荷造り（変更のまとまりに名前をつけて箱に入れる）」、<code>push</code> が「発送」です。私が作業のたびに 2 つ並べて報告しているのは、そのためです。</p>
+  </div>
+</section>
+
+<!-- ===== 何がどこにあるか ===== -->
+<section>
+  <h2>何が、どこにあるのか</h2>
+  <div class="col">
+    <p>混乱しやすいところなので、表にしておきます。</p>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>もの</th><th>ある場所</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><code>portable-out</code> の原本</td><td>GitHub</td><td><span class="tag keep">消えない</span></td></tr>
+        <tr><td>その写し</td><td>クラウドの使い捨てパソコン</td><td><span class="tag gone">チャット終了後に消える</span></td></tr>
+        <tr><td>その写し</td><td>あなたの PC</td><td><span class="tag keep">消えない</span></td></tr>
+        <tr><td>ComfyUI 本体とモデルファイル</td><td><strong>あなたの PC だけ</strong></td><td><span class="tag keep">消えない</span></td></tr>
+        <tr><td>チャットの会話</td><td>Claude 側</td><td><span class="tag gone">新しいチャットには引き継がれない</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="col">
+    <p>4 行目が大事です。<strong>ComfyUI のモデルファイルは GitHub にもクラウドにも一切ありません。</strong>20 GB もあるものを置く場所ではありませんし、置く意味もありません。<strong>ファイル名とサイズさえ分かれば、判断はできます。</strong></p>
+    <p>5 行目も大事です。<strong>私は会話を覚えていません。</strong>新しいチャットを開いた瞬間、記憶はゼロに戻ります。</p>
+  </div>
+
+  <div class="note">
+    <span class="lbl">だから <code>HANDOFF.md</code> がある</span>
+    <p>会話は引き継げませんが、<strong>フォルダの中のファイルは読めます。</strong>だから「いまどこまで進んだか」を <code>HANDOFF.md</code> という<strong>ただのメモ帳</strong>に書いて、原本に送り返しておきます。次のチャットでは、私にそれを読ませれば続きから始められます。</p>
+    <p>特別な仕組みではありません。<strong>置き手紙</strong>です。</p>
+  </div>
+</section>
+
+<!-- ===== ブランチ ===== -->
+<section>
+  <h2>おまけ：「ブランチ」とは何か</h2>
+  <div class="col">
+    <p>私の報告に <code>claude/minimax-10eros-comfyui-setup-23yatw</code> という長い名前が出てきて、混乱させてしまいました。これは <strong>ブランチ</strong>といいます。</p>
+    <p>原本の中には、<strong>本棚</strong>と<strong>作業台</strong>があると思ってください。</p>
+    <ul>
+      <li><strong>本棚（<code>main</code>）</strong>… 完成したものを置く、正式な場所</li>
+      <li><strong>作業台（ブランチ）</strong>… 作業中のものを一時的に広げておく場所</li>
+    </ul>
+    <p>作業台を使うのは、<strong>途中の状態で本棚を汚さないため</strong>です。気に入らなければ作業台ごと捨てられます。</p>
+  </div>
+
+  <figure>
+    <div class="svgscroll">
+    <svg viewBox="0 0 760 200" role="img" aria-label="main という本棚の線から作業台のブランチが枝分かれし、今回の成果はすべて作業台の上にあって、まだ本棚には戻されていない">
+      <defs>
+        <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <polygon points="0,0 10,5 0,10" fill="currentColor"></polygon>
+        </marker>
+      </defs>
+
+      <text x="60" y="40" font-size="12.5" font-weight="700" fill="currentColor">main（本棚）— 完成したものを置く場所</text>
+      <line x1="60" y1="64" x2="700" y2="64" stroke="currentColor" stroke-width="3" marker-end="url(#ar3)"></line>
+      <circle cx="110" cy="64" r="6" fill="currentColor"></circle>
+      <circle cx="170" cy="64" r="6" fill="currentColor"></circle>
+
+      <path d="M 170 64 C 210 64 210 124 250 124 L 600 124" fill="none" class="s-ai" stroke-width="3"></path>
+      <circle cx="300" cy="124" r="6" class="f-ai"></circle>
+      <circle cx="370" cy="124" r="6" class="f-ai"></circle>
+      <circle cx="440" cy="124" r="6" class="f-ai"></circle>
+      <circle cx="510" cy="124" r="6" class="f-ai"></circle>
+      <circle cx="580" cy="124" r="6" class="f-ai"></circle>
+
+      <text x="250" y="152" font-size="12.5" font-weight="700" class="f-ai">作業台（ブランチ）— 今回の成果は全部ここ</text>
+      <text x="250" y="176" font-size="12" class="f-gone">まだ本棚（main）には戻していない</text>
+    </svg>
+    </div>
+    <figcaption>丸ひとつが 1 回の保存（コミット）。今回の調査・資料・スクリプトはすべて青い線の上にあり、<strong>まだ本棚には載っていません</strong>。だから PC で受け取るときに、長いブランチ名を指定する必要があります。本棚に載せてしまえば、その指定は要らなくなります。</figcaption>
+  </figure>
+</section>
+
+<!-- ===== 実際にどうするか ===== -->
+<section>
+  <h2>結局、あなたは何をすればいいのか</h2>
+  <div class="col">
+    <p><strong>git のコマンドは覚えなくて構いません。日本語で頼めば、Claude Code がやります。</strong></p>
+    <p>PC のデスクトップアプリを、いつもの作業フォルダで開いて、こう言うだけです。</p>
+  </div>
+
+  <blockquote>
+    <p>GitHub の <code>Okinaga-8/portable-out</code> を、このフォルダに持ってきて。<br>
+    ブランチは <code>claude/minimax-10eros-comfyui-setup-23yatw</code> を使って。<br>
+    そのあと <code>HANDOFF.md</code> を読んで、続きから始めて。</p>
+  </blockquote>
+
+  <div class="col">
+    <p>これで PC 側の Claude が、取り寄せも、置き手紙を読むところまでも全部やります。以降は「最新にして」「送り返して」で通じます。</p>
+    <p>逆に、スマホ側で調べ物を頼んだときは、最後にこう言っておけば往復が閉じます。</p>
+  </div>
+
+  <blockquote>
+    <p>ここまでの結果を <code>HANDOFF.md</code> に書いて、プッシュしておいて。</p>
+  </blockquote>
+</section>
+
+<!-- ===== よくある勘違い ===== -->
+<section>
+  <h2>よくある勘違い</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>思いがちなこと</th><th>実際は</th></tr></thead>
+      <tbody>
+        <tr><td>クラウドの私は、PC のファイルも見られる</td><td><strong>見られません。</strong>まったく別のパソコンです</td></tr>
+        <tr><td>新しいチャットでも、前の話を覚えている</td><td><strong>覚えていません。</strong>ファイルに書いたものだけが伝わります</td></tr>
+        <tr><td>作ったものは自動で保存される</td><td><strong>されません。</strong>GitHub に送り返して初めて残ります</td></tr>
+        <tr><td>PC で <code>git pull</code> すれば最新が来る</td><td>本棚（<code>main</code>）の最新が来ます。作業台の中身は、そのブランチを指定しないと来ません</td></tr>
+        <tr><td>GitHub は公開の場だから危ない</td><td>公開／非公開は選べます。<strong>ただし今の <code>portable-out</code> は公開設定です</strong>（下記）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note warn">
+    <span class="lbl">このリポジトリは「公開」設定です</span>
+    <p><code>Okinaga-8/portable-out</code> は誰でも見られる状態になっています。<code>README</code> の「ログインなしで開ける」はそういう意味です。</p>
+    <p>プログラムや手順書を置くぶんには問題ありませんが、<strong>ComfyUI のワークフロー（<code>.json</code>）にはプロンプトの文章とローカルの絶対パスがそのまま入ります。</strong>それを置くと世界中から読めてしまいます。置きたい場合は、先に非公開に切り替えてください（GitHub のリポジトリ → Settings → 一番下の Danger Zone → Change visibility）。</p>
+  </div>
+</section>
+
+<footer>
+  <p>2026-09-05 作成。<span style="font-family:var(--f-mono)">Okinaga-8/portable-out · docs/cloud-and-pc.html</span><br>
+  分からないところがあれば、そのままチャットで聞いてください。このページも書き足せます。</p>
+</footer>
+
+</div>
