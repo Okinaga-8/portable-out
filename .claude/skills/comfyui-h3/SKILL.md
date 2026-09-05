@@ -14,6 +14,11 @@ description: ローカル ComfyUI の MiniMax H3 系（Hailuo H3 / 10Eros-Max �
 
 数値や推奨は常にこの構成を前提に答えること。
 
+## 最初に読むもの
+
+**`HANDOFF.md`（リポジトリ直下）** — 現在地・確定事項・未確定・次の一手。
+セッションをまたいだ作業はここから始める。作業を終えるときは更新して push する。
+
 ## 既存の成果物
 
 - `docs/minimax-h3-10eros-max.html` — 10Eros-Max 導入の判断シート。Artifact として公開済み。

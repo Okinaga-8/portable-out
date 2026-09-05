@@ -6,7 +6,8 @@ Portable PJ: code drop-box. Request from iPhone, pick up from any browser (no lo
 
 | ファイル | 内容 |
 |---|---|
-| [`WORKFLOW.md`](WORKFLOW.md) | iPhone で依頼 → GitHub に反映 → PC で確認する手順 |
+| [`HANDOFF.md`](HANDOFF.md) | **現在地。** 作業を再開するときに最初に読む |
+| [`WORKFLOW.md`](WORKFLOW.md) | iPhone で依頼 → GitHub に反映 → PC で確認する手順／**出先で調べて自宅 PC で使う型** |
 | [`docs/minimax-h3-10eros-max.html`](docs/minimax-h3-10eros-max.html) | **ComfyUI の MiniMax H3 環境に 10Eros-Max を追加する判断シート**（モデル候補・VRAM 試算・設定・実測ログ） |
 | [`tools/h3_env_check.py`](tools/h3_env_check.py) | ComfyUI / GPU / モデルファイルの現状を Markdown で吐き出す |
 | `hello.py` | 動作確認用 |
