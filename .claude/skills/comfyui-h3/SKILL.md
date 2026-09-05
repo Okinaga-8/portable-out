@@ -10,7 +10,9 @@ description: ローカル ComfyUI の MiniMax H3 系（Hailuo H3 / 10Eros-Max �
 - **GPU: RTX 4080 / VRAM 16GB（Ada, SM 8.9）** — NVFP4 のネイティブ演算は無い
 - **RAM 64GB** — offload ボトルネックの根本的な解決になる容量
 - **CUDA 13** — 4080 系で最も効いた既知の改善策は適用済み。速度問題で CUDA を疑う必要はない
-- **主用途 Ref2VA、FL2VA も併用。Turbo LoRA 使用中**
+- **主用途 Ref2VA、FL2VA も併用**
+- **DiT: `minimax_h3_ref2va_pruned_int8_convrot.safetensors`**（Ref2VA / **pruned** / INT8 ConvRot / 19.53GB）
+- Turbo LoRA を実際に当てているかは**未確認**（`models/loras/` とワークフローのノードを見ること）
 
 数値や推奨は常にこの構成を前提に答えること。
 
@@ -99,6 +101,19 @@ A/B は動きのある題材で、参照画像の枚数も揃えて行う。
 
 **Ref2VA 用は 4-step v0.1 の 1 種類しかない。** FL2VA 用を流用してはいけない。
 **step だけ変えても成立しない** — shift もその LoRA の行に合わせる。
+
+### pruned チェックポイントでは上表がそのまま使えない
+
+元の Turbo LoRA は **2688 次元の AdaLN ブランチ**を対象にするが、pruned は
+**8 次元 `adaln_t_table` + ブロックごとの projection** という別構造。よって AdaLN 行列を当てられない。
+pruned 用変換版は blocks.0–49 の AdaLN projection 50 組 + `final_layer.adaln_proj.linear` を
+削除した「部分互換」であり、**FL2VA 側にしか存在しない**。
+
+→ **pruned Ref2VA の高速化は [ComfyUI-MiniMax-H3-PDD-Acc](https://github.com/Jalen-Brunson/ComfyUI-MiniMax-H3-PDD-Acc) 経路のみ。**
+pruned 向けの adaln rebase と head bank 読み込みを実装している。
+LoRA は alibaba-pai `MiniMax-H3-Ref2VA-Acc-8Step.safetensors`（1.28GB）。
+**要 ComfyUI 0.33.0+**、ref2va UNET とペア、euler / CFG 1.0 / SigmaShift 12・3 / NFE 4–8、
+他の distill LoRA・step-cache とは併用不可。
 Ref2VA では参照画像のリサイズ方針を **`match`** にする（蒸留学習時と同じ）。
 ModelTC が Ref2VA 用ワークフロー JSON（`video_minimax_h3_ref2v_lightx2v_turbo.json`、既定 960×544）を配布。
 
@@ -112,7 +127,7 @@ sigma shift は上表 / steps **20〜32**（素）・**4〜8**（Turbo）・**6�
 
 - **Ref2VA に FL2VA 用の Turbo LoRA を当てていないか。** 最頻の事故。
 - ファイル名に `TURBO` が入る版は蒸留が焼き込み済み。**Turbo LoRA を重ねない。**
-- `pruned` 版には pruned 用の Turbo LoRA を使う（フル版向けとは別物）。
+- **`pruned` に Full 向け Turbo LoRA は効かない**（AdaLN の構造が別）。Ref2VA には pruned 用変換版が無い。
 - **Turbo は音を劣化させる。** 下書きに使い、採用シードは Turbo なしで本番を回す。
 - **Turbo は VRAM を減らさない。** OOM 対策にはならない。
 - **hybrid を i2v で使わない。**
