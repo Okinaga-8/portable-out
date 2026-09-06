@@ -216,7 +216,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <span>ComfyUI + 量子化</span>
     <span>台詞・人の声が主役</span>
     <span>将来 32GB 借用も検討</span>
-    <span>更新 2026-09-06(第 24 版)</span>
+    <span>更新 2026-09-06(第 25 版)</span>
   </div>
 </header>
 
@@ -479,7 +479,7 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
       <tbody>
         <tr><td>フレームレート</td><td class="num">24 fps</td><td>秒とフレームの換算基準。<span class="c c2">一致</span></td></tr>
         <tr><td>フレーム数の粒度</td><td class="num"><code>length % 17 == 5</code></td><td><strong>5, 22, 39, 56…</strong>。最初の 5 フレーム + 17 フレームのブロック。要求した秒数は次の有効値に切り上げられる。<strong>§5 の <code>context_length</code> の選択肢と同じ数列</strong>(§11i)<span class="c c1">一次</span></td></tr>
-        <tr><td>クリップ長</td><td class="num">4 〜 15 秒</td><td>公式値。初版の「約 5〜15 秒」を訂正。15 秒指定で <strong>362 フレーム</strong>。<span class="c c1">一次</span></td></tr>
+        <tr><td>クリップ長</td><td class="num">4 〜 15 秒<br><strong>(実際は 20 秒も通る)</strong></td><td>4〜15 秒は公式値 <span class="c c1">一次</span>。15 秒指定で <strong>362 フレーム</strong>。<br><strong>ただし <span class="c c0">実測</span> — 仕様外の 20.042 秒(481 フレーム = 17×28+5)が完走した。</strong>0.4MP / Ref2VA + 参照 3 枚 / 6 step で <strong>274.7 秒・OOM なし</strong>、<strong>後半の破綻も無し</strong>(数値・実視聴とも)。<strong>崖がどこにあるかは未探索</strong>(25 秒以上は未測) → §2b / §9</td></tr>
         <tr><td>解像度</td><td class="num">短辺 768 が既定</td><td>2K は再生成(regeneration)扱い。ローカルは 768p 級を前提に設計する。<span class="c c1">一次</span></td></tr>
         <tr><td>アスペクト比</td><td class="num">21:9 / 16:9 / 4:3 / 1:1 / 3:4 / 9:16</td><td>連鎖する全クリップで揃える。<span class="c c1">一次</span></td></tr>
         <tr><td>音声</td><td class="num">32 kHz ステレオ</td><td>映像と同一パスで同時生成。<strong>クリップごとに独立した音世界が立ち上がる</strong>。ffmpeg で音を触るときの基準値。<span class="c c1">一次</span></td></tr>
@@ -611,6 +611,8 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
     <table>
       <thead><tr><th style="width:24%">分割案</th><th style="width:14%">本数</th><th style="width:12%">継ぎ目</th><th>内訳</th></tr></thead>
       <tbody>
+        <tr style="background:var(--accent-soft)"><td><strong>20 秒 × 独立生成</strong> <span class="c c0">実測</span></td><td class="num"><strong>3 本</strong></td><td class="num"><strong>2</strong></td><td><strong>3 × 481 = 1,443 フレーム(60.1 秒)。継ぎ目が最も少ない。</strong>仕様外だが 20.042 秒(481f)は実測で通る(§9)</td></tr>
+        <tr style="background:var(--accent-soft)"><td><strong>20 秒 × 継続(のりしろ 39)</strong> <span class="c c0">実測</span></td><td class="num"><strong>4 本</strong></td><td class="num"><strong>3</strong></td><td>実質 442 フレーム/本。481 + 3×442 = 1,807(75.3 秒)。<strong>連鎖しても継ぎ目 3</strong> — 15 秒連鎖より 1 つ少ない</td></tr>
         <tr><td>15 秒 × 独立生成</td><td class="num">4 本</td><td class="num">3</td><td>4 × 362 = 1,448 フレーム(60.3 秒)。ただし連続性は期待できない</td></tr>
         <tr><td><strong>15 秒 × 継続(のりしろ 22)</strong></td><td class="num">5 本</td><td class="num">4</td><td>実質 340 フレーム/本。362 + 4×340 = 1,722(71.8 秒)。余剰は末尾で捨てる</td></tr>
         <tr><td>15 秒 × 継続(のりしろ 39)</td><td class="num">5 本</td><td class="num">4</td><td>実質 323 フレーム/本。362 + 4×323 = 1,654(68.9 秒)</td></tr>
@@ -1934,6 +1936,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>連鎖する全クリップで<strong>アスペクト比・解像度を揃える</strong></td><td>§2 / §5</td></tr>
         <tr><td><strong>カット割りは技術的な劣化リセットでもある。</strong>「ここは連続でなければならないか?」を継ぎ目ごとに問う</td><td>§2b</td></tr>
         <tr><td>口だけ動く 2 人が映り続ける動画は<strong>技術的に成功しても退屈</strong>になる</td><td>§11</td></tr>
+        <tr><td><strong>決着 <span class="c c0">実測</span> — Ref2VA + 参照 3 枚でも 15 秒は通り、しかも遅くならない。</strong>0.4MP / 362f / 6 step で <strong>194.0 秒・OOM なし</strong>。<strong>参照を積むコストは無視できる</strong>(残論点 A はこれで決着)</td><td>§9 / §10</td></tr>
+        <tr style="color:var(--accent-ink)"><td><strong>公式仕様は 4〜15 秒だが、20.042 秒(481f = 17×28+5)も通る <span class="c c0">実測</span>。</strong>274.7 秒・OOM なし、<strong>後半の破綻も無し</strong>(YAVG・フレーム間差・音声 RMS が最後まで平坦。実視聴でも確認)。<strong>1 分が「20 秒 × 3 本・継ぎ目 2」で作れる</strong> — 15 秒より継ぎ目が 1 つ減る。<strong>崖の位置は未探索</strong>(25 秒以上は未測)</td><td>§9 / §2b</td></tr>
       </tbody>
     </table>
   </div>
@@ -2000,6 +2004,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>VRAM を形状から見積もる系のローダーは、Dynamic VRAM と役割が重なる。</strong>この PC は comfy-aimdo が既に効いているので、<strong>同じ仕事をする層は片方だけにする</strong></td><td>§11j / §9</td></tr>
         <tr><td><strong>参照動画を使うレンダーは、参照画像より明確に遅い</strong>(5090 で 15 秒に 16 分)<span class="c c3">要検証</span></td><td>§11j</td></tr>
         <tr><td style="color:var(--risk)"><strong>解消 <span class="c c0">実測</span> — ComfyUI を 0.34.5 へ更新した</strong>(2026-09-06)。<strong>torch / comfy-kitchen は無傷</strong>、comfy-aimdo は 0.4.13→0.4.15。<strong>依存を上げる <code>update_comfyui_and_python_dependencies.bat</code> は使わない</strong>（torch を差し替える）</td><td>§11k / §5</td></tr>
+        <tr><td><strong>尺と時間は緩やかな超線形。極端な崖は無い <span class="c c0">実測</span>。</strong>同一グラフ・同 seed(0.4MP / 6 step / Ref2VA + 参照 3 枚)で <strong>124f = 59.3 秒 / 362f = 194.0 秒 / 481f = 274.7 秒</strong>。フレームあたり 0.478 → 0.536 → 0.571 秒、<strong>超線形の指数は 1.1〜1.2</strong></td><td>§9</td></tr>
+        <tr><td><strong>尺を伸ばすと VRAM ピークはむしろ下がる <span class="c c0">実測</span>(2 度目の再現)。</strong>362f で 14,995 MiB、<strong>481f で 14,842 MiB</strong>。しかもピーク値は待機中の常駐重み(14,994 MiB)とほぼ同じで、<strong>サンプリング中の平均は 10,854〜11,045 MiB とさらに低い</strong>。<strong>ピークを見て「崖の手前」と判断しないこと</strong></td><td>§9</td></tr>
         <tr><td>比較用 — <strong>RTX 3060 12GB / 0.41MP</strong> の実測: 4step LoRA で 4 秒 = 約 5 分・8 秒 = 約 9 分、20step で 4 秒 = 約 18 分・8 秒 = 約 31 分。<strong>モデル 20GB が 12GB に載らず毎ステップ重みをストリームしている</strong>。<span class="c c0">実測</span>の「0.4MP / 15 秒 = 約 4 分」は<strong>尺あたり 4〜5 倍速い</strong></td><td>§11k / §9</td></tr>
         <tr><td><strong>ComfyUI 0.33.1 → 0.34.5 の更新は、サンプリングを変えていない <span class="c c0">実測</span>。</strong>同 seed・同設定で焼いた出力を突き合わせたところ、<strong>音声(AAC)がバイト単位で完全一致</strong>した。H3 は映像と音声を<strong>同じ DiT forward で同時に作る</strong>(<code>model_type FLOW_AV</code>)ので、<strong>音声の一致 = 潜在の一致 = サンプリング無変更</strong>。潜在が少しでもずれれば音声も必ず別のバイト列になる</td><td>§9</td></tr>
         <tr><td style="color:var(--risk)"><strong>ただし 0.34.5 は動画に常に <code>bt709</code> / <code>sRGB</code>(<code>iec61966-2-1</code>)の色タグを付ける <span class="c c0">実測</span>。</strong><code>CreateVideo</code> の <code>color_space</code> 入力を外しても戻らない。<strong>そのため 0.34.5 以前に焼いた出力とのバイト比較・SSIM 比較はもう成立しない</strong>(同一内容でも SSIM Y 0.9807 / PSNR 40.3 dB になる。平均絶対差 1.69/255、フレーム間の PSNR は 40.2〜41.4 と狭く、<strong>再エンコードの差の出方</strong>)</td><td>§9</td></tr>
@@ -2341,7 +2347,7 @@ comfy-aimdo 0.4.15 / comfy-kitchen 0.2.31
   <span class="sec-label">論点</span>
   <h2>未解決の論点</h2>
 
-  <p><strong>第 21 版で全面的に振り分け直しました(2026-09-06)。</strong> 前版の 10 論点のうち <strong>5 つが実測で決着</strong>し、<strong>1 つは前提が変わり</strong>、<strong>残る本当の未解決は 4 つ</strong>です。<strong>そのうち 3 つは「連鎖とドリフト」という 1 つの塊</strong>に集まっています。</p>
+  <p><strong>第 21 版で全面的に振り分け直しました(2026-09-06)。</strong> 前版の 10 論点のうち <strong>5 つが実測で決着</strong>し、<strong>1 つは前提が変わり</strong>、<strong>残る本当の未解決は 3 つ</strong>です。<strong>そのうち 3 つは「連鎖とドリフト」という 1 つの塊</strong>に集まっています。</p>
 
   <div class="box">
     <div class="box-title">決着したもの — 調査で</div>
@@ -2369,10 +2375,17 @@ comfy-aimdo 0.4.15 / comfy-kitchen 0.2.31
     <p style="margin:0"><strong>前版 7「PyTorch の入替で速くなるか」。</strong> <strong>「効けば全部が半分の時間で回る」は、もう期待できません。</strong>根拠にしていた「入替だけで 2.17 倍」の実例は<strong>同梱の古い torch が前提</strong>でしたが、この PC は既に <code>torch 2.13.0+cu130</code>。<strong>さらに attention の高速化(1.65 倍)は Comfy Kitchen INT8 で取得済み</strong>です。<strong>→ 論点として残しますが、優先度は最下位。実験 4・5 を終えてから触ること</strong>(壊すと全部止まります)。</p>
   </div>
 
-  <h3>残っている本当の未解決 — 4 つ</h3>
+  <div class="box tint">
+    <div class="box-title">論点 A は決着しました <span class="c c0">実測</span>(第 25 版)</div>
+    <p><strong>Ref2VA + 参照 3 枚でも 15 秒は通り、しかも遅くなりませんでした。</strong>0.4MP / 362f / 6 step で <strong>194.0 秒・OOM なし</strong>。<strong>参照を積むエンコード段のコストを心配する必要はありませんでした。</strong></p>
+    <p style="margin-bottom:0"><strong>そのうえ、公式仕様の 15 秒を超えられます。</strong> <strong>20.042 秒(481f)が完走し、後半の破綻もありませんでした</strong>(274.7 秒・OOM なし。YAVG・フレーム間差・音声 RMS が最後まで平坦で、実視聴でも問題なし)。<br>
+    → <strong>設計は「15 秒 × 4 本・継ぎ目 3」ではなく「20 秒 × 3 本・継ぎ目 2」まで行けます</strong>(§2b)。<strong>継ぎ目が 1 つ減るのは、論点 B のドリフトに直接効きます。</strong><br>
+    <strong>ただし崖の位置は未探索です</strong> — 25 秒以上は測っていません。20 秒が上限だという根拠もまだありません。</p>
+  </div>
+
+  <h3>残っている本当の未解決 — 3 つ</h3>
 
   <ol>
-    <li><strong>A. Ref2VA + 参照 3 枚で 15 秒が通るか。</strong> <strong>15 秒の実測は T2VA のものです。</strong>参照を積むとエンコード段のコストが乗ります。<strong>ここが通れば「15 秒 × 4 本 = 継ぎ目 3 つ」で設計が確定し、通らなければ 10 秒 × 6 本(継ぎ目 5 つ)に落ちます。</strong>1 本測れば済みます。<em>→ 実験 3</em></li>
     <li><strong>B. 何ショット目からドリフトが限界を超えるか。</strong> <strong>これがいちばん大きい未知で、§2b のブロック長を決めます。</strong>この PC の実測 20 本は<strong>すべて単発クリップ</strong>で、連鎖は一度もやっていません。<strong>色は YAVG で数値化できる</strong>ので、印象ではなく系列で取ること。<em>→ 実験 4・5</em></li>
     <li><strong>C. 音は (a) を狙うか (b) で妥協するか。</strong> <strong>実測が 1 つ判断材料を足しました</strong> — <strong>セリフは終端の 0.2 秒前まで来ます</strong>。<strong>つまり編集側のクロスフェード(§7 レシピ 4)で語尾を削る危険が常にある</strong>ということで、<strong>音声差し替え方式(§6b 層 0)の相対的な有利さが上がりました。</strong>LongMedia のリップシンクモードを使う (b) は、<strong>7〜10 秒/クリップの制約に加えてこの問題も抱えます。</strong></li>
     <li><strong>D. 動画 1 方式(画像列)と動画 2 方式(潜在)のどちらを採るか。</strong> 前者は公式ノードだけで済み導入が軽い。後者は繋がりが強いがカスタムノードが要る。<strong>まず前者、足りなければ後者</strong>という順序は変えません。<strong>B の結果で決まります。</strong></li>
@@ -3850,7 +3863,8 @@ comfy-aimdo 0.4.15 / comfy-kitchen 0.2.31
   <strong>第 22 版 2026-09-06</strong>(<strong>10 本目の動画を §11j に追加</strong>。MuseCollective の Director V1.2 のバグ修正記録。<strong>ノード固有の機能と、H3 モデル自体の挙動を切り分けて収録した。</strong>後者が本ノートに効く — <strong>リップシンクは音声を渡すだけでは同期せず、台詞をタイムスタンプ位置に置く必要がある</strong>(日本語 TTS 方針と噛み合い、TTS なら書き起こしが不要)、<strong>参照 9 枠は Location と継続アンカーに食われて実質 7 枠・超えても黙って落ちる</strong>、<strong>二段サンプリング 1 段目の音は判断材料にならない</strong>、<strong>参照動画は 24fps に揃える</strong>、<strong>潜在を保持して繋ぐと継ぎ目にグリッチが出うる</strong>(論点 D への材料)、<strong>境界を FL2VA でハードロックする hybrid continuation</strong>。加えて <strong>scheduler が <code>simple</code> か <code>beta</code> かの食い違い</strong>を未決着として記録し、<strong>Sol-Attn への反証</strong>を台帳に併記した。<strong>リポジトリの README は動画より新しく、参照枠の数字を上書きしている</strong>)。更新履歴はこのファイルの git コミットログを参照。<br>
   <strong>第 23 版 2026-09-06</strong>(<strong>11 本目の動画を §11k に追加</strong>。連鎖そのものを主題にした情報源で、<strong>残論点 B と D に初めて外からの材料が付いた</strong>。<strong>最大の発見は「連鎖の中核が標準ノードで組める」こと</strong> — H3 は attention にフレームインデックスを指定でき、<code>MiniMaxH3AddGuide</code> が<strong>終端フレーム群 + 音声</strong>を渡してオーバーラップさせる。<strong>§4 に選択肢 B' を追記</strong>し、<strong>要件が ComfyUI 0.34.0 以降で、この PC の 0.33.1 では届かないことを明記</strong>した。ほかに — <strong>オーバーラップ帯は差分がほぼ黒で再現される</strong>、<strong>ハンドオフは 5/22/39/56 フレーム・推奨はショット長の 1/5</strong>(「画像列は 3 秒以上」とは別物)、<strong>4 クリップは持ち 6 クリップで顔が崩れる</strong>、<strong>ドリフトの原因は「各セグメントが 1 つ前しか見ない」こと</strong>、<strong>潜在 / VAE ハンドオーバーは品質に大差なし</strong>(論点 D)、<strong>解像度を上げると一貫性そのものが上がる</strong>(低解像度で測ると悲観的に出る)、<strong>両端ピン留めで鎖の途中だけ作り直せる</strong>、<strong>ドリフト測定ツールが既製で存在する</strong>。台帳 §8c に 16 行追加し、<strong>177 行になった</strong>。<strong>あわせて §0 の再開用スニペットを修正</strong> — <strong>入口はこの 412KB の文書ではなく <code>HANDOFF.md</code>(12KB)</strong>。スマホやクラウドから再開するとき、全文を読ませるとそれだけでセッションが終わるため)。更新履歴はこのファイルの git コミットログを参照。<br>
   <strong>第 24 版 2026-09-06</strong>(<strong>ComfyUI を 0.33.1 から 0.34.5 へ更新した</strong>。連鎖に必要な <code>MiniMaxH3AddGuide</code> を追加したのが v0.34.0 そのもので、0.33.1 の次のリリースがそれにあたる。<strong>依存を上げない <code>update.py --stable</code> の経路で実施し、torch / torchvision / torchaudio / comfy-kitchen は無傷</strong>、comfy-aimdo だけ 0.4.13 → 0.4.15。<strong>実機で確認した</strong> <span class="c c0">実測</span> — 必要な 3 ノードはすべて存在し、<strong><code>AddGuide</code> の入力は <code>frame_idx</code> / <code>image</code> / <code>audio</code> を含む</strong>ので、§11k の「フレームインデックスを指定して終端フレーム群 + 音声を渡す」がノードの入力そのもので裏付けられた。起動はエラー・警告ゼロで <code>Using Comfy Kitchen attention</code> も出る。<strong>更新後の初回レンダーで <code>unet unexpected: ['adaln_basis', 'adaln_mean']</code> という新しい警告が出たが、調べた結果これは無視してよい</strong> — ComfyUI はこの 2 つを 0.33.1 でもソースに持っておらず、<strong>原因は ComfyUI ではなく <code>10Eros-Max beta4</code> が持つ余剰テンソル</strong>だった(台帳「環境・速度」に収録)。所要 59.29 秒もベースライン 58.20 秒の +1.9% で正常。<strong>同 seed での回帰確認も実施し、サンプリングは無変更と確認した</strong> — <strong>音声が 0.33.1 とバイト単位で完全一致</strong>したため(映像と音声は同じ DiT forward の産物なので、これで潜在の一致が言える)。<strong>ただし映像はバイト一致しない</strong> — <strong>0.34.5 が常に <code>bt709</code> / <code>sRGB</code> の色タグを付ける</strong>ようになり、<code>color_space</code> を外しても戻らないため、同一内容でも SSIM Y は 0.9807 になる。<strong>「同 seed なら SSIM Y = 1.000000」の判定は、同一 ComfyUI バージョン内でのみ有効</strong>)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① <strong>実験 3 の「Ref2VA + 参照 3 枚で 15 秒」の結果</strong>(残論点 A)、③ <strong>実験 4・5 のドリフト測定</strong>(残論点 B — <code>tools/face_drift.py</code> の流用を先に検討)、④ <strong>scheduler <code>simple</code> vs <code>beta</code> の 1 変数比較</strong>(§11j)、⑤ 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、⑥ FastH3 の Ref2VA 対応が出たら再評価。</p>
+  <strong>第 25 版 2026-09-06</strong>(<strong>残論点 A を実測で決着させた</strong>。Ref2VA + 参照 3 枚 / 0.4MP / 6 step で <strong>15 秒(362f)が 194.0 秒・OOM なし</strong> — <strong>参照を積んでも遅くならない</strong>。<strong>さらに、公式仕様の 4〜15 秒を超える 20.042 秒(481f)も完走した</strong>(274.7 秒・OOM なし)。後半の破綻は数値(YAVG / フレーム間差 / 音声 RMS が最後まで平坦)でも実視聴でも見つからず、<strong>設計が「20 秒 × 3 本・継ぎ目 2」まで行けることになった</strong> — 15 秒より継ぎ目が 1 つ少なく、<strong>論点 B のドリフトに直接効く</strong>。ほかに <strong>尺と時間は超線形だが指数 1.1〜1.2 で崖は無い</strong>(124f 59.3 秒 / 362f 194.0 秒 / 481f 274.7 秒)、<strong>尺を伸ばすと VRAM ピークはむしろ下がる</strong>(14,995 → 14,842 MiB)を収録。§2 のクリップ長、§2b の分割案、§8c(+4 行)、§10 を更新。<strong>ただし崖の位置は未探索</strong> — 25 秒以上は測っていない)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① <strong>尺の崖を探す</strong>(25 秒・30 秒。仕様外の 20 秒が通ったので上限が未確定)、② <strong>実験 4・5 のドリフト測定</strong>(残論点 B — <code>tools/face_drift.py</code> の流用を先に検討)、③ <strong>scheduler <code>simple</code> vs <code>beta</code> の 1 変数比較</strong>(§11j)、④ 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、⑤ FastH3 の Ref2VA 対応が出たら再評価。</p>
 </footer>
 
 </main>
