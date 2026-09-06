@@ -216,7 +216,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <span>ComfyUI + 量子化</span>
     <span>台詞・人の声が主役</span>
     <span>将来 32GB 借用も検討</span>
-    <span>更新 2026-09-06(第 21 版・実測反映)</span>
+    <span>更新 2026-09-06(第 23 版)</span>
   </div>
 </header>
 
@@ -253,6 +253,8 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <li><a href="#s11g">動画 7 — 1 分を作りきった記録</a></li>
     <li><a href="#s11h">動画 8 — 速度と品質の両立</a></li>
     <li><a href="#s11i">動画 9 — 全機能地図</a></li>
+    <li><a href="#s11j">動画 10 — Director V1.2</a></li>
+    <li><a href="#s11k">動画 11 — 継ぎ目の見えない連鎖</a></li>
     <li><a href="#s12">出典と確度</a></li>
   </ol>
 </nav>
@@ -780,6 +782,14 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">第 22 版の追記 — B と C の間に、もう一つありました</div>
+    <p style="margin:0"><strong>B'. 標準ノードでオーバーラップさせる</strong>(§11k)。<br>
+    <strong>B は「最終フレーム 1 枚」を渡す方式</strong>ですが、標準ノード <code>MiniMaxH3AddGuide</code> は <strong>「終端フレーム<em>群</em> + 音声」</strong>を渡せます。H3 の Omni transformer が <strong>attention にフレームインデックスを指定できる</strong>ためで、<strong>次のクリップはオーバーラップして始まります</strong>。<br>
+    <strong>B の 2 つの弱点(モーションの受け渡しが逸れる / 音が切れる)は、これで直接塞がります。</strong>しかも <strong>C と違ってカスタムノードパックが要りません</strong> — <strong>要るのは ComfyUI 0.34.0 以降だけ</strong>(この PC は 0.33.1)。<br>
+    <strong>いま入るならここです。</strong>下の「まず Furuknap 方式(B の発展形)から」という結論は、<strong>B' に読み替えてください</strong>。</p>
   </div>
 
   <div class="box tint">
@@ -1858,6 +1868,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>同じサウンドスケープの記述を<strong>全クリップのプロンプトに入れる</strong>。入れないと継ぎ目で環境音がリセットする</td><td>§6</td></tr>
         <tr><td>継ぎ目で<strong>矛盾する音の指示を書かない</strong></td><td>§6</td></tr>
         <tr><td>FL2VA と Ref2VA の<strong>アダプタを混ぜない</strong>。一方の shift を他方に流用しない</td><td>§5</td></tr>
+        <tr><td style="color:var(--risk)"><strong>リップシンクは音声を渡すだけでは同期しない。</strong>InfiniteTalk 系と違い、<strong>台詞・歌詞が正しいタイムスタンプ位置にプロンプトとして置かれて初めて口が合う</strong>。波形だけでは合わない</td><td>§11j</td></tr>
+        <tr><td><strong>参照画像・背景は analyze を押して初めて識別される。</strong>忘れると背景の記述が空になり、キャラだけ差し替わる。<strong>逆に「既存シーンのキャラだけ差し替えたい」なら Location を空にするのが正解</strong></td><td>§11j</td></tr>
       </tbody>
     </table>
   </div>
@@ -1894,6 +1906,13 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>自前音声を使うなら Turbo LoRA の音質劣化は無関係。</strong>速度制約が外れる</td><td>§8 / §11c</td></tr>
         <tr><td><code>er_sde</code> サンプラーが音声生成にやや良い(LoRA の有無を問わず)<span class="c c3">要検証</span></td><td>§11c</td></tr>
         <tr><td>プロンプト内で画像・音声を参照するときは<strong>三角括弧</strong>を使う</td><td>§11c</td></tr>
+        <tr><td style="color:var(--risk)"><strong>二段サンプリングの 1 段目で出る音は、最終品質を代表しない。</strong>seed 候補は<strong>映像だけで選ぶ</strong>。<span class="c c0">実測</span>の「映像だけ見て音を判断すると必ず間違える」と表裏 — <strong>途中段階の音で音を判断してもいけない</strong></td><td>§11j / §9</td></tr>
+        <tr><td><strong>元動画の台詞に自分の台詞を足すなら <code>partial voice match</code>。</strong>lip sync モードだと<strong>元トラックの音声が全体を支配して追加台詞を足せない</strong>。ただし書き起こしとカット挿入は先に lip sync モードでやる(挿入したカットは切り替えても残る)</td><td>§11j</td></tr>
+        <tr><td>音声参照のモードは <strong>voice reference(声クローン)/ lip sync / partial voice match / weak voice match</strong> の 4 段階。<strong>§11i の retention 4 段階と同じ発想が音声側にもある</strong></td><td>§11j</td></tr>
+        <tr><td><strong>1 クリップ 15 秒 / 3 カットで、3 人が各カットで 1 人ずつ喋る構成が成功した。</strong>「同時に喋らせず、カットで分ける」なら通る<span class="c c3">要検証</span></td><td>§11j / §6</td></tr>
+        <tr><td>声クローンの参照は <strong>25 秒あれば十分</strong>(長いクリップは in/out で切り出す)という実務報告。<strong>ただし公式仕様は「各 2〜15 秒・合計 15 秒以内」で食い違う</strong> — ノード側が内部で切っている可能性がある<span class="c c3">要検証</span></td><td>§11j / §2</td></tr>
+        <tr><td><strong>オーバーラップ方式なら、歌でも継ぎ目が通った</strong>(環境とキャラを各ステージに渡しただけの 3 クリップ)。<strong>15 秒制限を超える楽曲系コンテンツに有望</strong>という評価</td><td>§11k</td></tr>
+        <tr><td><strong>音声はオーバーラップ帯を sample-exact な WAV サイドカーで持つ。</strong>波形を作り直すのではなく持ち回る設計</td><td>§11k</td></tr>
       </tbody>
     </table>
   </div>
@@ -1937,6 +1956,17 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>Multi-Ref パックの <code>Video Masked Motion Context</code> は <strong>context length 39 がたいていベスト</strong><span class="c c3">要検証</span></td><td>§11c</td></tr>
         <tr><td>KJ nodes の <code>Image Batch Extend with Overlap</code> がシーン間のブレンドに効く</td><td>§11c</td></tr>
         <tr><td><strong>自分が生成したものでない既存動画も延長できる</strong></td><td>§11c</td></tr>
+        <tr><td style="color:var(--risk)"><strong>訂正 — 参照 9 枠はキャラだけのものではない。</strong>Location が 1 枠、<strong>チャンク間の継続アンカーがもう 1 枠</strong>を食う。<strong>キャラに使えるのは実質 7 枠</strong>で、超えても<strong>エラーにならず静かに 1 枚落ちる</strong>(あるノードは上限を 9→7 に下げて対処した)</td><td>§11j / §2</td></tr>
+        <tr><td><strong>参照動画は 24fps に揃える。</strong>30 / 60fps の素材を入れると<strong>動きが尺の途中で終わる</strong></td><td>§11j</td></tr>
+        <tr><td><strong>motion transfer は 1 対 1 ではない。</strong>「一致させるというより緩い参照」。ControlNet を足しても大きくは改善しなかった<span class="c c3">要検証</span></td><td>§11j</td></tr>
+        <tr><td><strong>チャンク境界を FL2VA でハードロックする手がある</strong>(hybrid continuation)。1 本目は Ref2VA、<strong>2 本目以降は前チャンクの最終フレームを first frame に固定した FL2VA</strong>。soft carry-over conditioning ではない。<strong>論点 D への第 3 の答え</strong></td><td>§11j / §10</td></tr>
+        <tr><td style="color:var(--risk)"><strong>潜在を保持して後から繋ぐと、継ぎ目にグリッチが出ることがある。</strong>背景が動かないカットで見える。<strong>「潜在のほうが繋がりが強い」とは限らない</strong>。通しで生成すれば出ない</td><td>§11j</td></tr>
+        <tr><td><strong>連鎖の中核は標準ノードで組める。</strong>H3 は attention にフレームインデックスを指定できるので、<strong><code>MiniMaxH3AddGuide</code> が「前クリップの終端フレーム群 + 音声」を渡してオーバーラップさせる</strong>。カスタムノードパックは不要。<strong>ただし ComfyUI 0.34.0 以降が要る</strong>(この PC は 0.33.1)</td><td>§11k</td></tr>
+        <tr><td style="color:var(--risk)"><strong>ラストフレーム 1 枚では足りない理由は 2 つ。</strong>①1 フレームしか手がかりが無いのでモーションの受け渡しが逸れる ②<strong>音声をまったく扱えないので発話が不自然に切れる</strong></td><td>§11k</td></tr>
+        <tr><td><strong><code>AddGuide</code> のハンドオフ長は 5 / 22 / 39 / 56 フレーム(17k+5 格子)。既定 39f = 1.625 秒。推奨はショット長の約 1/5</strong>(8 秒→1.625 秒 / 4 秒→0.917 秒)。<strong>短すぎると継ぎ目が目立つ</strong>。<strong>上の「画像列は 3 秒以上」とは別の仕組み・別の数字</strong></td><td>§11k / §2</td></tr>
+        <tr><td><strong>オーバーラップ帯は実際に再現される。</strong>前レンダーの末尾 1.5 秒と次レンダーの先頭 1.5 秒の差分は<strong>ほぼ黒で、明るさを 4 倍にしてやっと見える</strong>。<span class="c c0">実測</span>の「完全に決定的」と噛み合う</td><td>§11k / §9</td></tr>
+        <tr><td><strong>両端をピン留めして、鎖の途中 1 本だけ作り直せる</strong>(開始は前のハンドオフ、終了は既存の次クリップに固定)。<strong>下流を巻き添えにしない。</strong>ただし<strong>ピン留めされる終端は映像だけで、音声は捨てるレンダーのものが来る</strong></td><td>§11k</td></tr>
+        <tr><td><strong>潜在ハンドオーバーと VAE ハンドオーバーを比べたが、品質に大きな違いは無かった</strong>(残論点 D への直接の回答)</td><td>§11k / §10</td></tr>
       </tbody>
     </table>
   </div>
@@ -1959,6 +1989,12 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>OOM が出るなら Chunk FeedForward</strong>(MLP ピーク VRAM −37%)</td><td>§8</td></tr>
         <tr><td><strong>attention 系ノードは択一。</strong>H3 の attention ノードを 2 つ入れない。KJNodes と重ねるときは順序が決まっている</td><td>§8</td></tr>
         <tr><td>K サンプラーが複数になったら<strong>グローバルなステップ数</strong>を使う(turbo / 非 turbo の切り替えが一箇所で済む)</td><td>§11c</td></tr>
+        <tr><td style="color:var(--risk)"><strong>Sol-Attn に反対の実測がある。</strong>あるノード作者は採用後に<strong>「実メモリ圧下でレンダーを止めうる、とテストで確認された」として取り消した</strong>。上の「4080 SUPER で確認済み」の行と衝突する。<strong>この PC は CK attention で足りているので、試す理由は薄い</strong><span class="c c3">要検証</span></td><td>§11j / §8</td></tr>
+        <tr><td style="color:var(--risk)"><strong>同じ形状で候補を連続生成すると、leftover VRAM の掃除が飛ばされてロックアップした事例がある</strong>(GPU 100% のまま無進行)。あるノードの不具合として修正済みだが、<strong>この型の事故は実在する</strong></td><td>§11j</td></tr>
+        <tr><td><strong>VRAM を形状から見積もる系のローダーは、Dynamic VRAM と役割が重なる。</strong>この PC は comfy-aimdo が既に効いているので、<strong>同じ仕事をする層は片方だけにする</strong></td><td>§11j / §9</td></tr>
+        <tr><td><strong>参照動画を使うレンダーは、参照画像より明確に遅い</strong>(5090 で 15 秒に 16 分)<span class="c c3">要検証</span></td><td>§11j</td></tr>
+        <tr><td style="color:var(--risk)"><strong>連鎖の標準ノード経路には ComfyUI 0.34.0 以降が要る。この PC は 0.33.1。</strong>§5 の Motion Context も同じ要件だった。<strong>連鎖に踏み込むなら本体の更新が先</strong></td><td>§11k / §5</td></tr>
+        <tr><td>比較用 — <strong>RTX 3060 12GB / 0.41MP</strong> の実測: 4step LoRA で 4 秒 = 約 5 分・8 秒 = 約 9 分、20step で 4 秒 = 約 18 分・8 秒 = 約 31 分。<strong>モデル 20GB が 12GB に載らず毎ステップ重みをストリームしている</strong>。<span class="c c0">実測</span>の「0.4MP / 15 秒 = 約 4 分」は<strong>尺あたり 4〜5 倍速い</strong></td><td>§11k / §9</td></tr>
       </tbody>
     </table>
   </div>
@@ -2011,6 +2047,12 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>二段階アップスケール方式は VRAM 効率が良く、16GB でも 15 秒が視野に入る可能性がある</strong>(§8 の「7〜10 秒」は別方式の目安)<span class="c c3">要検証</span></td><td>§11f</td></tr>
         <tr><td>滑らかさが欲しければ <strong>RIFE などの補間</strong>。生成後の後処理なので安い</td><td>§8d</td></tr>
         <tr><td><strong>1 回に 1 つだけ変えて、3 軸すべて記録する</strong>(所要時間 / 継ぎ目 / 破綻)</td><td>§1b / §9</td></tr>
+        <tr><td><strong>当たり探しは「1 段目だけで候補を出し、選んだ 1 本だけ 2 段目に通す」。</strong>seed をずらして 1 段目で止め、潜在を保持したまま選ぶ。<strong>選び直しても最初から作り直さない。</strong>§8 の潜在キャッシュと狙いは同じ</td><td>§11j / §8</td></tr>
+        <tr><td><strong>スケジューラは未決着。</strong><span class="c c0">実測</span>のベースラインは <code>euler</code>+<code>simple</code>、別の実務者は <code>euler</code>+<code>beta</code>。<strong>1 つだけ変えれば決着する安い比較</strong>(このパイプラインは決定的なので、差が出たら本当に scheduler の差)</td><td>§11j / §9</td></tr>
+        <tr><td><strong>ドリフトの原因は「各セグメントが 1 つ前しか見ないこと」。元へ引き戻すものが何も無い。</strong>だから<strong>キャラクターシートを毎回渡すのは、その引き戻す力を外から足す手当て</strong>にあたる。連鎖が長いほど効く</td><td>§11k / §8d</td></tr>
+        <tr><td><strong>4 クリップ連鎖は音声・映像とも継ぎ目が分からなかった。6 クリップで顔に段階的な劣化が出た</strong>(表情と動きを増やした版)。<strong>残論点 B に初めて付いた具体的な数字</strong></td><td>§11k / §10</td></tr>
+        <tr><td><strong>色ドリフトは中間のカラーグレーディングで抑えられるが、顔の一貫性は生成そのものの品質を上げるしかない。</strong>チェーン連結時の <code>stabilize</code>(CPU)も緩やかな色ドリフトを平坦化する — <strong>オンのままにする</strong></td><td>§11k</td></tr>
+        <tr><td style="color:var(--risk)"><strong>解像度を上げるとキャラの一貫性そのものが上がった</strong>(同じ生成を 3060 の低解像度と 5090 の高解像度で比較)。<strong>「何本目でドリフトが限界を超えるか」を低解像度で測ると、実際より悲観的に出る可能性がある</strong> — <strong>論点 B の最終判断は本番解像度で</strong><span class="c c3">要検証(GPU も違う)</span></td><td>§11k / §8d</td></tr>
       </tbody>
     </table>
   </div>
@@ -2028,6 +2070,10 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>低解像度なら寄りで撮る。</strong>引きの絵は顔が不明瞭で使えない</td><td>§8d / §11g</td></tr>
         <tr><td>ワークフローを <strong>JSON API 形式でエクスポート</strong>すれば、LLM に一括生成を任せられる。<strong>ただし「参照画像を渡したのにプロンプトで名指ししていない」事故が起きるのでガードレールが要る</strong></td><td>§11g</td></tr>
         <tr><td>レンタルは<strong>考えている間もダウンロード中もメーターが回る</strong>。借りる前に全部固める</td><td>§8b</td></tr>
+        <tr><td><strong>長尺は一度に回さない。</strong>チャンク単位で保存して日をまたいで再開する運用が実在する(3 分の曲 = 13 チャンク・約 3 時間)。<strong>1 分 5 本なら不要だが、考え方は §8b の借用運用と同じ</strong></td><td>§11j / §8b</td></tr>
+        <tr><td><strong>台詞を先に日本語 TTS で作るなら、書き起こし(Whisper)の工程が丸ごと要らない。</strong>台詞テキストも各行の秒数も最初から手元にある</td><td>§11j / §6b</td></tr>
+        <tr><td><strong>屋外ロケの一貫性には、上空からの地図スクリーンショットを Location 参照として渡す。</strong>§11g の「3D 建築レイアウトを 1 枚」の屋外版</td><td>§11k / §11g</td></tr>
+        <tr><td><strong>ドリフト測定ツールが既製で存在する</strong> — <code>tools/face_drift.py</code> / <code>latent_drift.py</code> / <code>bench_chain.py</code>。<strong>実験 4・5(論点 B)を自分で書く前にここを見る</strong></td><td>§11k / §9</td></tr>
       </tbody>
     </table>
   </div>
@@ -2316,6 +2362,16 @@ comfy-aimdo 0.4.13 / comfy-kitchen 0.2.31
     <li><strong>C. 音は (a) を狙うか (b) で妥協するか。</strong> <strong>実測が 1 つ判断材料を足しました</strong> — <strong>セリフは終端の 0.2 秒前まで来ます</strong>。<strong>つまり編集側のクロスフェード(§7 レシピ 4)で語尾を削る危険が常にある</strong>ということで、<strong>音声差し替え方式(§6b 層 0)の相対的な有利さが上がりました。</strong>LongMedia のリップシンクモードを使う (b) は、<strong>7〜10 秒/クリップの制約に加えてこの問題も抱えます。</strong></li>
     <li><strong>D. 動画 1 方式(画像列)と動画 2 方式(潜在)のどちらを採るか。</strong> 前者は公式ノードだけで済み導入が軽い。後者は繋がりが強いがカスタムノードが要る。<strong>まず前者、足りなければ後者</strong>という順序は変えません。<strong>B の結果で決まります。</strong></li>
   </ol>
+
+  <div class="box tint">
+    <div class="box-title">第 22 版 — B と D に、初めて外からの材料が付きました(§11k)</div>
+    <p><strong>B について。</strong> 同じ「人がしゃべり続ける」構成で、<strong>4 クリップ連鎖は音声・映像とも継ぎ目が分からず、6 クリップで顔に段階的な劣化が出た</strong>という報告があります。<strong>原因の説明が的確です</strong> — 「<strong>各セグメントは 1 つ前しか見ない。だから元へ引き戻すものが何も無い</strong>」。<br>
+    → <strong>§8d の「キャラクターシートを毎回渡す」は、この引き戻す力を外から足す手当てだった</strong>ことになります。<strong>§2b の「連鎖は 2 本に抑える」ブロック設計は、かなり安全側だった</strong>とも読めます。<br>
+    <strong>ただし注意が 1 つ。</strong>同じ生成を低解像度と高解像度で比べると、<strong>高解像度のほうがキャラの一貫性も良かった</strong>と報告されています。<strong>ドリフトの限界を低解像度で測ると、実際より悲観的な数字が出る可能性があります</strong> <span class="c c3">要検証</span>。</p>
+    <p style="margin-bottom:0"><strong>D について。</strong> <strong>潜在ハンドオーバーと VAE ハンドオーバーの両方を試して「品質に大きな違いは見られなかった」</strong>という報告 <span class="c c1">一次</span>。§11j の「潜在保持で繋ぐと継ぎ目にグリッチが出うる」と<strong>同じ向き</strong>です。<br>
+    <strong>そして選択肢そのものが増えました</strong> — 標準ノード <code>MiniMaxH3AddGuide</code> で<strong>「終端フレーム群 + 音声」を渡すオーバーラップ連鎖</strong>ができます(§4 の <strong>B'</strong>)。<strong>カスタムノードは要らず、要件は ComfyUI 0.34.0 以降だけ</strong>(この PC は 0.33.1)。<br>
+    <strong>→ D は「画像列か潜在か」ではなく「まず B' を試す」に組み替えるべきです。</strong>本体の更新が実験 4 の前提条件になります。</p>
+  </div>
 
   <div class="box">
     <div class="box-title">保留 — 条件が来たら再浮上する</div>
@@ -3145,6 +3201,379 @@ comfy-aimdo 0.4.13 / comfy-kitchen 0.2.31
 
 
 
+<section id="s11j">
+  <span class="sec-label">動画 10</span>
+  <h2>Director V1.2 — バグ修正版</h2>
+
+  <div class="box">
+    <div class="box-title">出典</div>
+    <p style="margin:0"><strong>MiniMax H3 Director - The Bugs Are FIXED - V1.2 Update</strong> — チャンネル: MuseCollective /
+    <code>https://youtu.be/41R-wFwEVIM</code> 字幕全文から要約 <span class="c c1">一次</span>。<br>
+    実体は <a href="https://github.com/muse-collective-26/MiniMaxH3-Director-V1.2"><code>muse-collective-26/MiniMaxH3-Director-V1.2</code></a>。README も読みました <span class="c c1">一次</span>。<br>
+    <strong>§11i の Director(imbutus 版)とは別実装です。</strong>「Director」は総称で、公式製品ではありません(§11i)。</p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">読むときの前提 — 2 つに切り分けてください</div>
+    <p>これは<strong>特定のサードパーティノードのバグ修正記録</strong>です。そのままでは本件に関係しない部分が多い。ただし<strong>修正の過程で H3 モデル自体の挙動が何点か露出しており、そちらは本ノートに効きます。</strong></p>
+    <p style="margin-bottom:0"><strong>① H3 の挙動</strong>(ノードを入れなくても効く)— リップシンクの仕組み、参照 9 枠の実際の配分、参照動画の fps、1 段目の音。<br>
+    <strong>② このノード固有の機能</strong>(入れないと使えない)— seed hunt、hybrid、long form resume、prompt override。<strong>設計の参考にはなりますが、導入するかは別の判断です。</strong></p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">動画の説明は、もう一部が古くなっています</div>
+    <p style="margin:0">リポジトリ名は <code>V1.2</code> ですが、<strong>README は既に「V1.4」を名乗り、changelog は <code>v3.0.0</code> に言及しています</strong> <span class="c c1">一次</span>。番号体系が錯綜しており、<strong>動画で説明されている内容が README に上書きされている箇所があります</strong>(下の参照枠がまさにそれ)。<br>
+    <strong>この種のノードは動きが速いので、動画ではなく README を正とみなしてください。</strong></p>
+  </div>
+
+  <h3 style="color:var(--accent-ink)">① H3 の挙動として効くもの</h3>
+
+  <h4>リップシンクは「音声を渡せば自動で合う」ものではありません</h4>
+  <div class="box audio">
+    <p style="margin:0"><strong>これが本件にいちばん効きます。</strong> 著者は InfiniteTalk 系と比較して、<strong>「あちらは音声トラックを入れれば生成が同期する。H3 はそうならない。試した」</strong>と明言しています <span class="c c1">一次</span>。<br>
+    <strong>H3 で口を合わせるには、台詞や歌詞が「正しいタイムスタンプ位置にプロンプトとして置かれている」必要があります。</strong>波形だけ渡しても同期しません。</p>
+  </div>
+  <p>実演での手順は 3 段です。</p>
+  <div class="step">
+    <div class="step-n">1</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">Whisper で書き起こす</h4>
+      <p>モデルは tiny / base / small / medium。<strong>tiny が最速で最も不正確、medium が最も正確で遅い。</strong>ここは選ぶだけで、速くする手はないと著者は述べています。</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-n">2</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">タイムスタンプ付きで各カットに台詞を割り付ける</h4>
+      <p>1 チャンク 15 秒に対し、<strong>息継ぎ程度の「ごく短いカット」まで含めて</strong>割り付けます。台詞の無いカットも、そこに何をさせるかを書く必要があります(§6 の「無音は作らせる」と同じ理屈)。</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-n">3</div>
+    <div class="step-b">
+      <h4 style="margin-top:2px">その割り付けを LLM に渡してプロンプトを組ませる</h4>
+      <p>著者はタイムライン文字列をそのまま LLM に渡し、返ってきたプロンプトを貼り戻しています。<strong>§11g の「LLM に書かせるならガードレールが要る」</strong>(参照画像を渡したのにプロンプトで名指ししない事故)がそのまま当てはまります。</p>
+    </div>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">歌の場合 — 伴奏を先に抜く</div>
+    <p style="margin:0"><strong>Whisper に渡すのは、伴奏を抜いたボーカルのみのトラック</strong>にします。<strong>自動ではありません</strong> — 別のワークフローで先に分離し、2 本(元トラックとボーカルのみ)を用意します。混ざったままだと Whisper が歌詞を取り違えます。</p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">日本語 TTS 方針(§6b 層 0)と、これは完全に噛み合います</div>
+    <p style="margin:0"><strong>台詞を日本語 TTS で先に作るなら、書き起こしの工程そのものが要りません。</strong>台詞テキストも各行の秒数も、最初から手元にあるからです。<br>
+    <strong>Whisper が要るのは「既にある音声」から始めるときだけ</strong> — つまり本件では不要です。<strong>§6b で層 0 を本命に据えた判断が、ここでもう一段強くなりました。</strong></p>
+  </div>
+
+  <h4 style="color:var(--risk)">参照 9 枠は、キャラだけのものではありません</h4>
+  <div class="box warn">
+    <p style="margin:0">§2 に「Ref2VA は画像を最大 9 枚」と書きましたが、<strong>その 9 枠は共有されています</strong>。<br>
+    ・<strong>Location(場所)が 1 枠を食う</strong><br>
+    ・<strong>チャンク間の継続アンカー(前チャンクからの引き継ぎ画像)がもう 1 枠を食う</strong><br>
+    ・<strong>超えると、エラーにならず静かに 1 枚落ちます</strong><br>
+    動画(V1.2)では「9 枠は誤解を招くので 8 に減らした」と説明されていますが、<strong>README(V1.4)では 7 まで減っています</strong> — 「キャラ + アンカー + Location が、どのチャンクでも同時に収まるように」<span class="c c1">一次</span>。<strong>動画の数字はもう古い、ということです。</strong></p>
+  </div>
+  <p>→ <strong>§11f の「参照は 1 枚のシートに集約する」が、ここでも効きます。</strong> 枠が足りなくなる前に、そもそも 1 枚にまとめてしまう。品質の理由だけでなく、<strong>枠の理由でもそうすべき</strong>だった、ということになります。</p>
+
+  <h4>参照動画は 24fps に揃える</h4>
+  <div class="box">
+    <p style="margin:0">30fps / 60fps の素材を参照動画として入れると、<strong>動きが 15 秒尺の途中で終わってしまいます</strong>。H3 は 24fps 固定なのでフレーム数の対応が崩れるため。著者はこれで詰まっています。<br>
+    (このノードは自動でリサンプルしますが、<strong>素で扱うときの落とし穴</strong>として記録しておく価値があります)</p>
+  </div>
+
+  <h4>motion transfer は 1 対 1 ではありません</h4>
+  <p>参照動画のダンスを別キャラに移す実演で、<strong>「一致させるというより、緩い参照として使っている感じ」</strong>という評価でした。同じ動きも出るが違う動きも混ざる。<strong>ControlNet を足しても大きくは改善しなかった</strong>とのことです <span class="c c3">要検証</span>。</p>
+
+  <h4 style="color:var(--risk)">1 段目の音は、判断材料になりません</h4>
+  <div class="box audio">
+    <p style="margin:0">seed 候補を 1 段目だけで出したとき、著者は<strong>「1 段目サンプリングの音は seed hunt ではうまく出ない。良くない。だから映像だけで選ぶ」</strong>と述べています <span class="c c1">一次</span>。<br>
+    <strong>二段サンプリングの 1 段目で出る音は、最終品質を代表しません。</strong><br>
+    これは §9 の実測と表裏です — あちらは<strong>「0.4MP だと映像は一見きれいに出るので、映像だけ見て判断すると必ず間違える」</strong>。<strong>映像で音を判断してもいけないし、途中段階の音で音を判断してもいけない</strong>、ということになります。</p>
+  </div>
+
+  <h4>analyze を押さないと、参照が効きません</h4>
+  <p>参照画像と背景は<strong>それぞれ analyze を実行して初めてオブジェクトとして識別されます</strong>。押し忘れると背景の記述が空になり、<strong>キャラだけが差し替わって背景は元のまま</strong>になります。<br>
+  → 逆に言えば、<strong>既存シーンのキャラだけを差し替えたいなら、Location を空にするのが正解</strong>です。著者は事故として踏んでから、これを手法として使っています。</p>
+
+  <h3 style="color:var(--accent-ink)">② 設計の参考になるノード機能</h3>
+
+  <h4>seed hunt — 1 段目だけで候補を出し、選んだ 1 本だけ仕上げる</h4>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:28%">項目</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td>候補数</td><td class="num">1 〜 4</td></tr>
+        <tr><td><strong>seed の取り方</strong></td><td class="num"><code>seed</code> / <code>seed+1,000,003</code> / <code>seed+2,000,006</code> / <code>seed+3,000,009</code>。<strong>決定的</strong> <span class="c c1">一次</span></td></tr>
+        <tr><td><strong>latent-only scouting</strong></td><td>各パスを <strong>1 段目のアップサンプル後で止める</strong>。高価な 2 段目は、選んだ 1 本にだけ通す</td></tr>
+        <tr><td><strong>選び直し</strong></td><td><strong>最初から作り直しません。</strong>保持した潜在を refine するだけ(旧版は作り直していた。それがバグ)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="box tint">
+    <p style="margin:0"><strong>§8 の「conditioning と潜在をディスクにキャッシュすれば追加シードは 9.9 倍」を、UI として実装したもの</strong>です。狙いは同じ。<br>
+    <strong>この PC のパイプラインは完全に決定的(同 seed 同設定で SSIM Y = 1.000000)なので、同じ発想がそのまま成り立ちます。</strong>ノードを入れなくても、seed を決め打ちで振って 1 段目だけ回せば同じことができます。</p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">ただし継ぎ目にグリッチが出ました — ここが本ノートに効きます</div>
+    <p style="margin:0">seed hunt 経由だと、<strong>チャンクの継ぎ目に微小なグリッチ</strong>が出ていました。背景が動かないカットだとはっきり見えます。<br>
+    ・<strong>当初の回避策</strong>: 同じ seed で、seed hunt を使わず通しで再生成する(通しなら継ぎ目は完全)<br>
+    ・<strong>その後、修正されました。</strong>ただし<strong>前の潜在の一部を作り直すため、30 秒の動画で 11 分 → 13 分</strong>(+2 分)<br>
+    → <strong>潜在を保持して後から繋ぐやり方には、継ぎ目という固有の弱点がある</strong>ということです。§10 の残論点 D(画像列で渡すか、潜在で渡すか)への材料になります。<strong>「潜在のほうが繋がりが強い」とは限りません。</strong></p>
+  </div>
+
+  <h4 style="color:var(--accent-ink)">hybrid continuation — 境界を FL2VA でハードロックする</h4>
+  <div class="box tint">
+    <p style="margin:0">README <span class="c c1">一次</span>: <strong>「Reference mode 専用。チャンク境界を、soft carry-over conditioning ではなく First/Last Frame チェックポイントでハードロックする」</strong>。<br>
+    1 本目は Ref2VA で作り、<strong>2 本目以降は前チャンクの最終フレームを first frame に固定した FL2VA</strong> に切り替えます。<br>
+    → <strong>論点 D への第 3 の答え</strong>です。画像列でも潜在でもなく、<strong>「境界だけ FL2VA で釘を打つ」</strong>。<strong>§11f の「FL2VA のほうが素の品質は高い」とも噛み合います</strong>し、§3 の「FL2VA は末尾が凍る」を承知の上なら筋が通ります。</p>
+  </div>
+
+  <h4>音声トラックの上書きが、機能として入っています</h4>
+  <p><strong>Embed Audio Over Output</strong> — 生成後に<strong>元動画の実音声を出力に被せる</strong>(レンダー長に合わせてトリム)。<strong>H3 が生成した音とは別物</strong>だと README が明記しています <span class="c c1">一次</span>。<br>
+  → <strong>§6 / §11c で本ノートの本命とした「音声トラック差し替え」そのもの</strong>です。ffmpeg でやっても結果は同じなので、<strong>これを理由にノードを入れる必要はありません。</strong>方針が他所でも定石になっている、という裏付けとして読んでください。</p>
+
+  <h4>元動画に台詞を足すなら、lip sync ではなく partial voice match</h4>
+  <div class="box">
+    <p style="margin:0">既存シーン(1970 年代の SF ドラマ)に新しいキャラと台詞を足す実演で、<strong>lip sync モードだと元トラックの音声が全体を支配してしまい、追加の台詞を足せませんでした</strong>。<strong>partial voice match</strong> に切り替えて解決しています。<br>
+    ただし手順が特殊です — <strong>先に lip sync モードで書き起こしてタイムドカットに挿入し、その後 partial voice match に切り替える</strong>(挿入したカットは切り替えても残る)。<br>
+    音声参照のモードは <strong>voice reference(声クローン)/ lip sync / partial voice match / weak voice match</strong> の 4 つ。<strong>§11i の retention 4 段階と同じ発想が、音声側にもある</strong>ということです。</p>
+  </div>
+
+  <h4>1 クリップに 3 人、カットごとに 1 人ずつ喋る構成が成功しました</h4>
+  <p>15 秒 / 3 カットで、ref1・ref2・ref3 が各カットで発話。<strong>全員が正しいカットで正しい台詞を喋りました。</strong><br>
+  → §6 の Issue #17(複数被写体で声が混ざる)への緩和材料が、もう 1 件増えました。§11d は 1 クリップ 2 人の成功例です。<strong>「同時に喋らせず、カットで分ける」なら通る</strong>という読み方ができます <span class="c c3">要検証</span>。</p>
+
+  <h4>long form resume(beta)</h4>
+  <p>長尺を<strong>チャンク単位で保存し、日をまたいで再開できる</strong>機能。3 分の曲は 13 チャンク・約 3 時間になるため作られたもので、再開時も継ぎ目は保たれるとされています。<br>
+  本件は 1 分 = 5 本なので直接は要りませんが、<strong>「長尺は一度に回さない」</strong>という考え方自体は §8b の借用運用と同じです。</p>
+
+  <h3>実測値 — ただし RTX 5090 / システム RAM 48GB です</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:52%">条件</th><th>所要</th></tr></thead>
+      <tbody>
+        <tr><td>60 秒 リップシンク(10 step / 二段 6+4 / 1MP)</td><td class="num"><strong>35 分</strong></td></tr>
+        <tr><td>15 秒 参照動画(motion transfer)</td><td class="num"><strong>16 分</strong></td></tr>
+        <tr><td>30 秒 seed hunt(4 候補・グリッチ修正後)</td><td class="num">13 分(修正前 11 分)</td></tr>
+        <tr><td>3 分の曲</td><td class="num">13 チャンク・<strong>約 3 時間</strong></td></tr>
+        <tr><td>平均 VRAM(ノードの run counter 表示)</td><td class="num">18GB / 31GB</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap"><strong>5090 の数字なので 4080 にはそのまま使えません。</strong> ただし比率は読めます — 本ノートの実測(0.4MP / 15 秒 = 226.5〜247.5 秒)と比べると、<strong>参照動画を使うレンダーは明確に遅い</strong>(5090 で 15 秒に 16 分)。<strong>参照動画は参照画像より高い</strong>、と見ておくべきです <span class="c c3">要検証</span>。</p>
+
+  <h3 style="color:var(--risk)">設定 — 現行のベースラインと 1 箇所食い違います</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:26%">項目</th><th style="width:34%">動画 10</th><th>本ノートの現行(§9 <span class="c c0">実測</span>)</th></tr></thead>
+      <tbody>
+        <tr><td>サンプラー</td><td class="num"><code>euler</code></td><td class="num"><code>euler</code>(一致)</td></tr>
+        <tr><td><strong>スケジューラ</strong></td><td class="num"><strong><code>beta</code></strong></td><td class="num"><strong><code>simple</code></strong></td></tr>
+        <tr><td>ステップ数</td><td class="num">8step LoRA で <strong>10</strong>(二段 6+4)</td><td class="num"><strong>6</strong>(beta4 は turbo 焼き込み済み)</td></tr>
+        <tr><td>二段目</td><td>Minimax H3 latent upscaler <strong>3D</strong> / 1MP</td><td>—</td></tr>
+        <tr><td>temporal chunking</td><td><strong>オフのほうが良かった</strong>(速くもならなかった)</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="box warn">
+    <p style="margin:0"><strong>スケジューラが食い違います。</strong>本ノートの実測は <code>simple</code>、この動画は <code>beta</code>。サンプラーはどちらも <code>euler</code> です。<strong>1 回に 1 つだけ変えて比べれば決着します</strong> — このパイプラインは決定的なので、差が出たらそれは本当にスケジューラの差です。<strong>安く終わる比較</strong>なので、実験 3 のついでに入れる価値があります。<br>
+    <strong>ステップ数の差は、前提の差です。</strong>動画は 8step LoRA を別に当てており、本件の <code>10Eros-Max beta4</code> は turbo 焼き込み済み。<strong>重ねると二重蒸留になります</strong>(§9)。<strong>この行は真似しないでください。</strong><br>
+    なお著者は <strong>1MP を超える解像度をテストしていません</strong>。</p>
+  </div>
+
+  <h3>導入するなら — 判断材料</h3>
+  <ul>
+    <li><strong>必須依存</strong>: <a href="https://github.com/seitanism/ComfyUI-H3-Motion-Context-MultiRef"><code>ComfyUI-H3-Motion-Context-MultiRef</code></a>(§11c で既出のパック)。VAE re-encode carry と、リップシンクの masked context に要ります</li>
+    <li><strong><code>pip install av</code></strong> が要ります(参照動画・音声のデコードとトリム)</li>
+    <li>ComfyUI 本体が <code>comfy_extras.nodes_minimax_h3</code> を持っていること。無いとノードごとロードに失敗します。<strong>そのとき更新するのはノードではなく ComfyUI 本体です</strong></li>
+    <li>併設リポジトリ 2 つは<strong>どちらも任意</strong> — <a href="https://github.com/muse-collective-26/Muse-MiniMax-H3-Unified-Loader">Unified Loader</a>(形状に応じて VRAM を見積もり、Q4 / Q5 / フル解像度を自動選択)と <a href="https://github.com/muse-collective-26/Muse-Run-Stats">Run Stats</a>(所要時間・GPU・VRAM・RAM の表示)</li>
+  </ul>
+
+  <div class="box warn">
+    <div class="box-title">この PC で気をつけるべき 3 点</div>
+    <ol style="margin-bottom:0">
+      <li><strong>Unified Loader は Dynamic VRAM と役割が重なります。</strong>この PC は comfy-aimdo の Dynamic VRAM が既に効いており、<strong>VRAM ピークが OOM 接近の指標にならない</strong>ところまで実測で分かっています(§9)。<strong>同じ仕事をする層を 2 つ重ねる形になるので、入れるなら片方だけ。</strong></li>
+      <li style="color:var(--risk)"><strong>同じ作者が Sol-Attn を採用したあと取り消しています</strong> — 「実メモリ圧下でレンダーを止めうる、とテストで確認された」<span class="c c1">一次</span>。<strong>台帳の「Sol-Attn は RTX 40 系対応・4080 SUPER で確認済み」という行と衝突します。</strong>単一の主張なので断定はしませんが、<strong>この PC は既に CK attention で足りている</strong>ので、わざわざ試す理由は薄いはずです</li>
+      <li><strong>同じ形状で候補を連続生成すると、leftover VRAM の掃除が飛ばされてロックアップする</strong>不具合が v3.0.0 で修正されています(Low VRAM + GGUF で再現。<strong>GPU 使用率 100% のまま無進行</strong>)<span class="c c1">一次</span>。この PC は GGUF を却下済みですが、<strong>「同じ形状で回し続けるとメモリが積み上がる」型の事故が実在する</strong>という記録として</li>
+    </ol>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">あなたにとっての意味 — 導入は急がなくてよい</div>
+    <p>このノードが解いている問題(タイムライン UI、チャンクの自動分割、参照番号の管理)は、<strong>1 分 5 本なら手でも回せる規模</strong>です。しかも 5090 前提で書かれ、依存も多く、バージョン番号も錯綜しています。</p>
+    <p style="margin-bottom:0"><strong>ただし、次の 3 つはノードを入れなくても今日から効きます。</strong><br>
+    <strong>① リップシンクには、台詞をタイムスタンプ位置に置く必要がある</strong> — 日本語 TTS 方針(§6b 層 0)と噛み合い、しかも TTS なら書き起こしが要らない<br>
+    <strong>② 参照 9 枠は Location と継続アンカーに食われる</strong> — キャラに使えるのは実質 7 枠。超えても黙って落ちる<br>
+    <strong>③ 候補選びは映像だけで行い、音は 2 段目まで判断しない</strong></p>
+  </div>
+</section>
+
+
+
+
+<section id="s11k">
+  <span class="sec-label">動画 11</span>
+  <h2>継ぎ目の見えない連鎖</h2>
+
+  <div class="box">
+    <div class="box-title">出典</div>
+    <p style="margin:0"><strong>MiniMax H3 in ComfyUI: longer videos without visible joins</strong> — チャンネル: Loop Forge /
+    <code>https://youtu.be/kj6tNy6NXH4</code> 字幕全文から要約 <span class="c c1">一次</span>。<br>
+    実体は <a href="https://github.com/loopforge0/ComfyUI-H3-Continuous"><code>loopforge0/ComfyUI-H3-Continuous</code></a>。README も読みました <span class="c c1">一次</span>。</p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">この節は、残る論点 B と D に直接答えます</div>
+    <p style="margin:0"><strong>これまでで最も本件に近い情報源です。</strong>連鎖そのものを主題にし、<strong>ドリフトを測って見せ、繋ぎ目を差分で検証している</strong>。<br>
+    しかも<strong>環境が RTX 3060 12GB</strong> — <strong>この PC(16GB)より下</strong>で回っています。</p>
+  </div>
+
+  <h3 style="color:var(--accent-ink)">いちばん大きい発見 — 標準ノードにオーバーラップ経路がある</h3>
+
+  <div class="box warn">
+    <div class="box-title">ラストフレーム 1 枚では足りない、その理由 2 つ</div>
+    <p style="margin:0">「生成した動画の最終フレームを、次の動画の開始フレームとして渡す」— §4 の選択肢 B です。著者はこれに<strong>2 つの決定的な欠点</strong>を挙げています <span class="c c1">一次</span>。<br>
+    <strong>① 次の生成は 1 フレームしか手がかりが無いので、モーションの受け渡しが滑らかにならず、しばしば逸れる</strong><br>
+    <strong>② 音声をまったく扱えないので、発話が不自然に切れる</strong></p>
+  </div>
+
+  <div class="box tint">
+    <p style="margin:0"><strong>そして解決策は、カスタムノードではありませんでした。</strong><br>
+    H3 の Omni transformer アーキテクチャは <strong>attention 機構にフレームインデックスを指定できます</strong>。ComfyUI の標準ノード <strong><code>MiniMaxH3AddGuide</code></strong> がこの能力を使い、<strong>前の動画の「終端フレーム群」と「音声」を渡して、次の動画の開始フレーム群を導きます</strong>。<br>
+    つまり<strong>次のクリップはオーバーラップして始まる</strong>。1 枚ではなく<strong>帯</strong>で受け渡す、ということです。<br>
+    著者のパックは <code>MiniMaxH3ReferenceToVideo</code> / <code>MiniMaxH3AddGuide</code> / <code>SamplerCustomAdvanced</code> を<strong>再実装せずそのまま使っています</strong> <span class="c c1">一次</span>。<strong>連鎖の中核は標準ノードで組める</strong>ということです。</p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title" style="color:var(--risk)">ただし ComfyUI 0.34.0 以降が要ります — この PC は 0.33.1</div>
+    <p style="margin:0">README が <strong>「ComfyUI 0.34.0 or newer」を必須</strong>としています。古いビルドには該当ノードが無いためです <span class="c c1">一次</span>。<br>
+    <strong>§2 の環境表のとおり、この PC は ComfyUI 0.33.1 です。まず本体を上げる必要があります。</strong>§5 の H3 Motion Context が「0.34.0 以降」を要求していたのと同じ壁で、<strong>連鎖に踏み込むなら避けて通れません</strong>。<strong>これが実験 4 の前にやることです。</strong></p>
+  </div>
+
+  <h3>オーバーラップは、実際に再現されています</h3>
+  <p>著者は主張を検証しています。<strong>前のレンダーの最後 1.5 秒</strong>と、<strong>次のレンダーの最初 1.5 秒</strong>を並べる — 別々のジョブが同じ瞬間を演じている状態です。そして<strong>片方から片方を引き算します</strong>。</p>
+  <div class="box">
+    <p style="margin:0">「<strong>ノードはどのフレームが一致すべきかを既に教えている。だからこれは、モデルが実際にそれを再現したかどうかだけを問うている</strong>」<br>
+    一致すれば黒、違えば光る。結果は — <strong>差分が小さすぎて、見えるようにするために両パネルの明るさを 4 倍に上げる必要があった</strong> <span class="c c1">一次</span>。</p>
+  </div>
+  <p>→ <strong>§9 の <span class="c c0">実測</span>「このパイプラインは完全に決定的(同 seed・同設定で SSIM Y = 1.000000)」と噛み合います。</strong>オーバーラップ帯は「似た絵を作り直す」のではなく、<strong>ほぼそのまま再現される</strong>。<strong>継ぎ目問題の直接の解</strong>になっています。</p>
+
+  <h3 style="color:var(--risk)">ハンドオフ長 — 「3 秒以上」とは別の数字です</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:34%">項目</th><th>値</th></tr></thead>
+      <tbody>
+        <tr><td>選べる長さ</td><td class="num"><strong>5 / 22 / 39 / 56 フレーム</strong>(<strong>17k+5 格子</strong>)</td></tr>
+        <tr><td>既定</td><td class="num"><strong>約 1.625 秒 = 39 フレーム</strong></td></tr>
+        <tr><td><strong>推奨</strong></td><td><strong><code>handoff_seconds</code> はショット長の約 1/5</strong> — 8 秒ショットなら 1.625 秒、4 秒ショットなら 0.917 秒</td></tr>
+        <tr><td>短すぎると</td><td><strong>継ぎ目が目立つ</strong></td></tr>
+        <tr><td>音声</td><td><strong>sample-exact な WAV サイドカー</strong>で管理される</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="box warn">
+    <p style="margin:0"><strong>§11 の「のりしろは 3 秒(72 フレーム)以上」と混同しないでください。</strong><br>
+    あちらは <strong>Ref2VA に「デコード済みの画像列」を渡す</strong>ときの長さで、H3 のドキュメントが「参照には最低 3 秒の映像」を求めているからでした。<br>
+    こちらは <strong><code>AddGuide</code> の潜在コンテキスト</strong>で、<strong>17k+5 格子の 5 / 22 / 39 / 56</strong>。<strong>仕組みが違い、数字も違います。</strong><br>
+    <strong>§2 で「この 2 つは別物」と注記したとおりでした</strong> — 今回それが実データで裏付けられた形です。</p>
+  </div>
+
+  <h3 style="color:var(--accent-ink)">ドリフト — 論点 B に、初めて数字がつきました</h3>
+  <div class="box warn">
+    <div class="box-title">4 本は持った。6 本で顔が崩れ始めた</div>
+    <p>著者は「人がしゃべり続ける」動画を 2 本作っています。</p>
+    <ul style="margin-bottom:8px">
+      <li><strong>4 クリップ版</strong> — <strong>音声・映像とも継ぎ目が分からない。</strong>成功</li>
+      <li><strong>6 クリップ版</strong>(表情と動きを増やした) — <strong>キャラの顔に、段階的な劣化が出た</strong></li>
+    </ul>
+    <p style="margin-bottom:0">最初のフレームと最後のフレーム、そして間の各セグメントを並べると、<strong>1 回ごとに少しずつ離れていく</strong>のが見えます <span class="c c1">一次</span>。</p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">原因の説明が的確です</div>
+    <p style="margin:0">「<strong>各セグメントは、その 1 つ前しか見ない。だから元へ引き戻すものが何も無い</strong>」 <span class="c c1">一次</span>。<br>
+    → <strong>§8d の「キャラクターシートを毎回渡す(生成物だけを次の入力にし続けない)」は、まさにこの<em>引き戻す力</em>を外から足す手当てだった</strong>、ということになります。理屈が言語化されました。<br>
+    <strong>連鎖が長くなるほどキャラシートが効く</strong>、と読むべきです。</p>
+  </div>
+
+  <div class="box">
+    <div class="box-title">ドリフトへの対処、試した結果</div>
+    <p style="margin:0">・<strong>潜在ハンドオーバーと VAE ハンドオーバーの両方を試したが、品質に大きな違いは見られなかった</strong> <span class="c c1">一次</span> ← <strong>残論点 D への直接の回答</strong><br>
+    ・<strong>次段に渡す前にフレームを手でカラーグレーディングできるワークフローがあり、色の一貫性はそれで保てる</strong><br>
+    ・<strong>しかし顔の一貫性は、生成そのものの品質を上げるしかない</strong><br>
+    パック側にも <strong><code>H3 Chain to Video</code> の <code>stabilize</code></strong> があり、<strong>CPU 上でチェーンの緩やかな色ドリフトを平坦化します</strong>。作者は<strong>「オンのままにしておけ」</strong>と明記 <span class="c c1">一次</span>。</p>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title" style="color:var(--risk)">解像度が、一貫性そのものに効いています — 方針への注意</div>
+    <p>著者は同じ「Market Street を歩く」生成を、<strong>手元の 3060</strong> と <strong>RunPod で借りた 5090</strong> の両方でやっています。手元では<strong>渡せる解像度に制限があった</strong>ため。</p>
+    <p style="margin-bottom:0">結果 — 「<strong>全体的な品質だけでなく、キャラクターの一貫性も 2 本目のほうが良かった。参照フレームの上に積み上げていく以上、ある程度のドリフトが起きるからだ</strong>」 <span class="c c1">一次</span>。<br>
+    <strong>これは §8d / §2b の「低解像度で構成を固めて、解像度は最後」という方針に注意を促します。</strong>構成やプロンプトを低解像度で固める運用は変えなくてよい。<strong>ただし「何本目でドリフトが限界を超えるか」を低解像度で測ると、実際より悲観的な数字が出る可能性があります。</strong><br>
+    <strong>論点 B の最終判断だけは、本番解像度で確かめる必要があるかもしれません。</strong>(GPU も違うので、解像度だけの効果とは言い切れません <span class="c c3">要検証</span>)</p>
+  </div>
+
+  <h3 style="color:var(--accent-ink)">repair — 鎖の途中だけを作り直せる</h3>
+  <div class="box tint">
+    <p style="margin:0"><strong>開始を前セグメントのハンドオフに固定し、終了を「既に存在する次セグメントの、まさにそのクリップ」に固定する。</strong>両端が留まっているので、<strong>再生成した 1 本は前後どちらにも継ぎ目なく収まり、下流を作り直さずに済みます</strong> <span class="c c1">一次</span>。<br>
+    → <strong>§11 の「ショット単位で Bypass して再生成」より一段強い</strong>手です。そして <strong>§11g の現実(60〜100 本生成して 1/3 採用、2/3 は捨てる)に直接効きます</strong> — 鎖の 4 本目だけが気に入らないとき、5 本目以降を巻き添えにしなくてよい。</p>
+  </div>
+  <div class="box warn">
+    <p style="margin:0"><strong>ただし制約があります。</strong>「<strong>ピン留めされる終端は<em>映像だけ</em>。その音声は、捨てようとしているレンダーのものが来る</strong>」 <span class="c c1">一次</span>。<br>
+    <strong>台詞が主役の本件では、ここは効きます。</strong>映像を差し替えても音は古いほうが残るので、<strong>音声差し替え方式(§6 / §6b 層 0)を採っていれば問題ごと消えます</strong>が、生成音をそのまま使うつもりなら要注意です。</p>
+  </div>
+
+  <h3>ドリフト測定ツールが、既にあります</h3>
+  <div class="box tint">
+    <p style="margin:0">リポジトリに <strong><code>tools/face_drift.py</code> / <code>tools/latent_drift.py</code> / <code>tools/bench_chain.py</code></strong> が同梱されています <span class="c c1">一次</span>。<br>
+    <strong>§9 の実験 4・5(残論点 B の測定)に、そのまま流用できる可能性があります。</strong>顔のドリフトと潜在のドリフトを別々に測る道具を自分で書かずに済むのは大きい。<strong>実験に入る前に、まずここを見てください。</strong></p>
+  </div>
+
+  <h3>RTX 3060 12GB の実測 — この PC より下の環境です</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:44%">条件(480×864 = 0.41MP)</th><th>所要</th></tr></thead>
+      <tbody>
+        <tr><td>LoRA あり <strong>4 ステップ</strong> / 4 秒ショット</td><td class="num">約 5 分</td></tr>
+        <tr><td>LoRA あり <strong>4 ステップ</strong> / 8 秒ショット</td><td class="num">約 9 分</td></tr>
+        <tr><td>LoRA なし <strong>20 ステップ</strong> / 4 秒ショット</td><td class="num">約 18 分</td></tr>
+        <tr><td>LoRA なし <strong>20 ステップ</strong> / 8 秒ショット</td><td class="num">約 31 分</td></tr>
+        <tr><td colspan="2"><strong>「モデルは 20GB あって 12GB には収まらないので、毎ステップ重みをストリームしている」</strong> <span class="c c1">一次</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="box tint">
+    <p style="margin:0"><strong>この PC と直接比べられます。</strong>解像度がほぼ同じ(0.41MP 対 <span class="c c0">実測</span> 0.4MP)だからです。<br>
+    3060 は <strong>8 秒で約 9 分</strong>。この PC は <strong>15 秒で 226.5〜247.5 秒(約 4 分)</strong>。<strong>尺あたりでおよそ 4〜5 倍速い</strong>計算になります。VRAM が足りて重みをストリームしなくて済む差が、そのまま出ていると見てよさそうです。<br>
+    <strong>ただし 3060 の速いほうの数字は 4 ステップです。</strong>§9 の <span class="c c0">実測</span>のとおり<strong>4 ステップは音声が割れる</strong>ので、本件では採れません。<strong>比較するなら 20 ステップ側の数字を見てください。</strong><br>
+    OOM が出たら <code>unload_models_after</code> を<strong>該当セグメントだけ</strong>有効にする、というのが作者の対処です。</p>
+  </div>
+
+  <h3>拾っておきたい細部</h3>
+  <ul>
+    <li><strong>屋外ロケの一貫性に、上空からの地図スクリーンショットを Location 参照として渡している</strong>(サンフランシスコの Market Street)。<strong>§11g の「3D 建築レイアウトを 1 枚作る」の屋外版</strong>です。主人公の画像を常に渡し、友人が出るクリップでだけ友人の画像を足す、という配分</li>
+    <li>プロンプトは<strong>プロンプトガイドに沿わせて Claude Code に書かせている</strong> — §11g と同じやり方。<strong>ガードレールの必要性(§11g)も同じく当てはまります</strong></li>
+    <li><strong>歌でも継ぎ目は通りました。</strong>環境とキャラを各ステージに渡し、歌うプロンプトを指定しただけの 3 クリップ。<strong>「モデルの 15 秒制限を超える音楽・楽曲系のコンテンツに有望」</strong>という評価 — <strong>§6 の音声継ぎ目問題に対して、オーバーラップ方式が効いている証拠</strong>です</li>
+    <li>提供ノードは <code>H3 Chain Settings</code> / <code>H3 Render Segment</code> / <code>H3 Chain to Video</code> / <code>H3 Repair Segment</code> / <code>H3 Load Session</code> の 5 つ。<strong>セッションを保存して後から延長できます</strong>(§11j の long form resume と同じ発想)</li>
+  </ul>
+
+  <div class="box tint">
+    <div class="box-title">あなたにとっての意味 — ここが実験 4・5 の入口です</div>
+    <p><strong>この節は「読んで終わり」ではありません。</strong>残論点 B(ドリフト)と D(渡し方)に、他のどの情報源より近い材料が揃っています。</p>
+    <p style="margin-bottom:0"><strong>① まず ComfyUI を 0.34.0 以降に上げる。</strong>これが無いと <code>MiniMaxH3AddGuide</code> の経路に入れません(現在 0.33.1)<br>
+    <strong>② 連鎖の中核は標準ノードで組める。</strong>§5 のカスタムノード群を先に入れる必要はありませんでした<br>
+    <strong>③ ハンドオフはショット長の 1/5、既定 39 フレーム。</strong>「3 秒以上」は画像列の話なので持ち込まない<br>
+    <strong>④ 論点 D は「大差なかった」。</strong>潜在に賭ける根拠は、これで一段弱くなりました(§11j のグリッチ報告と同じ向き)<br>
+    <strong>⑤ ドリフトは 4 本なら持ち、6 本で顔に出る。</strong>§2b の「連鎖は 2 本に抑える」ブロック設計は、かなり安全側だったことになります<br>
+    <strong>⑥ 測定ツールが既にある。</strong>実験 4・5 を自分で書き起こす前に <code>tools/</code> を見る</p>
+  </div>
+</section>
+
+
+
+
 <section id="s12">
   <span class="sec-label">出典</span>
   <h2>出典と確度</h2>
@@ -3284,6 +3713,22 @@ comfy-aimdo 0.4.13 / comfy-kitchen 0.2.31
     <li><a href="https://github.com/Thefrizzy1/ComfyUI-MiniMaxH3-Director">Thefrizzy1 / ComfyUI-MiniMaxH3-Director</a> / <a href="https://github.com/Songssx/ComfyUI-MiniMaxH3-TimelineDirector">Songssx / TimelineDirector</a> — 同名の別実装</li>
   </ul>
 
+  <h3>動画 10 と Muse Director(§11j)</h3>
+  <ul>
+    <li><strong><a href="https://youtu.be/41R-wFwEVIM">動画 10 本編(字幕全文を受領・§11j の出典)</a></strong> — MiniMax H3 Director - The Bugs Are FIXED - V1.2 Update / MuseCollective <span class="c c1">一次</span>。<strong>リップシンクの仕組み、参照枠の配分、1 段目の音、seed hunt の継ぎ目グリッチ</strong>の出典</li>
+    <li><a href="https://github.com/muse-collective-26/MiniMaxH3-Director-V1.2">muse-collective-26 / MiniMaxH3-Director-V1.2</a> <span class="c c1">一次</span> — <strong>README は既に「V1.4」を名乗り、changelog は v3.0.0 に言及</strong>。<strong>参照枠 9→7、seed のオフセット、hybrid continuation の実装、Embed Audio Over Output、Sol-Attn の取り消し、VRAM ロックアップの修正</strong>の出典。<strong>動画より新しいので、こちらを正とする</strong></li>
+    <li><a href="https://github.com/muse-collective-26/Muse-MiniMax-H3-Unified-Loader">muse-collective-26 / Muse-MiniMax-H3-Unified-Loader</a> — 形状から VRAM を見積もってモデルを自動選択(任意。<strong>Dynamic VRAM と役割が重なる</strong>)</li>
+    <li><a href="https://github.com/muse-collective-26/Muse-Run-Stats">muse-collective-26 / Muse-Run-Stats</a> — 所要時間・GPU・VRAM・RAM の表示(任意)</li>
+    <li><a href="https://github.com/seitanism/ComfyUI-H3-Motion-Context-MultiRef">seitanism / ComfyUI-H3-Motion-Context-MultiRef</a> — <strong>このノードの必須依存</strong>(§11c で既出)</li>
+  </ul>
+
+  <h3>動画 11 と H3-Continuous(§11k)</h3>
+  <ul>
+    <li><strong><a href="https://youtu.be/kj6tNy6NXH4">動画 11 本編(字幕全文を受領・§11k の出典)</a></strong> — MiniMax H3 in ComfyUI: longer videos without visible joins / Loop Forge <span class="c c1">一次</span>。<strong>ラストフレーム 1 枚の 2 つの欠点、<code>MiniMaxH3AddGuide</code> によるオーバーラップ、差分による継ぎ目の検証、4 本 / 6 本のドリフト、潜在 vs VAE ハンドオーバーの比較、解像度と一貫性</strong>の出典</li>
+    <li><a href="https://github.com/loopforge0/ComfyUI-H3-Continuous">loopforge0 / ComfyUI-H3-Continuous</a> <span class="c c1">一次</span> — <strong>ComfyUI 0.34.0 必須、標準ノードをそのまま使う設計、ハンドオフ 5/22/39/56(既定 39f・推奨はショット長の 1/5)、sample-exact な WAV サイドカー、repair の「終端は映像だけ」制約、<code>stabilize</code> による色ドリフト平坦化、RTX 3060 12GB の実測、<code>tools/face_drift.py</code> ほかの測定ツール</strong>の出典</li>
+    <li>ComfyUI 標準ノード <code>MiniMaxH3ReferenceToVideo</code> / <code><strong>MiniMaxH3AddGuide</strong></code> / <code>SamplerCustomAdvanced</code> — <strong>連鎖の中核。カスタムノードパックは不要</strong></li>
+  </ul>
+
   <h3>日本語の発話(§6b)</h3>
   <ul>
     <li><a href="https://www.weshop.ai/solutions/models/mini-max-h3-prompt-guide-for-dialogue-and-timing">weshop — 台詞とタイミングのプロンプトガイド</a>(未取得。<strong><code>&lt;d&gt;</code> タグ・話者 ID・句読点</strong>の出典)</li>
@@ -3370,7 +3815,9 @@ comfy-aimdo 0.4.13 / comfy-kitchen 0.2.31
 <footer>
   <p>初版 2026-08-30 / 第 20 版 2026-08-30(<strong>9 本目の動画を §11i に追加</strong>。H3 の全機能を実装した Director workflow の解説で、事実上の機能仕様書として扱った。<strong>17k+5 が <code>length % 17 == 5</code> として確定</strong>、<strong>retention の 4 段階</strong>(5 層プロンプトの第 3 層の実体)、<strong>Storyboard は構図だけで外見は別ファイル</strong>、<strong>「出力音声は常に合成される」の確定</strong>、<strong>Carries over</strong>、<strong>参照画像のサイズとアスペクト比の制約</strong>、顔移植の落とし穴、Global music の書き方などを収録)。更新履歴はこのファイルの git コミットログを参照。<br>
   <strong>第 21 版 2026-09-06</strong>(<strong>この PC の実測を反映した初めての改訂</strong>。前版までは「実測ゼロ」を前提に書かれていたが、同じ PC の <code>MiniMaxH3_work/</code> に 20 本以上の実測と公式プロンプトガイドの原文が既にあった。<strong>§9 と §10 を全面的に書き換え</strong>、<strong>§0 に確度 <span class="c c0">実測</span> を新設</strong>、台帳 §8c の 4 行と §12 の「未取得」1 件を訂正。主な訂正 — <strong>15 秒は通る</strong>(0.4MP / 362f / 226.5〜247.5 秒 / OOM なし)、<strong>時間予算は前版の外挿より 2〜3 倍速い</strong>、<strong>GGUF は却下・INT8 ConvRot 一択</strong>、<strong>ベースラインは 6 step</strong>、<strong>4 step は音声が割れる</strong>、<strong>セリフは終端 0.2 秒前に張り付く</strong>、<strong>VRAM ピークは OOM 接近の指標にならない</strong>、<strong>パイプラインは完全に決定的</strong>、<strong>公式プロンプト指針は取得済み</strong>)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① <strong>実験 3 の「Ref2VA + 参照 3 枚で 15 秒」の結果</strong>(残論点 A)、② <strong>実験 4・5 のドリフト測定</strong>(残論点 B — 最大の未知)、③ 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、④ FastH3 の Ref2VA 対応が出たら再評価。</p>
+  <strong>第 22 版 2026-09-06</strong>(<strong>10 本目の動画を §11j に追加</strong>。MuseCollective の Director V1.2 のバグ修正記録。<strong>ノード固有の機能と、H3 モデル自体の挙動を切り分けて収録した。</strong>後者が本ノートに効く — <strong>リップシンクは音声を渡すだけでは同期せず、台詞をタイムスタンプ位置に置く必要がある</strong>(日本語 TTS 方針と噛み合い、TTS なら書き起こしが不要)、<strong>参照 9 枠は Location と継続アンカーに食われて実質 7 枠・超えても黙って落ちる</strong>、<strong>二段サンプリング 1 段目の音は判断材料にならない</strong>、<strong>参照動画は 24fps に揃える</strong>、<strong>潜在を保持して繋ぐと継ぎ目にグリッチが出うる</strong>(論点 D への材料)、<strong>境界を FL2VA でハードロックする hybrid continuation</strong>。加えて <strong>scheduler が <code>simple</code> か <code>beta</code> かの食い違い</strong>を未決着として記録し、<strong>Sol-Attn への反証</strong>を台帳に併記した。<strong>リポジトリの README は動画より新しく、参照枠の数字を上書きしている</strong>)。更新履歴はこのファイルの git コミットログを参照。<br>
+  <strong>第 23 版 2026-09-06</strong>(<strong>11 本目の動画を §11k に追加</strong>。連鎖そのものを主題にした情報源で、<strong>残論点 B と D に初めて外からの材料が付いた</strong>。<strong>最大の発見は「連鎖の中核が標準ノードで組める」こと</strong> — H3 は attention にフレームインデックスを指定でき、<code>MiniMaxH3AddGuide</code> が<strong>終端フレーム群 + 音声</strong>を渡してオーバーラップさせる。<strong>§4 に選択肢 B' を追記</strong>し、<strong>要件が ComfyUI 0.34.0 以降で、この PC の 0.33.1 では届かないことを明記</strong>した。ほかに — <strong>オーバーラップ帯は差分がほぼ黒で再現される</strong>、<strong>ハンドオフは 5/22/39/56 フレーム・推奨はショット長の 1/5</strong>(「画像列は 3 秒以上」とは別物)、<strong>4 クリップは持ち 6 クリップで顔が崩れる</strong>、<strong>ドリフトの原因は「各セグメントが 1 つ前しか見ない」こと</strong>、<strong>潜在 / VAE ハンドオーバーは品質に大差なし</strong>(論点 D)、<strong>解像度を上げると一貫性そのものが上がる</strong>(低解像度で測ると悲観的に出る)、<strong>両端ピン留めで鎖の途中だけ作り直せる</strong>、<strong>ドリフト測定ツールが既製で存在する</strong>。台帳 §8c に 16 行追加し、<strong>177 行になった</strong>)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① <strong>ComfyUI を 0.34.0 以降へ更新</strong>(§11k — 実験 4 の前提条件)、② <strong>実験 3 の「Ref2VA + 参照 3 枚で 15 秒」の結果</strong>(残論点 A)、③ <strong>実験 4・5 のドリフト測定</strong>(残論点 B — <code>tools/face_drift.py</code> の流用を先に検討)、④ <strong>scheduler <code>simple</code> vs <code>beta</code> の 1 変数比較</strong>(§11j)、⑤ 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、⑥ FastH3 の Ref2VA 対応が出たら再評価。</p>
 </footer>
 
 </main>
