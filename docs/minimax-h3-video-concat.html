@@ -216,7 +216,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <span>ComfyUI + 量子化</span>
     <span>台詞・人の声が主役</span>
     <span>将来 32GB 借用も検討</span>
-    <span>更新 2026-09-06(第 23 版)</span>
+    <span>更新 2026-09-06(第 24 版)</span>
   </div>
 </header>
 
@@ -794,7 +794,7 @@ MiniMax H3 で 1 分の動画を作る件の続きです。</code></pre>
     <div class="box-title">第 22 版の追記 — B と C の間に、もう一つありました</div>
     <p style="margin:0"><strong>B'. 標準ノードでオーバーラップさせる</strong>(§11k)。<br>
     <strong>B は「最終フレーム 1 枚」を渡す方式</strong>ですが、標準ノード <code>MiniMaxH3AddGuide</code> は <strong>「終端フレーム<em>群</em> + 音声」</strong>を渡せます。H3 の Omni transformer が <strong>attention にフレームインデックスを指定できる</strong>ためで、<strong>次のクリップはオーバーラップして始まります</strong>。<br>
-    <strong>B の 2 つの弱点(モーションの受け渡しが逸れる / 音が切れる)は、これで直接塞がります。</strong>しかも <strong>C と違ってカスタムノードパックが要りません</strong> — <strong>要るのは ComfyUI 0.34.0 以降だけ</strong>(この PC は 0.33.1)。<br>
+    <strong>B の 2 つの弱点(モーションの受け渡しが逸れる / 音が切れる)は、これで直接塞がります。</strong>しかも <strong>C と違ってカスタムノードパックが要りません</strong> — <strong>要るのは ComfyUI 0.34.0 以降だけ</strong>(<strong>2026-09-06 に 0.34.5 へ更新済み</strong> / §11k)。<br>
     <strong>いま入るならここです。</strong>下の「まず Furuknap 方式(B の発展形)から」という結論は、<strong>B' に読み替えてください</strong>。</p>
   </div>
 
@@ -1967,7 +1967,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>motion transfer は 1 対 1 ではない。</strong>「一致させるというより緩い参照」。ControlNet を足しても大きくは改善しなかった<span class="c c3">要検証</span></td><td>§11j</td></tr>
         <tr><td><strong>チャンク境界を FL2VA でハードロックする手がある</strong>(hybrid continuation)。1 本目は Ref2VA、<strong>2 本目以降は前チャンクの最終フレームを first frame に固定した FL2VA</strong>。soft carry-over conditioning ではない。<strong>論点 D への第 3 の答え</strong></td><td>§11j / §10</td></tr>
         <tr><td style="color:var(--risk)"><strong>潜在を保持して後から繋ぐと、継ぎ目にグリッチが出ることがある。</strong>背景が動かないカットで見える。<strong>「潜在のほうが繋がりが強い」とは限らない</strong>。通しで生成すれば出ない</td><td>§11j</td></tr>
-        <tr><td><strong>連鎖の中核は標準ノードで組める。</strong>H3 は attention にフレームインデックスを指定できるので、<strong><code>MiniMaxH3AddGuide</code> が「前クリップの終端フレーム群 + 音声」を渡してオーバーラップさせる</strong>。カスタムノードパックは不要。<strong>ただし ComfyUI 0.34.0 以降が要る</strong>(この PC は 0.33.1)</td><td>§11k</td></tr>
+        <tr><td><strong>連鎖の中核は標準ノードで組める。</strong>H3 は attention にフレームインデックスを指定できるので、<strong><code>MiniMaxH3AddGuide</code> が「前クリップの終端フレーム群 + 音声」を渡してオーバーラップさせる</strong>。カスタムノードパックは不要。<strong>ただし ComfyUI 0.34.0 以降が要る</strong>(<code>MiniMaxH3AddGuide</code> を追加したのが 0.34.0 そのもの。<strong>この PC は 0.34.5 に更新済み</strong>)</td><td>§11k</td></tr>
         <tr><td style="color:var(--risk)"><strong>ラストフレーム 1 枚では足りない理由は 2 つ。</strong>①1 フレームしか手がかりが無いのでモーションの受け渡しが逸れる ②<strong>音声をまったく扱えないので発話が不自然に切れる</strong></td><td>§11k</td></tr>
         <tr><td><strong><code>AddGuide</code> のハンドオフ長は 5 / 22 / 39 / 56 フレーム(17k+5 格子)。既定 39f = 1.625 秒。推奨はショット長の約 1/5</strong>(8 秒→1.625 秒 / 4 秒→0.917 秒)。<strong>短すぎると継ぎ目が目立つ</strong>。<strong>上の「画像列は 3 秒以上」とは別の仕組み・別の数字</strong></td><td>§11k / §2</td></tr>
         <tr><td><strong>オーバーラップ帯は実際に再現される。</strong>前レンダーの末尾 1.5 秒と次レンダーの先頭 1.5 秒の差分は<strong>ほぼ黒で、明るさを 4 倍にしてやっと見える</strong>。<span class="c c0">実測</span>の「完全に決定的」と噛み合う</td><td>§11k / §9</td></tr>
@@ -1999,7 +1999,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td style="color:var(--risk)"><strong>同じ形状で候補を連続生成すると、leftover VRAM の掃除が飛ばされてロックアップした事例がある</strong>(GPU 100% のまま無進行)。あるノードの不具合として修正済みだが、<strong>この型の事故は実在する</strong></td><td>§11j</td></tr>
         <tr><td><strong>VRAM を形状から見積もる系のローダーは、Dynamic VRAM と役割が重なる。</strong>この PC は comfy-aimdo が既に効いているので、<strong>同じ仕事をする層は片方だけにする</strong></td><td>§11j / §9</td></tr>
         <tr><td><strong>参照動画を使うレンダーは、参照画像より明確に遅い</strong>(5090 で 15 秒に 16 分)<span class="c c3">要検証</span></td><td>§11j</td></tr>
-        <tr><td style="color:var(--risk)"><strong>連鎖の標準ノード経路には ComfyUI 0.34.0 以降が要る。この PC は 0.33.1。</strong>§5 の Motion Context も同じ要件だった。<strong>連鎖に踏み込むなら本体の更新が先</strong></td><td>§11k / §5</td></tr>
+        <tr><td style="color:var(--risk)"><strong>解消 <span class="c c0">実測</span> — ComfyUI を 0.34.5 へ更新した</strong>(2026-09-06)。<strong>torch / comfy-kitchen は無傷</strong>、comfy-aimdo は 0.4.13→0.4.15。<strong>依存を上げる <code>update_comfyui_and_python_dependencies.bat</code> は使わない</strong>（torch を差し替える）</td><td>§11k / §5</td></tr>
         <tr><td>比較用 — <strong>RTX 3060 12GB / 0.41MP</strong> の実測: 4step LoRA で 4 秒 = 約 5 分・8 秒 = 約 9 分、20step で 4 秒 = 約 18 分・8 秒 = 約 31 分。<strong>モデル 20GB が 12GB に載らず毎ステップ重みをストリームしている</strong>。<span class="c c0">実測</span>の「0.4MP / 15 秒 = 約 4 分」は<strong>尺あたり 4〜5 倍速い</strong></td><td>§11k / §9</td></tr>
       </tbody>
     </table>
@@ -2127,7 +2127,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tbody>
           <tr><td><strong>クリップ長は何秒まで通るか</strong></td><td><strong>15.083 秒(362f)が 0.4MP で通る。</strong>226.54〜247.54 秒 / <strong>OOM なし</strong>(通算 16 本連続)。ただし <strong>T2VA での値</strong>。Ref2VA + 参照 3 枚での 15 秒は<strong>未計測</strong></td></tr>
           <tr><td><strong>1 クリップに何分かかるか</strong></td><td>下の「時間予算」の表に実測で置き換えた。<strong>前版の外挿(低解像度 28 分 / 768p 2 時間 40 分)は 2〜3 倍悲観的だった</strong></td></tr>
-          <tr><td><strong>PyTorch 同梱版の入替</strong></td><td><strong>未検証のまま。</strong>現在 <code>torch 2.13.0+cu130</code> / Python 3.13.14 / ComfyUI 0.33.1。<strong>ここは前版のとおり残る</strong>(下記の注意も参照)</td></tr>
+          <tr><td><strong>PyTorch 同梱版の入替</strong></td><td><strong>未検証のまま。</strong>現在 <code>torch 2.13.0+cu130</code> / Python 3.13.14 / ComfyUI 0.34.5。<strong>ここは前版のとおり残る</strong>(下記の注意も参照)</td></tr>
           <tr><td><strong>attention バックエンド</strong></td><td><strong>決着。</strong>Comfy Kitchen INT8(<code>--use-ck-attention</code>)で<strong>サンプリング 1.81 倍 / 総時間 1.65 倍</strong>(1.0MP×5 秒 311.76 → 189.10 秒)。追加インストール不要</td></tr>
           <tr><td><strong>量子化レベル(Q4/Q5/int4)</strong></td><td><strong>決着。GGUF は却下。</strong>Dynamic VRAM 経路に乗らず <strong>1.8〜2.6 倍遅く VRAM も増えた</strong>。<strong>INT8 ConvRot を使う</strong></td></tr>
           <tr><td><strong>ステップ数</strong></td><td><strong>決着。4 step を使ってはいけない</strong>(LoRA 名に 4step とあっても)。音声 Peak が <strong>−0.1〜−1.6 dB で割れる</strong>。6 step −7.6〜−12.9 dB / 8 step −7.4〜−10.1 dB が実用域</td></tr>
@@ -2177,13 +2177,17 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <div class="step-b">
       <h4 style="margin-top:2px">足回り — <span style="color:var(--accent-ink)">ほぼ完了済み</span>。残りは 3 つだけ(15 分)</h4>
       <p><strong>前版はここに 7 項目を並べていましたが、5 つは既に済んでいました。</strong>現在の実機の状態はこうです <span class="c c0">実測</span>:</p>
-      <pre style="margin:12px 0"><code>ComfyUI 0.33.1 (windows portable) / RTX 4080 16,376 MiB / sm_89 / RAM 64GB
+      <pre style="margin:12px 0"><code>ComfyUI 0.34.5 (windows portable) / RTX 4080 16,376 MiB / sm_89 / RAM 64GB
 driver 610.62 / torch 2.13.0+cu130 / Python 3.13.14
-comfy-aimdo 0.4.13 / comfy-kitchen 0.2.31
+comfy-aimdo 0.4.15 / comfy-kitchen 0.2.31
 
 起動: --windows-standalone-build --disable-pinned-memory --use-ck-attention
 起動ログ: "DynamicVRAM support detected and enabled"
           "Using Comfy Kitchen attention"</code></pre>
+      <div class="box warn" style="margin:0 0 14px">
+        <p style="margin:0"><strong>注意 — この表の下にある実測値は、すべて ComfyUI 0.33.1 / comfy-aimdo 0.4.13 で取ったものです。</strong>2026-09-06 に <strong>0.34.5 / 0.4.15</strong> へ更新しました(§11k。連鎖に必要な <code>MiniMaxH3AddGuide</code> が 0.34.0 で入ったため)。<br>
+        <strong>更新後はまだ 1 本も焼いていません。</strong>数値が引き継げるかは未確認です。<strong>最初にやるのは、同 seed・同設定で 1 本焼いて更新前と一致するかの確認</strong> — <strong>このパイプラインは決定的なので、ずれたら更新が原因だと断定できます。</strong></p>
+      </div>
       <p><strong>済んでいること</strong> — attention は Comfy Kitchen INT8 で稼働中(<strong>総時間 1.65 倍</strong>)。<code>--disable-pinned-memory</code> は投入済み。<strong>基準時間も取得済み</strong>(0.4MP×5 秒 = 58.20 秒 / 1.0MP×5 秒 = 189.10 秒)。RAM 64GB は活きていて <code>--cache-none</code> なしで走っています。</p>
       <p><strong>残っているのはこの 3 つだけです。</strong></p>
       <ul class="check">
@@ -2375,7 +2379,7 @@ comfy-aimdo 0.4.13 / comfy-kitchen 0.2.31
     → <strong>§8d の「キャラクターシートを毎回渡す」は、この引き戻す力を外から足す手当てだった</strong>ことになります。<strong>§2b の「連鎖は 2 本に抑える」ブロック設計は、かなり安全側だった</strong>とも読めます。<br>
     <strong>ただし注意が 1 つ。</strong>同じ生成を低解像度と高解像度で比べると、<strong>高解像度のほうがキャラの一貫性も良かった</strong>と報告されています。<strong>ドリフトの限界を低解像度で測ると、実際より悲観的な数字が出る可能性があります</strong> <span class="c c3">要検証</span>。</p>
     <p style="margin-bottom:0"><strong>D について。</strong> <strong>潜在ハンドオーバーと VAE ハンドオーバーの両方を試して「品質に大きな違いは見られなかった」</strong>という報告 <span class="c c1">一次</span>。§11j の「潜在保持で繋ぐと継ぎ目にグリッチが出うる」と<strong>同じ向き</strong>です。<br>
-    <strong>そして選択肢そのものが増えました</strong> — 標準ノード <code>MiniMaxH3AddGuide</code> で<strong>「終端フレーム群 + 音声」を渡すオーバーラップ連鎖</strong>ができます(§4 の <strong>B'</strong>)。<strong>カスタムノードは要らず、要件は ComfyUI 0.34.0 以降だけ</strong>(この PC は 0.33.1)。<br>
+    <strong>そして選択肢そのものが増えました</strong> — 標準ノード <code>MiniMaxH3AddGuide</code> で<strong>「終端フレーム群 + 音声」を渡すオーバーラップ連鎖</strong>ができます(§4 の <strong>B'</strong>)。<strong>カスタムノードは要らず、要件は ComfyUI 0.34.0 以降だけ</strong>(<strong>0.34.5 へ更新済み</strong>)。<br>
     <strong>→ D は「画像列か潜在か」ではなく「まず B' を試す」に組み替えるべきです。</strong>本体の更新が実験 4 の前提条件になります。</p>
   </div>
 
@@ -3453,10 +3457,27 @@ comfy-aimdo 0.4.13 / comfy-kitchen 0.2.31
     著者のパックは <code>MiniMaxH3ReferenceToVideo</code> / <code>MiniMaxH3AddGuide</code> / <code>SamplerCustomAdvanced</code> を<strong>再実装せずそのまま使っています</strong> <span class="c c1">一次</span>。<strong>連鎖の中核は標準ノードで組める</strong>ということです。</p>
   </div>
 
-  <div class="box warn">
-    <div class="box-title" style="color:var(--risk)">ただし ComfyUI 0.34.0 以降が要ります — この PC は 0.33.1</div>
-    <p style="margin:0">README が <strong>「ComfyUI 0.34.0 or newer」を必須</strong>としています。古いビルドには該当ノードが無いためです <span class="c c1">一次</span>。<br>
-    <strong>§2 の環境表のとおり、この PC は ComfyUI 0.33.1 です。まず本体を上げる必要があります。</strong>§5 の H3 Motion Context が「0.34.0 以降」を要求していたのと同じ壁で、<strong>連鎖に踏み込むなら避けて通れません</strong>。<strong>これが実験 4 の前にやることです。</strong></p>
+  <div class="box tint">
+    <div class="box-title">ComfyUI 0.34.0 の壁は、2026-09-06 に越えました <span class="c c0">実測</span></div>
+    <p>README は <strong>「ComfyUI 0.34.0 or newer」を必須</strong>としています。古いビルドには該当ノードが<strong>存在しない</strong>ためです <span class="c c1">一次</span> — <strong><code>MiniMaxH3AddGuide</code> を追加したのが v0.34.0 そのもの</strong>でした。<br>
+    <strong>この PC は 0.33.1 だったので、0.34 系の最新安定版 <code>v0.34.5</code> へ更新しました。</strong>0.33.1 の次のリリースが 0.34.0 で、間に中間リリースはありません。</p>
+    <div class="scroll" style="margin:10px 0">
+      <table>
+        <thead><tr><th style="width:34%">確認したこと</th><th>結果</th></tr></thead>
+        <tbody>
+          <tr><td>ComfyUI</td><td class="num"><strong>0.34.5</strong>(tag / commit <code>7fd919f0</code>)</td></tr>
+          <tr><td><strong>必要なノード</strong></td><td><strong><code>MiniMaxH3AddGuide</code> / <code>MiniMaxH3ReferenceToVideo</code> / <code>SamplerCustomAdvanced</code> すべて存在</strong></td></tr>
+          <tr><td><strong><code>AddGuide</code> の入力</strong></td><td><code>latent</code> / <code>positive</code> / <code>vae</code> / <code>audio_vae</code> / <strong><code>image</code></strong> / <strong><code>audio</code></strong> / <strong><code>frame_idx</code></strong></td></tr>
+          <tr><td>torch / torchvision / torchaudio</td><td class="num"><strong>無傷</strong>(2.13.0+cu130 / 0.28.0+cu130 / 2.11.0+cu130)</td></tr>
+          <tr><td>comfy-kitchen</td><td class="num"><strong>無傷</strong>(0.2.31)。起動ログに <strong><code>Using Comfy Kitchen attention</code></strong></td></tr>
+          <tr><td>comfy-aimdo</td><td class="num">0.4.13 → <strong>0.4.15</strong>(RTX 4080 を正しく掴んでいる)</td></tr>
+          <tr><td>起動</td><td><strong>エラー・警告ゼロ</strong>。custom_nodes は <code>ComfyUI-GGUF</code> のみで、これも正常に読めた</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-bottom:0"><strong><code>frame_idx</code> があり、<code>image</code> と <code>audio</code> を同じノードで受けている</strong> — この節が「attention にフレームインデックスを指定して、終端フレーム群 + 音声を渡す」と書いてきたことが、<strong>ノードの入力そのもので裏付けられました</strong>。<br>
+    <strong>ただし、まだ 1 本も生成していません。</strong>次にやるのは<strong>同 seed・同設定で 1 本焼いて、更新前と一致するか確かめること</strong>です。<strong>このパイプラインは決定的なので、ずれたら更新が原因だと断定できます。</strong><br>
+    <strong>壊れたときの戻し方:</strong> <code>git -C "…\ComfyUI_windows_portable\ComfyUI" checkout v0.33.1</code>(更新前は commit <code>72865f4</code>。更新時に <code>backup_branch_2026-09-06_16_50_21</code> も自動作成されています)。<strong>依存パッケージを上げる <code>update_comfyui_and_python_dependencies.bat</code> は使わないこと</strong> — あれは torch を差し替えます。</p>
   </div>
 
   <h3>オーバーラップは、実際に再現されています</h3>
@@ -3568,7 +3589,7 @@ comfy-aimdo 0.4.13 / comfy-kitchen 0.2.31
   <div class="box tint">
     <div class="box-title">あなたにとっての意味 — ここが実験 4・5 の入口です</div>
     <p><strong>この節は「読んで終わり」ではありません。</strong>残論点 B(ドリフト)と D(渡し方)に、他のどの情報源より近い材料が揃っています。</p>
-    <p style="margin-bottom:0"><strong>① まず ComfyUI を 0.34.0 以降に上げる。</strong>これが無いと <code>MiniMaxH3AddGuide</code> の経路に入れません(現在 0.33.1)<br>
+    <p style="margin-bottom:0"><strong>① ComfyUI は 0.34.5 へ更新済み。</strong><code>MiniMaxH3AddGuide</code> の存在と入力(<code>frame_idx</code> / <code>image</code> / <code>audio</code>)を実機で確認済み。<strong>次は同 seed で 1 本焼いて回帰確認</strong><br>
     <strong>② 連鎖の中核は標準ノードで組める。</strong>§5 のカスタムノード群を先に入れる必要はありませんでした<br>
     <strong>③ ハンドオフはショット長の 1/5、既定 39 フレーム。</strong>「3 秒以上」は画像列の話なので持ち込まない<br>
     <strong>④ 論点 D は「大差なかった」。</strong>潜在に賭ける根拠は、これで一段弱くなりました(§11j のグリッチ報告と同じ向き)<br>
@@ -3823,7 +3844,8 @@ comfy-aimdo 0.4.13 / comfy-kitchen 0.2.31
   <strong>第 21 版 2026-09-06</strong>(<strong>この PC の実測を反映した初めての改訂</strong>。前版までは「実測ゼロ」を前提に書かれていたが、同じ PC の <code>MiniMaxH3_work/</code> に 20 本以上の実測と公式プロンプトガイドの原文が既にあった。<strong>§9 と §10 を全面的に書き換え</strong>、<strong>§0 に確度 <span class="c c0">実測</span> を新設</strong>、台帳 §8c の 4 行と §12 の「未取得」1 件を訂正。主な訂正 — <strong>15 秒は通る</strong>(0.4MP / 362f / 226.5〜247.5 秒 / OOM なし)、<strong>時間予算は前版の外挿より 2〜3 倍速い</strong>、<strong>GGUF は却下・INT8 ConvRot 一択</strong>、<strong>ベースラインは 6 step</strong>、<strong>4 step は音声が割れる</strong>、<strong>セリフは終端 0.2 秒前に張り付く</strong>、<strong>VRAM ピークは OOM 接近の指標にならない</strong>、<strong>パイプラインは完全に決定的</strong>、<strong>公式プロンプト指針は取得済み</strong>)。更新履歴はこのファイルの git コミットログを参照。<br>
   <strong>第 22 版 2026-09-06</strong>(<strong>10 本目の動画を §11j に追加</strong>。MuseCollective の Director V1.2 のバグ修正記録。<strong>ノード固有の機能と、H3 モデル自体の挙動を切り分けて収録した。</strong>後者が本ノートに効く — <strong>リップシンクは音声を渡すだけでは同期せず、台詞をタイムスタンプ位置に置く必要がある</strong>(日本語 TTS 方針と噛み合い、TTS なら書き起こしが不要)、<strong>参照 9 枠は Location と継続アンカーに食われて実質 7 枠・超えても黙って落ちる</strong>、<strong>二段サンプリング 1 段目の音は判断材料にならない</strong>、<strong>参照動画は 24fps に揃える</strong>、<strong>潜在を保持して繋ぐと継ぎ目にグリッチが出うる</strong>(論点 D への材料)、<strong>境界を FL2VA でハードロックする hybrid continuation</strong>。加えて <strong>scheduler が <code>simple</code> か <code>beta</code> かの食い違い</strong>を未決着として記録し、<strong>Sol-Attn への反証</strong>を台帳に併記した。<strong>リポジトリの README は動画より新しく、参照枠の数字を上書きしている</strong>)。更新履歴はこのファイルの git コミットログを参照。<br>
   <strong>第 23 版 2026-09-06</strong>(<strong>11 本目の動画を §11k に追加</strong>。連鎖そのものを主題にした情報源で、<strong>残論点 B と D に初めて外からの材料が付いた</strong>。<strong>最大の発見は「連鎖の中核が標準ノードで組める」こと</strong> — H3 は attention にフレームインデックスを指定でき、<code>MiniMaxH3AddGuide</code> が<strong>終端フレーム群 + 音声</strong>を渡してオーバーラップさせる。<strong>§4 に選択肢 B' を追記</strong>し、<strong>要件が ComfyUI 0.34.0 以降で、この PC の 0.33.1 では届かないことを明記</strong>した。ほかに — <strong>オーバーラップ帯は差分がほぼ黒で再現される</strong>、<strong>ハンドオフは 5/22/39/56 フレーム・推奨はショット長の 1/5</strong>(「画像列は 3 秒以上」とは別物)、<strong>4 クリップは持ち 6 クリップで顔が崩れる</strong>、<strong>ドリフトの原因は「各セグメントが 1 つ前しか見ない」こと</strong>、<strong>潜在 / VAE ハンドオーバーは品質に大差なし</strong>(論点 D)、<strong>解像度を上げると一貫性そのものが上がる</strong>(低解像度で測ると悲観的に出る)、<strong>両端ピン留めで鎖の途中だけ作り直せる</strong>、<strong>ドリフト測定ツールが既製で存在する</strong>。台帳 §8c に 16 行追加し、<strong>177 行になった</strong>。<strong>あわせて §0 の再開用スニペットを修正</strong> — <strong>入口はこの 412KB の文書ではなく <code>HANDOFF.md</code>(12KB)</strong>。スマホやクラウドから再開するとき、全文を読ませるとそれだけでセッションが終わるため)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① <strong>ComfyUI を 0.34.0 以降へ更新</strong>(§11k — 実験 4 の前提条件)、② <strong>実験 3 の「Ref2VA + 参照 3 枚で 15 秒」の結果</strong>(残論点 A)、③ <strong>実験 4・5 のドリフト測定</strong>(残論点 B — <code>tools/face_drift.py</code> の流用を先に検討)、④ <strong>scheduler <code>simple</code> vs <code>beta</code> の 1 変数比較</strong>(§11j)、⑤ 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、⑥ FastH3 の Ref2VA 対応が出たら再評価。</p>
+  <strong>第 24 版 2026-09-06</strong>(<strong>ComfyUI を 0.33.1 から 0.34.5 へ更新した</strong>。連鎖に必要な <code>MiniMaxH3AddGuide</code> を追加したのが v0.34.0 そのもので、0.33.1 の次のリリースがそれにあたる。<strong>依存を上げない <code>update.py --stable</code> の経路で実施し、torch / torchvision / torchaudio / comfy-kitchen は無傷</strong>、comfy-aimdo だけ 0.4.13 → 0.4.15。<strong>実機で確認した</strong> <span class="c c0">実測</span> — 必要な 3 ノードはすべて存在し、<strong><code>AddGuide</code> の入力は <code>frame_idx</code> / <code>image</code> / <code>audio</code> を含む</strong>ので、§11k の「フレームインデックスを指定して終端フレーム群 + 音声を渡す」がノードの入力そのもので裏付けられた。起動はエラー・警告ゼロで <code>Using Comfy Kitchen attention</code> も出る。<strong>ただし更新後はまだ 1 本も焼いていない</strong> — §9 の実測値は 0.33.1 で取ったものなので、引き継げるかは未確認)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① <strong>更新後の回帰確認</strong>(同 seed・同設定で 1 本焼いて 0.33.1 の結果と一致するか。決定的なパイプラインなのでずれたら更新が原因)、② <strong>実験 3 の「Ref2VA + 参照 3 枚で 15 秒」の結果</strong>(残論点 A)、③ <strong>実験 4・5 のドリフト測定</strong>(残論点 B — <code>tools/face_drift.py</code> の流用を先に検討)、④ <strong>scheduler <code>simple</code> vs <code>beta</code> の 1 変数比較</strong>(§11j)、⑤ 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、⑥ FastH3 の Ref2VA 対応が出たら再評価。</p>
 </footer>
 
 </main>

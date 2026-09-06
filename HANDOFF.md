@@ -52,8 +52,9 @@ Artifact 版もあります: https://claude.ai/code/artifact/af3d2a55-9715-4d98-
 | --- | --- |
 | GPU | **RTX 4080 16GB** |
 | システム RAM | **64GB**(H3 のエンコーダ 15.7GB + DiT 21GB が同居できる。有利な条件) |
-| 実行環境 | **ComfyUI 0.33.1** / torch 2.13.0+cu130 / Python 3.13.14 / comfy-aimdo 0.4.13 / comfy-kitchen 0.2.31 |
-| ⚠ 更新が要る | **連鎖に入るなら ComfyUI を 0.34.0 以降へ。**標準ノード `MiniMaxH3AddGuide` の経路（§11k）も §5 の Motion Context も 0.34.0 以降を要求する。**0.33.1 では届かない** |
+| 実行環境 | **ComfyUI 0.34.5**（2026-09-06 に 0.33.1 から更新）/ torch 2.13.0+cu130 / Python 3.13.14 / **comfy-aimdo 0.4.15** / comfy-kitchen 0.2.31 |
+| 更新の記録 | `update\update_comfyui_stable.bat` 相当（`update.py --stable`）で実施。**torch / torchvision / torchaudio / comfy-kitchen は無傷**、comfy-aimdo だけ 0.4.13 → 0.4.15 に上がった。**依存を上げる `update_comfyui_and_python_dependencies.bat` は使っていない**（あれは torch を差し替える） |
+| 退避先 | 壊れたら `git -C "…\ComfyUI_windows_portable\ComfyUI" checkout v0.33.1`（更新前は commit `72865f4`）。更新時に `backup_branch_2026-09-06_16_50_21` も自動作成されている |
 | 起動フラグ | `--windows-standalone-build --disable-pinned-memory --use-ck-attention` |
 | 量子化 | **INT8 ConvRot**(GGUF は実測で却下) |
 | 目標 | **1 分**の動画 |
@@ -100,9 +101,20 @@ base に戻すなら **turbo LoRA 有効 / `res_multistep` / 8 step**。**混ぜ
    「終端フレーム群 + 音声」を渡すオーバーラップ連鎖**(§4 の B')。**カスタムノード不要。**
    **→ D は「画像列か潜在か」ではなく「まず B' を試す」に読み替える。**
 
-**実験 4 に入る前にやること — ComfyUI を 0.34.0 以降へ上げる(§11k)。**
-標準ノード `MiniMaxH3AddGuide` の経路も §5 の Motion Context も 0.34.0 以降を要求します。
-**この PC は 0.33.1 なので、連鎖はまだ試せません。ここが実験 4 の前提条件です。**
+**~~実験 4 の前に ComfyUI を 0.34.0 以降へ~~ → 2026-09-06 に 0.34.5 へ更新して解消。**
+**連鎖に入れる状態になりました。**実機で確認済み(この PC での `実測`):
+
+- `MiniMaxH3AddGuide` / `MiniMaxH3ReferenceToVideo` / `SamplerCustomAdvanced` は**すべて存在する**
+- **`MiniMaxH3AddGuide` の入力は `latent` / `positive` / `vae` / `audio_vae` / `image` / `audio` / `frame_idx`。**
+  **`frame_idx` があり、`image` と `audio` を同じノードで受ける** — §11k の
+  「attention にフレームインデックスを指定して、終端フレーム群 + 音声を渡す」が
+  **ノードの入力そのもので裏付けられました**
+- 起動ログに **`Using Comfy Kitchen attention`** が出る（CK INT8 は生きている）。
+  comfy-aimdo 0.4.15 も RTX 4080 を掴んでいる。**エラー・警告ゼロ**
+- **ただし実際に生成は回していません。**次にやるのは
+  **同 seed・同設定で 1 本焼いて、更新前と一致するかの確認**です
+  （このパイプラインは決定的なので、ずれたら更新が原因と断定できます）
+
 そして**測定ツールを自分で書く前に `loopforge0/ComfyUI-H3-Continuous` の `tools/` を見ること**
 (`face_drift.py` / `latent_drift.py` / `bench_chain.py` が同梱されています)。
 
