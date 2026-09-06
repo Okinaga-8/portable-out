@@ -122,6 +122,25 @@ base に戻すなら **turbo LoRA 有効 / `res_multistep` / 8 step**。**混ぜ
 
 ---
 
+## 5b. 未処理(2026-09-06 時点)
+
+- **Artifact `af3d2a55-9715-4d98-af73-3b236109ffa2` はまだ第 20 版のまま。**
+  再公開には「ライブ版を全行読む」手順が要り、322KB あるので次のセッションに送った。
+  **ライブ版は第 20 版とバイト一致を確認済み**(差分は host が付ける doctype ラッパーのみ)
+  なので、**マージすべき内容は無い。読んだら第 21 版をそのまま上書きしてよい。**
+  Artifact 用の本体は `docs/minimax-h3-video-concat.html` から
+  doctype / html / head / body を外し、`<div class="wrap">` の直前に
+  `<!--HEADEND-->` を挿すだけで作れる
+- **`MiniMaxH3_work/` 側の `portable-out` 作業ツリーは、いま
+  `claude/minimax-h3-video-concat-p6knks` を checkout している。**
+  `claude/minimax-h3-face-prompt-lpoapj` の未コミット分(14章・実機照合)は
+  **`git stash` に退避してある**(`stash@{0}`)。face-prompt に戻るときは
+  checkout してから `git stash pop`
+- **新しい情報源(YouTube / note)を追加する話が出ている。**
+  **字幕全文・本文テキストを貼ってもらうのが最短**(前回 §11 が推測から要約に変わったのは
+  それが理由)。`youtube.com` / `note.com` は cloud 側ではブロックされていた。
+  **ローカルから通るかは未確認**
+
 ## 6. このリポジトリの流儀
 
 - **ノートは新規ファイルを作らず、`docs/minimax-h3-video-concat.html` を書き換えて更新する**
