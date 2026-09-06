@@ -149,6 +149,7 @@ td.num{font-variant-numeric:tabular-nums; font-family:var(--font-mono); font-siz
 .c1{background:var(--accent-soft); color:var(--accent-ink)}
 .c2{background:var(--surface-2); color:var(--ink-2); border:1px solid var(--border)}
 .c3{background:var(--risk-soft); color:var(--risk)}
+.c0{background:var(--ink); color:var(--surface)}
 
 /* ---- code ---- */
 pre{
@@ -215,7 +216,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <span>ComfyUI + 量子化</span>
     <span>台詞・人の声が主役</span>
     <span>将来 32GB 借用も検討</span>
-    <span>更新 2026-08-30</span>
+    <span>更新 2026-09-06(第 21 版・実測反映)</span>
   </div>
 </header>
 
@@ -273,15 +274,26 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
 
   <div class="box tint">
     <div class="box-title">確度の表記</div>
-    <p style="margin:0"><span class="c c1">一次</span> GitHub の README や公式 PR 番号など、出所が特定できるもの。<br>
+    <p style="margin:0"><span class="c c0">実測</span> <strong>この PC(4080 16GB)で実際に測った値。</strong>いちばん強い。出典は <code>MiniMaxH3_work/03_BENCHMARK.md</code> ほか。<br>
+    <span class="c c1">一次</span> GitHub の README や公式 PR 番号など、出所が特定できるもの。<br>
     <span class="c c2">一致</span> 複数の二次情報が同じことを言っているもの。<br>
     <span class="c c3">要検証</span> 単一の解説記事のみ、または私の推論。<strong>実機で確かめてから信じてください。</strong></p>
   </div>
 
   <div class="box warn">
+    <div class="box-title">訂正(2026-09-06)— このノートは「実測ゼロ」を前提に書かれていました</div>
+    <p>初版〜第 20 版は、<strong>この PC で H3 がまだ一度も回っていない</strong>という前提で書かれています。<strong>それは誤りでした。</strong>同じ PC の <code>MiniMaxH3_work/</code> 側に、20 本以上の実測(OOM ゼロ)と、公式プロンプトガイドの原文が既にありました。</p>
+    <p style="margin-bottom:0">第 21 版で <strong>§9 と §10 を実測に基づいて全面的に書き換え</strong>、台帳(§8c)のうち実測に否定された行を訂正しました。<strong><span class="c c0">実測</span> が付いた記述は、他のどの確度よりも優先してください。</strong></p>
+  </div>
+
+  <div class="box warn">
     <div class="box-title">この調査の限界</div>
     <p><strong>更新:</strong> <code>github.com</code> は到達できることが分かり、<strong>MiniMax 公式リポジトリ(一次情報)を読めました</strong>。§2 の仕様はそれに基づいて訂正済みです。さらに<strong>動画の字幕全文をいただけたので、§11 は推測ではなく要約になりました</strong>。</p>
-    <p style="margin-bottom:0">一方 <code>huggingface.co</code> / <code>docs.comfy.org</code> / <code>youtube.com</code> は依然ブロックされています。とくに <strong>Hugging Face の「プロンプト指針」文書</strong>は、§11 で判明したとおり<strong>この案件の成否を分ける最重要ドキュメント</strong>です。公式リポジトリには収録されていないと明記されているので、PC 側で必ず開いてください。§12 にリンクがあります。</p>
+    <p>一方 <code>huggingface.co</code> / <code>docs.comfy.org</code> / <code>youtube.com</code> は依然ブロックされています。とくに <strong>Hugging Face の「プロンプト指針」文書</strong>は、§11 で判明したとおり<strong>この案件の成否を分ける最重要ドキュメント</strong>です。</p>
+    <p style="margin-bottom:0"><strong>解決済み(2026-09-06)<span class="c c0">実測</span>。</strong> その「最重要・未取得」文書は、<strong>この PC に既にありました</strong>。ダウンロードは不要です。<br>
+    <code>MiniMaxH3_work/docs_archive/official_prompt_guides/VIDEO_PROMPT_WRITING_GUIDE_base_en.md</code>(15.4KB)<br>
+    <code>MiniMaxH3_work/docs_archive/official_prompt_guides/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md</code>(23.0KB / Ref2VA 用)<br>
+    2026-08-22〜23 に取得済み。<strong>Ref2VA を使う本件では <code>_ref_en</code> のほうが本命です。</strong></p>
   </div>
 
   <div class="box">
@@ -1892,7 +1904,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
       <thead><tr><th style="width:64%">ルール</th><th>出典</th></tr></thead>
       <tbody>
         <tr><td>24fps・<strong>17k+5 フレームの格子</strong>・4〜15 秒。指定した秒数は次の格子点に切り上がる</td><td>§2</td></tr>
-        <tr><td><strong>16GB の目安は 7〜10 秒/クリップ。</strong>15 秒は通らない可能性がある</td><td>§8</td></tr>
+        <tr><td><strong>訂正 <span class="c c0">実測</span> — 15 秒は通る。</strong>0.4MP / 362f を <strong>226.54〜247.54 秒・OOM なし</strong>で完走(前版の「7〜10 秒が目安」は<strong>他人の環境の値</strong>だった)。<strong>ただし T2VA での実測</strong>で、Ref2VA + 参照 3 枚は未計測</td><td>§9</td></tr>
         <tr><td><strong>クリップは可能な限り長く取る</strong>(継ぎ目を減らすため)。ただし上の VRAM 制約と台詞の尺が上限を決める</td><td>§2b</td></tr>
         <tr><td>連鎖する全クリップで<strong>アスペクト比・解像度を揃える</strong></td><td>§2 / §5</td></tr>
         <tr><td><strong>カット割りは技術的な劣化リセットでもある。</strong>「ここは連続でなければならないか?」を継ぎ目ごとに問う</td><td>§2b</td></tr>
@@ -1937,7 +1949,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>ComfyUI 同梱の PyTorch を疑う。</strong>入れ替えだけで 2.17 倍になった実例(16GB 環境)</td><td>§8</td></tr>
         <tr><td>起動フラグ <code>--disable-pinned-memory --reserve-vram 1.5</code>(既定で RAM の 90% をページロックしてしまう)</td><td>§8</td></tr>
         <tr><td>モデル一式は <strong>42.5GB</strong>。RAM 64GB なら毎ステップのディスク読み直しを避けられる見込み</td><td>§8</td></tr>
-        <tr><td>量子化の推奨は<strong>コミュニティ内で割れている</strong>(Q4_K_M / Q5_K_M / int4)。自分の環境で実測するしかない</td><td>§8</td></tr>
+        <tr><td><strong>訂正 <span class="c c0">実測</span> — この環境では <code>INT8 ConvRot</code> 一択。GGUF は却下。</strong>Dynamic VRAM 経路に乗らず <strong>1.8〜2.6 倍遅く、VRAM も増えた</strong>。<strong>サイズではなく形式で選ぶ</strong>(Q4/Q5 の議論はここでは意味を持たない)</td><td>§9 / §10</td></tr>
         <tr><td><strong>低解像度で構成を固め、本番だけ高解像度。</strong>1 テイクが数時間かかるので、これを守らないと 1 日が溶ける</td><td>§2b / §11b</td></tr>
         <tr><td>潜在アップスケーラは<strong>時間を節約するが VRAM は節約しない</strong></td><td>§11b</td></tr>
         <tr><td>Sol-Attn は <strong>Blackwell 世代向け</strong>。Ada の 4080 は対象外の可能性が高い</td><td>§8</td></tr>
@@ -1958,14 +1970,14 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
       <tbody>
         <tr><td><strong>速度改善は品質改善。</strong>1 テイク 3 時間なら 3 回しか試せない。試行回数が品質を決める</td><td>§1b</td></tr>
         <tr><td><strong>解像度を上げるのは最後。</strong>テストは低解像度、本番だけ高解像度(動画 2 は 480p → 0.8MP)</td><td>§8d / §11b</td></tr>
-        <tr><td>ベースライン: <strong>20 ステップ / <code>res_multistep</code> / <code>simple</code> / denoise 1.0</strong>。Turbo なら 4〜8 ステップ<span class="c c3">要検証</span></td><td>§8d</td></tr>
+        <tr><td><strong>訂正 <span class="c c0">実測</span> — 現行のベースラインは 6 step。</strong>beta4(turbo 焼き込み)なら <strong><code>euler</code> / <code>simple</code> / 6 step / LoRA バイパス</strong>。base に戻すなら <strong>turbo LoRA 有効 / <code>res_multistep</code> / 8 step</strong>。<strong>この 2 つを混ぜると二重掛けになる。</strong>20 ステップは不要</td><td>§9</td></tr>
         <tr><td>最適化系ノードは <strong>H3 Sigma Shift の後、guider と sampler の前</strong>に置く<span class="c c3">要検証</span></td><td>§8d</td></tr>
         <tr><td><strong>ステップ数と量子化は独立に評価できない。</strong>20 ステップで破綻した int4 が Turbo LoRA と組むと最良になった実測がある</td><td>§8d / §8</td></tr>
         <tr><td>高解像度は<strong>二段サンプリング</strong>で取りにいく:<strong>低解像度 25 ステップ → 2× 潜在アップスケール → 8 ステップ仕上げ</strong></td><td>§8d</td></tr>
         <tr><td><strong>二段目は部分デノイズ必須</strong>(<code>sigmas[0]</code> は 1.0 未満)。フルデノイズは拒否される</td><td>§8d</td></tr>
         <tr><td>潜在の縦横を倍にすると<strong>動画トークンは約 4 倍</strong>。<strong>二段目でこそ OOM が起きる</strong>ので Chunk FeedForward を入れておく</td><td>§8d</td></tr>
         <tr><td><code>lock_audio</code> で二段目の音声をロックできる。<strong>音声差し替え方式と噛み合う</strong></td><td>§8d</td></tr>
-        <tr><td><strong>Turbo LoRA は 8 ステップが実用下限。</strong>4 ステップは映像も破綻した報告がある。<strong>映像の破綻は自前音声では救えない</strong></td><td>§8d / §8</td></tr>
+        <tr><td><strong>裏付け <span class="c c0">実測</span> — 4 step を使ってはいけない。</strong>LoRA 名に <code>4step</code> とあっても割れる。音声 Peak <strong>4 step = −0.1〜−1.6 dB(実用外)</strong> / 5 step = −3.3 dB / <strong>6 step = −7.6〜−12.9 dB</strong> / 8 step = −7.4〜−10.1 dB。<strong>0.4MP だと映像は一見きれいに出るので、映像だけで判断すると必ず間違える</strong></td><td>§9</td></tr>
         <tr><td><strong>速度手段の第一候補は PDD 加速 LoRA(alibaba-pai 公式)。</strong>8 ステップで 20 ステップ相当、Ref2VA のキャラ一貫性ではそれ以上の結果も</td><td>§8 / §11h</td></tr>
         <tr><td><strong>PDD の必須設定: Euler / CFG 1.0 / strength 1.0 きっかり / SigmaShift 12.0・3.0 / ステップ 4 か 8。</strong>外すと深刻なアーティファクトや黒画面</td><td>§11h</td></tr>
         <tr><td><strong>PDD は他の蒸留 LoRA(Turbo / lightx2v)とも EasyCache / blockcache とも併用不可。</strong>FL2VA 版と Ref2VA 版の取り違えは静かに壊れる</td><td>§11h</td></tr>
@@ -2053,7 +2065,45 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <span class="sec-label">次の一手</span>
   <h2>今夕の最小実験</h2>
 
-  <p>動画 3 本の内容が分かったので、<strong>「確かめる」実験の多くが「設定する」作業に変わりました</strong>。残る本当の未知は <strong>「あなたの 4080 16GB で回るか」と「1 分にどれだけ時間がかかるか」</strong>の 2 つです。所要 2〜3 時間。</p>
+  <p><strong>第 21 版で全面的に書き換えました(2026-09-06)。</strong> 前版は「この 4080 で回るか」を最大の未知として実験を組んでいましたが、<strong>それは既に測ってありました</strong>。実験 1・2 はほぼ完了、実験 3 も基準値が揃っています。<strong>本当に残っている未知は実験 4 と 5(連鎖とドリフト)だけです。</strong></p>
+
+  <div class="box warn">
+    <div class="box-title">先に埋まっていたもの <span class="c c0">実測</span> — 出典 <code>MiniMaxH3_work/03_BENCHMARK.md</code> / <code>portable-out</code> の <code>main</code> ブランチ HANDOFF</div>
+    <div class="scroll" style="margin:10px 0 8px">
+      <table>
+        <thead><tr><th style="width:34%">前版の問い</th><th>実測の答え</th></tr></thead>
+        <tbody>
+          <tr><td><strong>クリップ長は何秒まで通るか</strong></td><td><strong>15.083 秒(362f)が 0.4MP で通る。</strong>226.54〜247.54 秒 / <strong>OOM なし</strong>(通算 16 本連続)。ただし <strong>T2VA での値</strong>。Ref2VA + 参照 3 枚での 15 秒は<strong>未計測</strong></td></tr>
+          <tr><td><strong>1 クリップに何分かかるか</strong></td><td>下の「時間予算」の表に実測で置き換えた。<strong>前版の外挿(低解像度 28 分 / 768p 2 時間 40 分)は 2〜3 倍悲観的だった</strong></td></tr>
+          <tr><td><strong>PyTorch 同梱版の入替</strong></td><td><strong>未検証のまま。</strong>現在 <code>torch 2.13.0+cu130</code> / Python 3.13.14 / ComfyUI 0.33.1。<strong>ここは前版のとおり残る</strong>(下記の注意も参照)</td></tr>
+          <tr><td><strong>attention バックエンド</strong></td><td><strong>決着。</strong>Comfy Kitchen INT8(<code>--use-ck-attention</code>)で<strong>サンプリング 1.81 倍 / 総時間 1.65 倍</strong>(1.0MP×5 秒 311.76 → 189.10 秒)。追加インストール不要</td></tr>
+          <tr><td><strong>量子化レベル(Q4/Q5/int4)</strong></td><td><strong>決着。GGUF は却下。</strong>Dynamic VRAM 経路に乗らず <strong>1.8〜2.6 倍遅く VRAM も増えた</strong>。<strong>INT8 ConvRot を使う</strong></td></tr>
+          <tr><td><strong>ステップ数</strong></td><td><strong>決着。4 step を使ってはいけない</strong>(LoRA 名に 4step とあっても)。音声 Peak が <strong>−0.1〜−1.6 dB で割れる</strong>。6 step −7.6〜−12.9 dB / 8 step −7.4〜−10.1 dB が実用域</td></tr>
+          <tr><td><strong>Hugging Face のプロンプト指針</strong></td><td><strong>この PC に既にある。</strong><code>docs_archive/official_prompt_guides/VIDEO_PROMPT_WRITING_GUIDE_{base,ref}_en.md</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin:0"><strong>おまけに 2 つ、前版が知らなかった性質があります。</strong><br>
+    ① <strong>このパイプラインは完全に決定的</strong> — 別セッションでも同 seed・同設定なら <strong>SSIM Y = 1.000000</strong>。<strong>A/B 比較の前提が実測で保証されています。差が出たら本当に条件の差です。</strong><br>
+    ② <strong>VRAM ピークは OOM 接近の指標にならない</strong> — Dynamic VRAM(comfy-aimdo)が活性化領域に合わせて常駐重みを降ろすので、<strong>解像度と尺を上げるとサンプリング中の VRAM はむしろ減ります</strong>(1.0MP×10 秒で 13.1GiB、0.4MP では 15.1〜15.8GiB)。<strong>「0.4MP で 96%」は「高解像度で危ない」を意味しません。</strong></p>
+  </div>
+
+  <div class="box tint">
+    <div class="box-title">時間予算 <span class="c c0">実測</span> — 1 分の完成尺にどれだけかかるか</div>
+    <p>§2b の「採用率およそ 1/3、1 分の完成尺に 60〜100 テイク」を、この PC の実測値に当てはめたものです。</p>
+    <div class="scroll" style="margin:10px 0 8px">
+      <table>
+        <thead><tr><th>条件</th><th style="width:16%">1 クリップ</th><th style="width:17%">1 分ぶん 1 周</th><th style="width:15%">60 テイク</th><th style="width:15%">100 テイク</th></tr></thead>
+        <tbody>
+          <tr><td><strong>0.4MP × 15 秒</strong>(864×480 / 8step turbo / T2VA)</td><td class="num">約 4 分 <span class="c c0">実測</span></td><td class="num">15〜17 分</td><td class="num">約 4 時間</td><td class="num">約 6.5 時間</td></tr>
+          <tr><td><strong>1.0MP × 10 秒</strong>(1376×768 / beta4 6step euler / 参照 3 枚)</td><td class="num">6 分 41 秒 <span class="c c0">実測</span></td><td class="num">約 40 分</td><td class="num">約 6.7 時間</td><td class="num">約 11 時間</td></tr>
+          <tr><td><strong>1.0MP × 15 秒</strong></td><td class="num">約 12〜13 分 <span class="c c3">試算</span></td><td class="num">48〜52 分</td><td class="num">約 12〜13 時間</td><td class="num">約 20 時間</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin:0"><strong>結論。低解像度で構成を固める工程は、実質ノーコストです</strong>(1 周 15〜17 分)。<strong>本番を 1.0MP × 15 秒でやると 60 テイクでも丸 1 日以上</strong>かかるので、§2b の「解像度を上げるのは最後」は実測でも正しい。<br>
+    <strong>数え方</strong> — 「1 分ぶん 1 周」は <strong>15 秒なら 4 本(60.3 秒)、10 秒なら 6 本(60.75 秒)</strong>。<strong>60/100 テイク列は「クリップ 60 本・100 本ぶんの生成時間」</strong>で、編集・確認の時間は含みません。<strong>1.0MP × 15 秒だけが試算</strong>(0.4MP からの解像度比 3.1〜3.2 倍による外挿)で、他は実測です。</p>
+  </div>
 
   <div class="box tint">
     <div class="box-title">測定シート — どの実験でも、この 3 軸を毎回記録する</div>
@@ -2073,32 +2123,57 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <div class="step">
     <div class="step-n">1</div>
     <div class="step-b">
-      <h4 style="margin-top:2px">足回りを確認する(15 分・最優先)</h4>
-      <p>ここだけで生成時間が半分になる可能性があります。</p>
+      <h4 style="margin-top:2px">足回り — <span style="color:var(--accent-ink)">ほぼ完了済み</span>。残りは 3 つだけ(15 分)</h4>
+      <p><strong>前版はここに 7 項目を並べていましたが、5 つは既に済んでいました。</strong>現在の実機の状態はこうです <span class="c c0">実測</span>:</p>
+      <pre style="margin:12px 0"><code>ComfyUI 0.33.1 (windows portable) / RTX 4080 16,376 MiB / sm_89 / RAM 64GB
+driver 610.62 / torch 2.13.0+cu130 / Python 3.13.14
+comfy-aimdo 0.4.13 / comfy-kitchen 0.2.31
+
+起動: --windows-standalone-build --disable-pinned-memory --use-ck-attention
+起動ログ: "DynamicVRAM support detected and enabled"
+          "Using Comfy Kitchen attention"</code></pre>
+      <p><strong>済んでいること</strong> — attention は Comfy Kitchen INT8 で稼働中(<strong>総時間 1.65 倍</strong>)。<code>--disable-pinned-memory</code> は投入済み。<strong>基準時間も取得済み</strong>(0.4MP×5 秒 = 58.20 秒 / 1.0MP×5 秒 = 189.10 秒)。RAM 64GB は活きていて <code>--cache-none</code> なしで走っています。</p>
+      <p><strong>残っているのはこの 3 つだけです。</strong></p>
       <ul class="check">
-        <li>ComfyUI に入っている PyTorch のバージョンを確認(同梱版のままなら入替を検討 → §8)</li>
-        <li>起動フラグに <code>--disable-pinned-memory --reserve-vram 1.5</code> を追加</li>
-        <li><strong>自前の台詞音声を使うなら Turbo LoRA(4〜8 ステップ)は最初から入れてよい</strong> — 音質劣化は無関係になる(§8)。生成音をそのまま使うつもりなら外して基準を取る</li>
-        <li><code>Model Attention Backend</code> で <strong>comfy kitchen attention</strong> を選ぶ(ComfyUI v0.32.0 以降なら追加インストール不要)</li>
-        <li>OOM が出るなら <strong>Chunk FeedForward</strong> を追加。attention 系ノードは<strong>択一・順序あり</strong>なので、1 つずつ入れて測る(§8)</li>
-        <li>864×480 で 5 秒を 1 本生成し、<strong>所要時間を記録</strong> — 以降すべての見積もりの基準になる</li>
-        <li><strong>RAM 64GB を活かせているか確認</strong> — <code>--cache-none</code> なしで走るか。走るなら毎回のフルリロードが起きない(§8e)</li>
+        <li><strong>PyTorch の入替</strong> — <strong>ここだけ前版のとおり未検証で残ります。</strong>ただし前版が引いた「入替だけで 2.17 倍」の実例は<strong>同梱の古い torch が前提</strong>で、こちらは既に <code>2.13.0+cu130</code>。<strong>伸びしろは前版が期待したほど無い可能性が高い</strong> <span class="c c3">要検証</span>。<strong>着手は最後でよい</strong>(壊すと全部止まるので、実験 4・5 を終えてから)</li>
+        <li><strong><code>--reserve-vram 1.5</code> は入れていない。</strong>入れる前に、Dynamic VRAM と噛み合うか 1 本測って確かめる — <strong>常駐重みを自動で降ろす仕組みと、手動で VRAM を予約する指定は目的が重なります</strong> <span class="c c3">要検証</span></li>
+        <li><strong>Chunk FeedForward は未導入。</strong>ただし <strong>1.0MP × 10 秒でもピーク 15,238 MiB(93.1%)で OOM していない</strong>ので、<strong>今は要りません</strong>。実験 5 で落ちたときに初めて入れる</li>
       </ul>
+      <div class="box warn" style="margin-top:14px">
+        <p style="margin:0"><strong>attention ノードを「1 つずつ入れて測る」は今も有効ですが、追加は不要です。</strong> ノードで選ぶのではなく<strong>起動フラグ</strong>で有効化されています。ここに Sol-Attn や SageAttention 系のノードを<strong>重ねて入れないでください</strong>(択一・§8)。</p>
+      </div>
     </div>
   </div>
 
   <div class="step">
     <div class="step-n">2</div>
     <div class="step-b">
-      <h4 style="margin-top:2px">材料を揃える(生成しない・30 分)</h4>
-      <p>ここが今夕いちばん価値のある作業かもしれません。<strong>全部ダウンロードと準備で、GPU を回しません。</strong></p>
+      <h4 style="margin-top:2px">材料を揃える(生成しない・30 分)— <span style="color:var(--accent-ink)">ここが今いちばん価値のある作業</span></h4>
+      <p><strong>全部ダウンロードと準備で、GPU を回しません。</strong>実験 1 が消えたぶん、ここが実質の出発点になりました。</p>
       <ul class="check">
-        <li><strong>動画の説明欄から「H3 long form blueprint」をダウンロード</strong>し、ComfyUI にドラッグ(§11)</li>
-        <li><strong>MiniMax 推奨のプロンプトテンプレートを入手</strong> — blueprint の左下に本文と参照元 URL が同梱されています。Hugging Face のプロンプト指針も併せて開く(§12)</li>
+        <li><strong>プロンプト指針はダウンロード不要。この PC にあります</strong> <span class="c c0">実測</span> — <code>MiniMaxH3_work/docs_archive/official_prompt_guides/</code> の <code>VIDEO_PROMPT_WRITING_GUIDE_ref_en.md</code>(23.0KB)が<strong>本件の本命</strong>(Ref2VA 用)。<code>_base_en.md</code>(15.4KB)と <code>h3-prompt-writing_SKILL.md</code> も同じ場所。<strong>最初にこれを読む</strong></li>
+        <li><strong>動画の説明欄から「H3 long form blueprint」をダウンロード</strong>し、ComfyUI にドラッグ(§11)。<strong>ここは前版のとおり未取得</strong></li>
         <li><strong>声を 2 本用意</strong>(話者が 1 人なら 1 本)。<strong>日本語のアクセントを確実にしたいなら、ここで日本語 TTS(Style-BERT-VITS2 / AivisSpeech / VOICEVOX)を選んでおく</strong> — 後で差し替える前提なら二度手間になりません(§6b)</li>
         <li><strong>参照画像を用意</strong> — 各キャラの立ち絵と、舞台の全景。ドリフト対策の主力です(§11)</li>
-        <li>台詞を書き出し、<strong>1 ショットあたり何秒かを決める</strong>(尺と台詞を一致させる → §6)</li>
+        <li><strong>台詞を書き出し、1 ショットあたり何秒かを決める。</strong>ただし<strong>下の「終端張り付き」を読んでから決めてください</strong> — 尺の決め方が前版と変わります</li>
       </ul>
+      <div class="box audio" style="margin-top:14px">
+        <div class="box-title">★ 訂正 — セリフはクリップの<strong>終端</strong>に張り付く <span class="c c0">実測</span></div>
+        <p>前版は「尺が長すぎると余った時間が雑音で埋まる」と書き、暗に<strong>「最後のショットを長めに取ればセリフに余裕ができる」</strong>と読める形になっていました。<strong>これは誤りです。</strong></p>
+        <div class="scroll" style="margin:10px 0 8px">
+          <table>
+            <thead><tr><th>実測</th><th style="width:20%">クリップ長</th><th style="width:20%">発話終了</th><th style="width:22%">終端までの余裕</th></tr></thead>
+            <tbody>
+              <tr><td>Run #12(路地・15 秒)</td><td class="num">15.083 秒</td><td class="num">14.90 秒</td><td class="num"><strong>0.20 秒</strong></td></tr>
+              <tr><td>Run #13(同じ seed / カットを 3 秒後ろへ)</td><td class="num">15.083 秒</td><td class="num">14.90 秒</td><td class="num"><strong>0.20 秒</strong></td></tr>
+              <tr><td>Try_012(玄関・10 秒)</td><td class="num">10.14 秒</td><td class="num">9.90 秒</td><td class="num"><strong>0.24 秒</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>3 本とも終端の 0.20〜0.24 秒前に発話が終わっています。</strong>ショットを伸ばして増えるのは<strong>発話前の無音</strong>であって、セリフ側の余裕ではありません。</p>
+        <p style="margin-bottom:0"><strong>連鎖の設計にそのまま効きます</strong> — §6 の「台詞は継ぎ目をまたがせない」は自動的に満たされる一方で、<strong>継ぎ目の直前 0.2 秒までセリフが来る</strong>ということでもあります。<strong>クロスフェード(§7 レシピ 4)をかけるとセリフの語尾を削ります。</strong>音を差し替える方式(§6b 層 0)なら、この問題ごと消えます。<br>
+        <strong>例外あり</strong> — 直前の話者に応答する形のセリフ(2 話者)は終端に張り付きませんでした <span class="c c3">要検証</span>。</p>
+      </div>
     </div>
   </div>
 
@@ -2106,58 +2181,98 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
     <div class="step-n">3</div>
     <div class="step-b">
       <h4 style="margin-top:2px">1 ショット通す + 設定を 2〜3 パターン比べる</h4>
-      <p>連鎖の前に、<strong>1 ショットが狙いどおりに出るか</strong>と、<strong>設定の当たり</strong>を見ます。ここが速度と品質の軸の本番です。</p>
-      <p><strong>比較するのは「Q 値 × ステップ数」で 2〜3 通りだけ。</strong> ステップ数と量子化は独立に評価できません(§8d)。同じプロンプト・<strong>同じシード</strong>で回して、<strong>所要時間と顔・手の破綻</strong>を並べてください。</p>
-      <p><strong>比較するのは 3 パターン</strong>: ①「20 ステップ・LoRA なし」で基準を取る → ②「<strong>8 ステップ・PDD 加速 LoRA</strong>」→(余裕があれば)③「8 ステップ・Turbo LoRA」。<br>
-      <strong>②が本命です</strong>(§11h)。設定が厳格なので Euler / CFG 1.0 / strength 1.0 / SigmaShift 12・3 を守ってください。<strong>間違えると黒画面になります。</strong>また <strong>PDD を使うときは EasyCache と Turbo を外します</strong>(併用不可)。</p>
+      <p>連鎖の前に、<strong>1 ショットが狙いどおりに出るか</strong>を見ます。<strong>設定の当たり探しは、もう大半が終わっています。</strong></p>
+      <div class="box tint">
+        <div class="box-title">現行のベースライン <span class="c c0">実測</span> — ここから動かす</div>
+        <div class="scroll" style="margin:10px 0 8px">
+          <table>
+            <thead><tr><th style="width:22%">項目</th><th>本番(採用中)</th><th>試行錯誤用</th></tr></thead>
+            <tbody>
+              <tr><td>モデル</td><td><code>10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot</code></td><td>同左</td></tr>
+              <tr><td>LoRA</td><td><strong>turbo LoRA はバイパス</strong>(焼き込み済み。ログの <code>0 patches attached</code> が証拠)</td><td>同左</td></tr>
+              <tr><td>sampler / scheduler</td><td><strong><code>euler</code> / <code>simple</code></strong></td><td>同左</td></tr>
+              <tr><td>steps</td><td><strong>6</strong></td><td>6</td></tr>
+              <tr><td>解像度 / 尺</td><td>1.0MP(1376×768)× 10 秒</td><td>0.4MP(864×480)× 5〜15 秒</td></tr>
+              <tr><td>モード</td><td><strong>ref2va か t2va</strong>(<code>i2v</code> では使わない)</td><td>同左</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin:0"><strong>base(公式 <code>fl2va_pruned_int8_convrot</code>)に戻す場合は回し方が変わります</strong> — <strong>turbo LoRA を有効化 / <code>res_multistep</code> / 8 step</strong>。<strong>この 2 つを混ぜると二重掛けになります。</strong>両方 <code>models/diffusion_models/</code> にあります。</p>
+      </div>
+      <p><strong>前版はここで「20 ステップ・LoRA なし」から基準を取れと書いていましたが、不要です。</strong>ステップ数も量子化も決着済み(上の表)。<strong>いま比べる価値があるのは PDD 加速 LoRA だけです。</strong></p>
+      <div class="box warn">
+        <div class="box-title">PDD をこの環境で試すときの注意 <span class="c c3">要検証</span></div>
+        <p style="margin:0"><strong>PDD は本当に効くなら魅力ですが(§11h)、いまの構成とは相性の確認が要ります。</strong><br>
+        ① <strong>beta4 は turbo を焼き込んだモデルです。</strong>PDD は他の蒸留 LoRA と併用不可なので、<strong>PDD を試すなら base に戻してから</strong>(beta4 + PDD は二重蒸留になります)。<br>
+        ② 必須設定 <strong>Euler / CFG 1.0 / strength 1.0 きっかり / SigmaShift 12.0・3.0 / 4 か 8 step</strong>。外すと黒画面。<br>
+        ③ <strong>比較対象は「base + turbo LoRA / res_multistep / 8 step」</strong>(既知の値)。<strong>seed を固定すれば SSIM で厳密に比べられます</strong> — このパイプラインは決定的なので。<br>
+        ④ <strong>ただし優先度は高くありません。</strong>PDD の売りは 20 step → 8 step ですが、<strong>こちらは既に 6 step で回っています。</strong>残る利点は「Ref2VA のキャラ一貫性が上がる」ほうで、<strong>それは実験 4・5 のドリフトを見てから判断すれば十分です。</strong></p>
+      </div>
       <ul class="check">
-        <li>テンプレートに沿ったプロンプト(被写体定義 + 声色参照の紐づけ)で 1 本生成</li>
+        <li><strong>公式指針(<code>_ref_en.md</code>)に沿ったプロンプト</strong>(被写体定義 + 声色参照の紐づけ)で 1 本生成</li>
         <li><strong>声が用意した参照に似ているか</strong></li>
-        <li><strong>台詞が終わったあとにガーガー音が入っていないか</strong>(入っていたら尺が長すぎる → §6)</li>
+        <li><strong>台詞が終わったあとにガーガー音が入っていないか</strong>(入っていたら尺が長すぎる → §6)。<strong>ただし発話は終端に張り付くので、余りは発話「前」に出ます</strong>(実験 2 の訂正)</li>
         <li>キャラがシーン説明文を読み上げていないか — <strong>読み上げるなら発話を <code>&lt;d&gt;[Japanese]…&lt;/d&gt;</code> でくくる</strong>(§6b)</li>
         <li><strong>日本語のアクセント・抑揚が自然か。不自然なら読点の位置を 2 通り試す</strong>(5 分で済み、§6b の層 1 が効くか分かる)</li>
-        <li><strong>各パターンの所要時間</strong>(§1b のとおり、これが試行回数=品質を決めます)</li>
-        <li><strong>顔と手の破綻</strong>を並べて比較。int4 + Turbo が最良だったという実測もあるので、先入観を持たずに</li>
-        <li>attention ノードを 1 つ入れて、速度差を測る(<strong>1 つずつ</strong>。併用規則は §8)</li>
-        <li><strong>EasyCache を使うなら <code>end_percent</code> を 0.65〜0.70 に</strong>してから測る(既定 0.95 のままだと顔がピクセル化します)</li>
-        <li><strong>同じ設定でシードだけ変えて 2〜3 本引く。</strong>2 本目以降が目に見えて速いか(conditioning キャッシュが効いているか / §8)</li>
-        <li><strong>二段階アップスケールで 15 秒が通るか</strong>を見る — 一段目 0.2MP / 二段目 1MP、総 12 ステップ(一段目 6・high sigmas のみ)。<strong>通れば §2b の設計が「15 秒 × 5 本」で確定します</strong>(§11f)</li>
-        <li><strong>絵コンテ方式を 1 回試す</strong> — 3〜4 パネルの絵コンテを 1 枚作って Ref2V に渡し、<strong>1 クリップ内でカットが割れるか</strong>を見る(§11e)。成立すれば設計が大きく楽になります</li>
+        <li><strong>音声 Peak を測る。</strong>−0.1〜−1.6 dB なら割れています(4 step の症状)。<strong>実用域は −7 dB 前後</strong>。<strong>0.4MP だと映像は一見きれいに出るので、映像だけ見て判断すると必ず間違えます</strong> <span class="c c0">実測</span></li>
+        <li><strong>顔と手の破綻</strong>を並べて比較</li>
+        <li><strong>二段階アップスケールで 15 秒が通るか</strong>を見る — 一段目 0.2MP / 二段目 1MP、総 12 ステップ(一段目 6・high sigmas のみ)。<strong>0.4MP 単段の 15 秒は既に通っている</strong>ので、これは<strong>「1.0MP × 15 秒を安く取れるか」の実験</strong>に意味が変わりました(§11f)</li>
+        <li><strong>絵コンテ方式を 1 回試す</strong> — 3〜4 パネルの絵コンテを 1 枚作って Ref2V に渡し、<strong>1 クリップ内でカットが割れるか</strong>を見る(§11e)。<strong>成立すれば継ぎ目そのものが減るので、実験 4・5 の難易度が下がります</strong></li>
+        <li><strong>Ref2VA + 参照 3 枚で 15 秒が通るかを 1 本測る</strong> — <strong>15 秒の実測は T2VA のものです。</strong>参照を積んだときの余裕は未計測で、<strong>設計を確定させるにはここが要ります</strong></li>
       </ul>
+      <div class="box" style="margin-top:14px">
+        <p style="margin:0"><strong>EasyCache / conditioning キャッシュは、いまは触らないでください。</strong> EasyCache が主に壊すのは音声で、<strong>台詞が主役の本件とは相性が悪い</strong>(§8)。conditioning キャッシュの「2 本目以降が 9.9 倍速い」も、<strong>参照画像を差し替えたのに古い conditioning がヒットする事故</strong>(§8e)が連鎖の検証と噛み合いません。<strong>速度で困っていないうちは、変数を増やさないほうが得です。</strong></p>
+      </div>
     </div>
   </div>
 
   <div class="step">
     <div class="step-n">4</div>
     <div class="step-b">
-      <h4 style="margin-top:2px">2 ショット繋ぐ</h4>
+      <h4 style="margin-top:2px">2 ショット繋ぐ — <span style="color:var(--risk)">ここからが本当の未知</span></h4>
+      <p><strong>実験 1〜3 は既知に寄りましたが、ここから先はこの PC で一度もやっていません。</strong>連鎖・継続・ドリフトは <code>03_BENCHMARK.md</code> の 20 本にも含まれていません(<strong>すべて単発クリップの計測</strong>)。</p>
       <p><strong>のりしろは 72 フレーム(3 秒)以上</strong>。1 秒では足りないことが実例で分かっています(§11)。</p>
       <ul class="check">
         <li>ショット 1 の継続参照をショット 2 に接続して生成</li>
         <li><strong>継ぎ目で声が変わらないか</strong>(voice0 / voice1 の共有が効いているか)</li>
         <li>継ぎ目で顔・画風がずれていないか。ずれるなら参照画像を足す</li>
+        <li><strong>継ぎ目の直前 0.2 秒にセリフの語尾が来ていないか</strong> — 来ていると <code>acrossfade</code> が語尾を削ります(実験 2 の訂正)</li>
+        <li><strong>色ドリフトを YAVG で数値化しておく</strong>(§7 レシピ 6)。<strong>目で見た印象より先に、数字を 1 本の系列として残す</strong>ほうが実験 5 で効きます</li>
         <li>のりしろを 24 フレームにして比べてみると、動画の "disaster" が再現できるはずです(理解が深まります)</li>
       </ul>
+      <div class="box tint" style="margin-top:14px">
+        <p style="margin:0"><strong>この実験は決定的なパイプラインの上でやれます</strong> <span class="c c0">実測</span> — 同 seed・同設定なら <strong>SSIM Y = 1.000000</strong>。つまり<strong>「のりしろ 72f と 24f」だけを変えた比較は、その差以外に一切ノイズが乗りません。</strong>1 回に 1 つだけ変える原則(§1b)が、ここでは厳密に成立します。</p>
+      </div>
     </div>
   </div>
 
   <div class="step">
     <div class="step-n">5</div>
     <div class="step-b">
-      <h4 style="margin-top:2px">5 ショットで 1 分相当を通す — 今夕の本命</h4>
-      <p>低解像度で構いません。<strong>ここで測るのは品質ではなく「完走するか」と「時間」</strong>です。</p>
+      <h4 style="margin-top:2px">1 分を通す — <span style="color:var(--risk)">本命</span>。測るのは「完走」ではなく「何本目でずれるか」</h4>
+      <p><strong>前版はここを「16GB で 5 ショット完走できるか」の実験にしていました。書き換えます。</strong></p>
+      <p><strong>完走の可否は、もう主題ではありません。</strong> 単発では 1.0MP × 10 秒が <strong>ピーク 15,238 MiB で OOM なし</strong>、0.4MP × 15 秒も <strong>16 本連続で OOM ゼロ</strong> <span class="c c0">実測</span>。<strong>連鎖しても VRAM のピークは 1 クリップぶんしか立たないはずです</strong>(クリップを 1 本ずつ生成するなら)<span class="c c3">要検証・私の推論</span>。落ちるとすれば<strong>参照を積んだとき</strong>で、それは実験 3 の最終項目で先に潰します。<strong>もし連鎖そのもので VRAM が積み上がったら、それ自体が報告に値する発見です。</strong></p>
+      <p><strong>だからここで測るべき本題は 1 つです — 何ショット目からドリフトが実用の限界を超えるか。</strong>それが §2b の「ブロック長」を決め、設計全体を決めます。</p>
+      <p><strong>構成は 0.4MP × 15 秒 × 4 本(= 60.3 秒)を推します。</strong>1 周 15〜17 分なので、<strong>午後に何周も回せます</strong>(前版の「5 ショット」は 1 本あたりを短く見積もった数です)。</p>
       <ul class="check">
-        <li><strong>16GB で 5 ショット完走できるか。</strong>落ちるなら何ショット目で、VRAM とシステム RAM のどちらが先に尽きたか</li>
-        <li><strong>合計所要時間</strong> — これが分かると本番解像度での見積もりが立つ(§2b の外挿と突き合わせる)</li>
-        <li>何ショット目から声・顔・色がずれ始めるか → §2b のブロック長を決める</li>
-        <li>出力が右下の <strong>assets</strong> パネルに 5 本溜まっているか</li>
+        <li><strong>何ショット目から声・顔・色がずれ始めるか</strong> → <strong>これが本題</strong>。§2b のブロック長を決める</li>
+        <li><strong>色ドリフトを 4 本ぶん YAVG の系列で出す</strong>(§7 レシピ 6)。<strong>単調に流れるのか、ある本数で折れるのかを見る</strong> — 折れるならそこがブロック境界</li>
+        <li><strong>声の一貫性は色や顔と別々に評価する。</strong>参照共有が効いていれば声だけ保つ可能性があります(§6)</li>
+        <li><strong>合計所要時間</strong> — 上の「時間予算」の表と突き合わせる。<strong>ずれたら表のほうを直す</strong></li>
+        <li>1.0MP に上げるのは<strong>ドリフトの限界が分かってから</strong>。<strong>1.0MP × 15 秒は 1 周 48〜52 分</strong>なので、構成の試行錯誤には使わない</li>
+        <li>出力が右下の <strong>assets</strong> パネルに溜まっているか</li>
         <li>気に入らないショットを <strong>Bypass</strong> して部分再生成できるか(運用上ここが効きます)</li>
+        <li><strong>OOM が出たときだけ</strong> Chunk FeedForward を入れる。<strong>それまでは入れない</strong>(変数を増やさない)</li>
       </ul>
     </div>
   </div>
 
   <div class="box tint">
-    <p style="margin:0"><strong>報告してほしいのは 3 点です。</strong> ① 実験 1 の 5 秒あたりの生成時間、② <strong>実験 5 で 5 ショット完走できたか(と合計時間)</strong>、③ 何ショット目からずれ始めたか。この 3 つで、本番解像度をどうするか、ブロックをどう割るか、32GB を借りる価値があるかが決まります。スクショやエラーログはそのままで構いません。</p>
+    <p style="margin:0"><strong>報告してほしいのは 3 点です</strong>(第 21 版で差し替え)。<br>
+    ① <strong>Ref2VA + 参照 3 枚で 15 秒が通ったか</strong>(実験 3 の最終項目)— <strong>これでクリップ長が確定します</strong><br>
+    ② <strong>何ショット目から声・顔・色がずれ始めたか</strong>(実験 5)— <strong>これでブロック長が決まります</strong><br>
+    ③ <strong>1 分ぶん 1 周の合計時間</strong> — 上の「時間予算」の表が当たっているか<br>
+    <strong>「5 秒あたりの生成時間」はもう要りません</strong>(実測済み)。スクショやエラーログはそのままで構いません。</p>
   </div>
 </section>
 
@@ -2165,25 +2280,50 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <span class="sec-label">論点</span>
   <h2>未解決の論点</h2>
 
-  <p>動画の内容が分かったことで、いくつかは決着しました。<strong>残っているのはほぼ「あなたの環境で回るか」だけ</strong>です。</p>
+  <p><strong>第 21 版で全面的に振り分け直しました(2026-09-06)。</strong> 前版の 10 論点のうち <strong>5 つが実測で決着</strong>し、<strong>1 つは前提が変わり</strong>、<strong>残る本当の未解決は 4 つ</strong>です。<strong>そのうち 3 つは「連鎖とドリフト」という 1 つの塊</strong>に集まっています。</p>
 
   <div class="box">
-    <div class="box-title">決着したもの</div>
+    <div class="box-title">決着したもの — 調査で</div>
     <p style="margin:0"><strong>音声参照は声色(timbre)の参照</strong>だった(§6)。ただし全ショットで参照を共有すれば声の一貫性は取れる。<strong>のりしろは 3 秒 = 72 フレーム以上</strong>(§11)。<strong>手法は Furuknap 方式(公式ノード + subgraph)から始める</strong>(§4)。<strong>1 分は射程内</strong> — 動画の作者は以前 2 分を達成している。</p>
   </div>
 
+  <div class="box tint">
+    <div class="box-title">決着したもの — この PC の実測で <span class="c c0">実測</span></div>
+    <div class="scroll" style="margin:10px 0 0">
+      <table>
+        <thead><tr><th style="width:6%">前版</th><th style="width:30%">論点</th><th>答え</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td><strong>クリップ長は何秒まで通るか</strong></td><td><strong>15 秒が通る。</strong>0.4MP / 362f / 226.54〜247.54 秒 / OOM なし。<strong>→ 継ぎ目 4 つの設計を採れる。</strong>ただし <strong>T2VA での値</strong>で、Ref2VA + 参照 3 枚は<strong>未計測(残論点 A に格下げして残す)</strong></td></tr>
+          <tr><td class="num">4</td><td><strong>5 ショット完走できるか</strong></td><td><strong>単発では余裕がある</strong> — 1.0MP × 10 秒で 15,238 MiB / OOM なし。<strong>連鎖してもピークは 1 クリップぶんしか立たないはず</strong>(クリップを 1 本ずつ生成するなら)<span class="c c3">要検証・私の推論</span>。<strong>→ 実験 5 の主題を「完走」から「ドリフト」に変更した</strong></td></tr>
+          <tr><td class="num">5</td><td><strong>1 分にどれだけかかるか</strong></td><td><strong>§9 の時間予算表に実測で置いた。</strong>0.4MP × 15 秒なら <strong>1 周 15〜17 分</strong>、1.0MP × 15 秒で <strong>48〜52 分</strong>。<strong>前版の外挿(28 分 / 2 時間 40 分)は 2〜3 倍悲観的だった</strong></td></tr>
+          <tr><td class="num">6</td><td><strong>量子化レベル</strong></td><td><strong>INT8 ConvRot。GGUF は却下</strong>(Dynamic VRAM 経路に乗らず <strong>1.8〜2.6 倍遅く VRAM も増えた</strong>)。<strong>Q4/Q5 の議論はこの環境では意味を持たない</strong> — <strong>サイズではなく形式で選ぶ</strong></td></tr>
+          <tr><td class="num">10</td><td><strong>32GB をいつ借りるか</strong></td><td><strong>当面いらない。</strong>1.0MP × 10 秒が通り、VRAM の逃げ道も Dynamic VRAM の挙動で確保されている。<strong>1.0MP を超える解像度か 10 秒を超える尺で詰まったときに再浮上する</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="box warn">
+    <div class="box-title">前提が変わったもの</div>
+    <p style="margin:0"><strong>前版 7「PyTorch の入替で速くなるか」。</strong> <strong>「効けば全部が半分の時間で回る」は、もう期待できません。</strong>根拠にしていた「入替だけで 2.17 倍」の実例は<strong>同梱の古い torch が前提</strong>でしたが、この PC は既に <code>torch 2.13.0+cu130</code>。<strong>さらに attention の高速化(1.65 倍)は Comfy Kitchen INT8 で取得済み</strong>です。<strong>→ 論点として残しますが、優先度は最下位。実験 4・5 を終えてから触ること</strong>(壊すと全部止まります)。</p>
+  </div>
+
+  <h3>残っている本当の未解決 — 4 つ</h3>
+
   <ol>
-    <li><strong>4080 16GB でクリップ長は何秒まで通るか。</strong> 15 秒が通れば継ぎ目 4 つ、8 秒しか通らなければ 8 つ。<strong>設計全体がここで決まります</strong>(§2b)。実験の前に <strong>MiniMax H3 Hub の VRAM 計算機</strong>で当たりを付けられます(§8)。<em>→ 実験 5</em></li>
-    <li><strong>音は (a) を狙うか (b) で妥協するか。</strong> LongMedia のリップシンクモードなら台詞音声をそのまま使えますが、16GB では 7〜10 秒/クリップの制約が付きます(§6)。<strong>音の完全な連続性と、継ぎ目の少なさのトレードオフ</strong>です。</li>
-    <li><strong>動画 1 方式(画像列)と動画 2 方式(潜在)のどちらを採るか。</strong> 前者は公式ノードだけで済み導入が軽い。後者は繋がりが強いがカスタムノードが要る。<strong>まず前者、足りなければ後者</strong>という順序を推します。</li>
-    <li><strong>4080 16GB で 5 ショット完走できるか。</strong> 動画 1 の作者は RunPod のレンタル GPU を使っており、16GB での実績は不明です。<em>→ 実験 5</em></li>
-    <li><strong>1 分に実際どれだけかかるか。</strong> §2b の外挿(低解像度 28 分 / 768p 2 時間 40 分)が自分の環境で当たっているか。<em>→ 実験 1 と 5</em></li>
-    <li><strong>量子化レベルは Q4 / Q5 / int4 のどれか。</strong> 推奨が割れている(§8)。台詞主役なので<strong>顔と口元の破綻</strong>が判断基準。</li>
-    <li><strong>PyTorch の入替で速くなるか。</strong> 効けば全部が半分の時間で回る。<em>→ 実験 1</em></li>
-    <li><strong>ブロックをどう割るか。</strong> 何ショット目からずれ始めるかで決まる(§2b)。</li>
-    <li><strong>潜在継続(§5)が要る箇所はあるか。</strong> Furuknap 方式で足りない継ぎ目が出て初めて検討する。</li>
-    <li><strong>32GB をいつ借りるか。</strong> 論点 1・2 の結果次第。実験 5 が完走して時間も許容できるなら、借りずに済むかもしれません(§8b)。</li>
+    <li><strong>A. Ref2VA + 参照 3 枚で 15 秒が通るか。</strong> <strong>15 秒の実測は T2VA のものです。</strong>参照を積むとエンコード段のコストが乗ります。<strong>ここが通れば「15 秒 × 4 本 = 継ぎ目 3 つ」で設計が確定し、通らなければ 10 秒 × 6 本(継ぎ目 5 つ)に落ちます。</strong>1 本測れば済みます。<em>→ 実験 3</em></li>
+    <li><strong>B. 何ショット目からドリフトが限界を超えるか。</strong> <strong>これがいちばん大きい未知で、§2b のブロック長を決めます。</strong>この PC の実測 20 本は<strong>すべて単発クリップ</strong>で、連鎖は一度もやっていません。<strong>色は YAVG で数値化できる</strong>ので、印象ではなく系列で取ること。<em>→ 実験 4・5</em></li>
+    <li><strong>C. 音は (a) を狙うか (b) で妥協するか。</strong> <strong>実測が 1 つ判断材料を足しました</strong> — <strong>セリフは終端の 0.2 秒前まで来ます</strong>。<strong>つまり編集側のクロスフェード(§7 レシピ 4)で語尾を削る危険が常にある</strong>ということで、<strong>音声差し替え方式(§6b 層 0)の相対的な有利さが上がりました。</strong>LongMedia のリップシンクモードを使う (b) は、<strong>7〜10 秒/クリップの制約に加えてこの問題も抱えます。</strong></li>
+    <li><strong>D. 動画 1 方式(画像列)と動画 2 方式(潜在)のどちらを採るか。</strong> 前者は公式ノードだけで済み導入が軽い。後者は繋がりが強いがカスタムノードが要る。<strong>まず前者、足りなければ後者</strong>という順序は変えません。<strong>B の結果で決まります。</strong></li>
   </ol>
+
+  <div class="box">
+    <div class="box-title">保留 — 条件が来たら再浮上する</div>
+    <p style="margin:0"><strong>PDD 加速 LoRA(前版の本命)</strong> — <strong>売りだった「20 step → 8 step」は、既に 6 step で回っているので価値が薄れました。</strong>残る利点は Ref2VA のキャラ一貫性で、<strong>B の結果がよくなければ再浮上します</strong>(§11h・実験 3 の注意書き)。<br>
+    <strong>潜在継続(§5)</strong> — Furuknap 方式で足りない継ぎ目が出て初めて検討する(変更なし)。<br>
+    <strong>Chunk FeedForward / W4A8</strong> — <strong>OOM したときだけ。</strong>いまは不要と判断済み。<br>
+    <strong>PyTorch 入替</strong> — 上記のとおり優先度最下位。</p>
+  </div>
 </section>
 
 <section id="s11">
@@ -3026,7 +3166,10 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
   <p>このセッションのネットワークから到達できませんでした。<strong>ここが本命です。</strong></p>
   <ul>
     <li><a href="https://docs.comfy.org/tutorials/video/minimax/minimax-h3">ComfyUI 公式チュートリアル — MiniMax H3(T2V / I2V / R2V)</a></li>
-    <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3"><strong>Hugging Face — MiniMaxAI/MiniMax-H3(モデルカードとプロンプト指針)</strong></a> — <strong>最優先。§11 で「結果が完全に変わった」とされる推奨プロンプトテンプレートの出典。同じものが blueprint の左下にも同梱されています</strong></li>
+    <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3"><strong>Hugging Face — MiniMaxAI/MiniMax-H3(モデルカードとプロンプト指針)</strong></a> — <strong>取得済み <span class="c c0">実測</span>(2026-09-06 に判明)。ダウンロード不要です。</strong>原文がこの PC の <code>MiniMaxH3_work/docs_archive/official_prompt_guides/</code> にあります:<br>
+    <code>VIDEO_PROMPT_WRITING_GUIDE_ref_en.md</code>(23.0KB / <strong>Ref2VA 用。本件の本命</strong>)<br>
+    <code>VIDEO_PROMPT_WRITING_GUIDE_base_en.md</code>(15.4KB)<br>
+    <code>h3-prompt-writing_SKILL.md</code>(2.1KB)</li>
     <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3/raw/main/LICENSE">同 — COMMUNITY LICENSE AGREEMENT 全文</a></li>
     <li><a href="https://comfyui-wiki.com/en/tutorial/advanced/video/minimax/minimax-h3">ComfyUI Wiki — MiniMax H3 ガイド</a></li>
   </ul>
@@ -3226,7 +3369,8 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
 
 <footer>
   <p>初版 2026-08-30 / 第 20 版 2026-08-30(<strong>9 本目の動画を §11i に追加</strong>。H3 の全機能を実装した Director workflow の解説で、事実上の機能仕様書として扱った。<strong>17k+5 が <code>length % 17 == 5</code> として確定</strong>、<strong>retention の 4 段階</strong>(5 層プロンプトの第 3 層の実体)、<strong>Storyboard は構図だけで外見は別ファイル</strong>、<strong>「出力音声は常に合成される」の確定</strong>、<strong>Carries over</strong>、<strong>参照画像のサイズとアスペクト比の制約</strong>、顔移植の落とし穴、Global music の書き方などを収録)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① §9 の実験結果の反映、② 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、③ FastH3 の Ref2VA 対応が出たら再評価。</p>
+  <strong>第 21 版 2026-09-06</strong>(<strong>この PC の実測を反映した初めての改訂</strong>。前版までは「実測ゼロ」を前提に書かれていたが、同じ PC の <code>MiniMaxH3_work/</code> に 20 本以上の実測と公式プロンプトガイドの原文が既にあった。<strong>§9 と §10 を全面的に書き換え</strong>、<strong>§0 に確度 <span class="c c0">実測</span> を新設</strong>、台帳 §8c の 4 行と §12 の「未取得」1 件を訂正。主な訂正 — <strong>15 秒は通る</strong>(0.4MP / 362f / 226.5〜247.5 秒 / OOM なし)、<strong>時間予算は前版の外挿より 2〜3 倍速い</strong>、<strong>GGUF は却下・INT8 ConvRot 一択</strong>、<strong>ベースラインは 6 step</strong>、<strong>4 step は音声が割れる</strong>、<strong>セリフは終端 0.2 秒前に張り付く</strong>、<strong>VRAM ピークは OOM 接近の指標にならない</strong>、<strong>パイプラインは完全に決定的</strong>、<strong>公式プロンプト指針は取得済み</strong>)。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① <strong>実験 3 の「Ref2VA + 参照 3 枚で 15 秒」の結果</strong>(残論点 A)、② <strong>実験 4・5 のドリフト測定</strong>(残論点 B — 最大の未知)、③ 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、④ FastH3 の Ref2VA 対応が出たら再評価。</p>
 </footer>
 
 </main>
