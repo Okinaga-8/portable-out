@@ -216,7 +216,7 @@ footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); fo
     <span>ComfyUI + 量子化</span>
     <span>台詞・人の声が主役</span>
     <span>将来 32GB 借用も検討</span>
-    <span>更新 2026-09-06(第 25 版)</span>
+    <span>更新 2026-09-06(第 26 版)</span>
   </div>
 </header>
 
@@ -1937,6 +1937,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>カット割りは技術的な劣化リセットでもある。</strong>「ここは連続でなければならないか?」を継ぎ目ごとに問う</td><td>§2b</td></tr>
         <tr><td>口だけ動く 2 人が映り続ける動画は<strong>技術的に成功しても退屈</strong>になる</td><td>§11</td></tr>
         <tr><td><strong>決着 <span class="c c0">実測</span> — Ref2VA + 参照 3 枚でも 15 秒は通り、しかも遅くならない。</strong>0.4MP / 362f / 6 step で <strong>194.0 秒・OOM なし</strong>。<strong>参照を積むコストは無視できる</strong>(残論点 A はこれで決着)</td><td>§9 / §10</td></tr>
+        <tr><td><strong>尺の崖 <span class="c c0">実測</span> — <strong>25 秒（600f = 17×35+5、ちょうど 25.000 秒）までは 20 秒と同じ性格のまま伸びる</strong>（363.0 秒）。<strong>30.667 秒（736f）も完走するが（484.2 秒）、3 つの指標が同時に曲がる</strong> — VRAM ピークが反転して余裕 694 MiB、超線形指数が 1.41 に上がり、<strong>フレーム間の動きが後半にかけて単調に減る</strong>（2.88→1.88。25 秒は下がって戻る）。音声 max も 30 秒だけ −11.7 dB（15/20/25 秒は −19.9/−20.4/−23.5 dB）。<span class="c c3">実用上限は 25 秒と見ているが、実物の品質判定は保留</span></td><td>§9 / §2b</td></tr>
         <tr style="color:var(--accent-ink)"><td><strong>公式仕様は 4〜15 秒だが、20.042 秒(481f = 17×28+5)も通る <span class="c c0">実測</span>。</strong>274.7 秒・OOM なし、<strong>後半の破綻も無し</strong>(YAVG・フレーム間差・音声 RMS が最後まで平坦。実視聴でも確認)。<strong>1 分が「20 秒 × 3 本・継ぎ目 2」で作れる</strong> — 15 秒より継ぎ目が 1 つ減る。<strong>崖の位置は未探索</strong>(25 秒以上は未測)</td><td>§9 / §2b</td></tr>
       </tbody>
     </table>
@@ -2004,8 +2005,11 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>VRAM を形状から見積もる系のローダーは、Dynamic VRAM と役割が重なる。</strong>この PC は comfy-aimdo が既に効いているので、<strong>同じ仕事をする層は片方だけにする</strong></td><td>§11j / §9</td></tr>
         <tr><td><strong>参照動画を使うレンダーは、参照画像より明確に遅い</strong>(5090 で 15 秒に 16 分)<span class="c c3">要検証</span></td><td>§11j</td></tr>
         <tr><td style="color:var(--risk)"><strong>解消 <span class="c c0">実測</span> — ComfyUI を 0.34.5 へ更新した</strong>(2026-09-06)。<strong>torch / comfy-kitchen は無傷</strong>、comfy-aimdo は 0.4.13→0.4.15。<strong>依存を上げる <code>update_comfyui_and_python_dependencies.bat</code> は使わない</strong>（torch を差し替える）</td><td>§11k / §5</td></tr>
+        <tr><td><strong>尺を伸ばすと超線形の指数も上がる <span class="c c0">実測</span>。</strong>124→362 で 1.11、362→481 で 1.22、481→600 で 1.26、<strong>600→736 で 1.41</strong>。<strong>736f で VRAM の反転と同時に起きている</strong></td><td>§9</td></tr>
+        <tr><td style="color:var(--risk)"><strong>モデルをフォルダに足したら refresh では足りない。完全再起動が要る。</strong>ドロップダウンには出るのに実行するとエラーになる（実例あり）。ノードが揃わないときは<strong>まず Manager の「install missing custom nodes」</strong></td><td>§11j</td></tr>
+        <tr><td><strong>VRAM を形状から見積もるローダに、速度上の利点は無い</strong>（同じ 15 秒で 385.2 秒 対 375 秒）。<strong>Dynamic VRAM と役割が重なるうえに速くもならないので、入れない理由が増えた</strong></td><td>§11j</td></tr>
         <tr><td><strong>尺と時間は緩やかな超線形。極端な崖は無い <span class="c c0">実測</span>。</strong>同一グラフ・同 seed(0.4MP / 6 step / Ref2VA + 参照 3 枚)で <strong>124f = 59.3 秒 / 362f = 194.0 秒 / 481f = 274.7 秒</strong>。フレームあたり 0.478 → 0.536 → 0.571 秒、<strong>超線形の指数は 1.1〜1.2</strong></td><td>§9</td></tr>
-        <tr><td><strong>尺を伸ばすと VRAM ピークはむしろ下がる <span class="c c0">実測</span>(2 度目の再現)。</strong>362f で 14,995 MiB、<strong>481f で 14,842 MiB</strong>。しかもピーク値は待機中の常駐重み(14,994 MiB)とほぼ同じで、<strong>サンプリング中の平均は 10,854〜11,045 MiB とさらに低い</strong>。<strong>ピークを見て「崖の手前」と判断しないこと</strong></td><td>§9</td></tr>
+        <tr><td><strong>尺を伸ばすと VRAM ピークは下がる — ただし限界がある <span class="c c0">実測</span>。</strong>362f 14,995 / 481f 14,842 / 600f 14,913 MiB と横ばい（むしろ微減）だが、<strong>736f で 15,682 MiB に跳ねて反転する</strong>。平均も 10,854→11,045→12,339→<strong>14,228</strong> と上がり、<strong>余裕は 694 MiB（4.2%）まで落ちる</strong>。<strong>Dynamic VRAM が常駐重みを降ろして吸収できる範囲に上限がある</strong>ということ</td><td>§9</td></tr>
         <tr><td>比較用 — <strong>RTX 3060 12GB / 0.41MP</strong> の実測: 4step LoRA で 4 秒 = 約 5 分・8 秒 = 約 9 分、20step で 4 秒 = 約 18 分・8 秒 = 約 31 分。<strong>モデル 20GB が 12GB に載らず毎ステップ重みをストリームしている</strong>。<span class="c c0">実測</span>の「0.4MP / 15 秒 = 約 4 分」は<strong>尺あたり 4〜5 倍速い</strong></td><td>§11k / §9</td></tr>
         <tr><td><strong>ComfyUI 0.33.1 → 0.34.5 の更新は、サンプリングを変えていない <span class="c c0">実測</span>。</strong>同 seed・同設定で焼いた出力を突き合わせたところ、<strong>音声(AAC)がバイト単位で完全一致</strong>した。H3 は映像と音声を<strong>同じ DiT forward で同時に作る</strong>(<code>model_type FLOW_AV</code>)ので、<strong>音声の一致 = 潜在の一致 = サンプリング無変更</strong>。潜在が少しでもずれれば音声も必ず別のバイト列になる</td><td>§9</td></tr>
         <tr><td style="color:var(--risk)"><strong>ただし 0.34.5 は動画に常に <code>bt709</code> / <code>sRGB</code>(<code>iec61966-2-1</code>)の色タグを付ける <span class="c c0">実測</span>。</strong><code>CreateVideo</code> の <code>color_space</code> 入力を外しても戻らない。<strong>そのため 0.34.5 以前に焼いた出力とのバイト比較・SSIM 比較はもう成立しない</strong>(同一内容でも SSIM Y 0.9807 / PSNR 40.3 dB になる。平均絶対差 1.69/255、フレーム間の PSNR は 40.2〜41.4 と狭く、<strong>再エンコードの差の出方</strong>)</td><td>§9</td></tr>
@@ -2025,6 +2029,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td>最適化系ノードは <strong>H3 Sigma Shift の後、guider と sampler の前</strong>に置く<span class="c c3">要検証</span></td><td>§8d</td></tr>
         <tr><td><strong>ステップ数と量子化は独立に評価できない。</strong>20 ステップで破綻した int4 が Turbo LoRA と組むと最良になった実測がある</td><td>§8d / §8</td></tr>
         <tr><td>高解像度は<strong>二段サンプリング</strong>で取りにいく:<strong>低解像度 25 ステップ → 2× 潜在アップスケール → 8 ステップ仕上げ</strong></td><td>§8d</td></tr>
+        <tr><td style="color:var(--risk)"><strong>二段サンプリングのステップ指定は「総ステップ数」。</strong>「2 段目の残りの数」だと誤解して入れると<strong>生成が壊れる</strong>（実例あり）。<strong>触るのは 1 段目のステップ数だけにする</strong></td><td>§11j / §8d</td></tr>
         <tr><td><strong>二段目は部分デノイズ必須</strong>(<code>sigmas[0]</code> は 1.0 未満)。フルデノイズは拒否される</td><td>§8d</td></tr>
         <tr><td>潜在の縦横を倍にすると<strong>動画トークンは約 4 倍</strong>。<strong>二段目でこそ OOM が起きる</strong>ので Chunk FeedForward を入れておく</td><td>§8d</td></tr>
         <tr><td><code>lock_audio</code> で二段目の音声をロックできる。<strong>音声差し替え方式と噛み合う</strong></td><td>§8d</td></tr>
@@ -2090,6 +2095,7 @@ ffmpeg -i a.mp4 -i b.mp4 -filter_complex \
         <tr><td><strong>長尺は一度に回さない。</strong>チャンク単位で保存して日をまたいで再開する運用が実在する(3 分の曲 = 13 チャンク・約 3 時間)。<strong>1 分 5 本なら不要だが、考え方は §8b の借用運用と同じ</strong></td><td>§11j / §8b</td></tr>
         <tr><td><strong>台詞を先に日本語 TTS で作るなら、書き起こし(Whisper)の工程が丸ごと要らない。</strong>台詞テキストも各行の秒数も最初から手元にある</td><td>§11j / §6b</td></tr>
         <tr><td><strong>屋外ロケの一貫性には、上空からの地図スクリーンショットを Location 参照として渡す。</strong>§11g の「3D 建築レイアウトを 1 枚」の屋外版</td><td>§11k / §11g</td></tr>
+        <tr><td style="color:var(--risk)"><strong>保存したタイムラインやワークフローを読み直したときは、参照画像を目視で確認する。</strong>復元後に<strong>人物の参照が入れ替わっていた実例</strong>がある。§8e のキャッシュキー事故と同じ系統</td><td>§11j / §8e</td></tr>
         <tr><td><strong>ドリフト測定ツールが既製で存在する</strong> — <code>tools/face_drift.py</code> / <code>latent_drift.py</code> / <code>bench_chain.py</code>。<strong>実験 4・5(論点 B)を自分で書く前にここを見る</strong></td><td>§11k / §9</td></tr>
       </tbody>
     </table>
@@ -3429,6 +3435,26 @@ comfy-aimdo 0.4.15 / comfy-kitchen 0.2.31
     </ol>
   </div>
 
+  <h3>追補 — 導入手順の動画(同チャンネル)</h3>
+  <div class="box">
+    <div class="box-title">出典</div>
+    <p style="margin:0"><strong>MiniMax H3 Director V1.2 — Full Install Guide</strong> — MuseCollective / <code>https://youtu.be/IIeZmYQ-UmU</code> 字幕全文から要約 <span class="c c1">一次</span>。<strong>まっさらな ComfyUI に入れ直す実演。</strong>導入そのものは本ノートの優先事項ではありませんが、<strong>途中で出てくる実測と落とし穴に転用できるものがありました</strong>。</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th style="width:34%">拾えたもの</th><th>中身</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Unified Loader に速度上の利点は無い</strong></td><td>同じ 15 秒の生成が <strong>Unified Loader 版 385.2 秒 / 標準の subgraph 版 375 秒</strong>。<strong>ほぼ同じ</strong>。§11j で「Dynamic VRAM と役割が重なるので入れるなら片方だけ」と書いた判断を、<strong>速度の面からも裏付けます</strong> — 入れない理由が増えました</td></tr>
+        <tr><td style="color:var(--risk)"><strong>モデルを足したら refresh では足りない</strong></td><td><code>models/latent_upscale_models/</code> に置いて refresh したらドロップダウンには出たのに、<strong>実行するとエラー</strong>。<strong>完全再起動で解消</strong>。H3 固有ではありませんが、実際に踏んでいます</td></tr>
+        <tr><td><strong>二段サンプリングのステップ指定は「全体」</strong></td><td>旧版は refiner 側にもステップ数があり、<strong>「残りのステップ数」だと誤解して入れると生成が壊れました</strong>(著者は 10 step の実行に 8 と入れて破綻させている)。<strong>V1.2 では潜在が正しいステップ数を運ぶようになり、refiner 側の指定は撤去</strong>。<strong>触るのは 1 段目のステップ数だけ</strong></td></tr>
+        <tr><td>著者の既定値</td><td>二段サンプリング時 <strong>0.5MP / 総 10 step(1 段目 6・2 段目 4)</strong>。<strong>1MP は確実に動く。2K は未テスト</strong>(「他のワークフローで 2 まで上げた例は知っているが自分では試していない」)</td></tr>
+        <tr><td style="color:var(--risk)"><strong>保存した timeline を読み直すと参照がずれることがある</strong></td><td>過去の timeline を読み込んだら<strong>人物の参照画像が入れ替わっていた</strong>ため、入れ直して analyze をやり直しています。<strong>§8e のキャッシュキー事故と同じ系統</strong> — 参照は復元後に必ず目視で確認</td></tr>
+        <tr><td>依存の実際</td><td>Director 本体のほかに <strong>Motion Context MultiRef / KJ nodes / latent upscaler(+モデル) / Unified Loader / Run Stats / CRT nodes</strong>。<strong>別リポジトリに分かれているのは、他のワークフローでも使うから</strong>。詰まったら<strong>まず Manager の「install missing custom nodes」</strong>(CRT nodes の不具合はこれで解消した)</td></tr>
+        <tr><td>seed hunt の実測</td><td><strong>4 候補で 10 分</strong>(15 秒 / 1MP)。候補 1 は指定した seed そのもの、2 以降は<strong>そこから派生させた seed</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <div class="box tint">
     <div class="box-title">あなたにとっての意味 — 導入は急がなくてよい</div>
     <p>このノードが解いている問題(タイムライン UI、チャンクの自動分割、参照番号の管理)は、<strong>1 分 5 本なら手でも回せる規模</strong>です。しかも 5090 前提で書かれ、依存も多く、バージョン番号も錯綜しています。</p>
@@ -3864,7 +3890,8 @@ comfy-aimdo 0.4.15 / comfy-kitchen 0.2.31
   <strong>第 23 版 2026-09-06</strong>(<strong>11 本目の動画を §11k に追加</strong>。連鎖そのものを主題にした情報源で、<strong>残論点 B と D に初めて外からの材料が付いた</strong>。<strong>最大の発見は「連鎖の中核が標準ノードで組める」こと</strong> — H3 は attention にフレームインデックスを指定でき、<code>MiniMaxH3AddGuide</code> が<strong>終端フレーム群 + 音声</strong>を渡してオーバーラップさせる。<strong>§4 に選択肢 B' を追記</strong>し、<strong>要件が ComfyUI 0.34.0 以降で、この PC の 0.33.1 では届かないことを明記</strong>した。ほかに — <strong>オーバーラップ帯は差分がほぼ黒で再現される</strong>、<strong>ハンドオフは 5/22/39/56 フレーム・推奨はショット長の 1/5</strong>(「画像列は 3 秒以上」とは別物)、<strong>4 クリップは持ち 6 クリップで顔が崩れる</strong>、<strong>ドリフトの原因は「各セグメントが 1 つ前しか見ない」こと</strong>、<strong>潜在 / VAE ハンドオーバーは品質に大差なし</strong>(論点 D)、<strong>解像度を上げると一貫性そのものが上がる</strong>(低解像度で測ると悲観的に出る)、<strong>両端ピン留めで鎖の途中だけ作り直せる</strong>、<strong>ドリフト測定ツールが既製で存在する</strong>。台帳 §8c に 16 行追加し、<strong>177 行になった</strong>。<strong>あわせて §0 の再開用スニペットを修正</strong> — <strong>入口はこの 412KB の文書ではなく <code>HANDOFF.md</code>(12KB)</strong>。スマホやクラウドから再開するとき、全文を読ませるとそれだけでセッションが終わるため)。更新履歴はこのファイルの git コミットログを参照。<br>
   <strong>第 24 版 2026-09-06</strong>(<strong>ComfyUI を 0.33.1 から 0.34.5 へ更新した</strong>。連鎖に必要な <code>MiniMaxH3AddGuide</code> を追加したのが v0.34.0 そのもので、0.33.1 の次のリリースがそれにあたる。<strong>依存を上げない <code>update.py --stable</code> の経路で実施し、torch / torchvision / torchaudio / comfy-kitchen は無傷</strong>、comfy-aimdo だけ 0.4.13 → 0.4.15。<strong>実機で確認した</strong> <span class="c c0">実測</span> — 必要な 3 ノードはすべて存在し、<strong><code>AddGuide</code> の入力は <code>frame_idx</code> / <code>image</code> / <code>audio</code> を含む</strong>ので、§11k の「フレームインデックスを指定して終端フレーム群 + 音声を渡す」がノードの入力そのもので裏付けられた。起動はエラー・警告ゼロで <code>Using Comfy Kitchen attention</code> も出る。<strong>更新後の初回レンダーで <code>unet unexpected: ['adaln_basis', 'adaln_mean']</code> という新しい警告が出たが、調べた結果これは無視してよい</strong> — ComfyUI はこの 2 つを 0.33.1 でもソースに持っておらず、<strong>原因は ComfyUI ではなく <code>10Eros-Max beta4</code> が持つ余剰テンソル</strong>だった(台帳「環境・速度」に収録)。所要 59.29 秒もベースライン 58.20 秒の +1.9% で正常。<strong>同 seed での回帰確認も実施し、サンプリングは無変更と確認した</strong> — <strong>音声が 0.33.1 とバイト単位で完全一致</strong>したため(映像と音声は同じ DiT forward の産物なので、これで潜在の一致が言える)。<strong>ただし映像はバイト一致しない</strong> — <strong>0.34.5 が常に <code>bt709</code> / <code>sRGB</code> の色タグを付ける</strong>ようになり、<code>color_space</code> を外しても戻らないため、同一内容でも SSIM Y は 0.9807 になる。<strong>「同 seed なら SSIM Y = 1.000000」の判定は、同一 ComfyUI バージョン内でのみ有効</strong>)。更新履歴はこのファイルの git コミットログを参照。<br>
   <strong>第 25 版 2026-09-06</strong>(<strong>残論点 A を実測で決着させた</strong>。Ref2VA + 参照 3 枚 / 0.4MP / 6 step で <strong>15 秒(362f)が 194.0 秒・OOM なし</strong> — <strong>参照を積んでも遅くならない</strong>。<strong>さらに、公式仕様の 4〜15 秒を超える 20.042 秒(481f)も完走した</strong>(274.7 秒・OOM なし)。後半の破綻は数値(YAVG / フレーム間差 / 音声 RMS が最後まで平坦)でも実視聴でも見つからず、<strong>設計が「20 秒 × 3 本・継ぎ目 2」まで行けることになった</strong> — 15 秒より継ぎ目が 1 つ少なく、<strong>論点 B のドリフトに直接効く</strong>。ほかに <strong>尺と時間は超線形だが指数 1.1〜1.2 で崖は無い</strong>(124f 59.3 秒 / 362f 194.0 秒 / 481f 274.7 秒)、<strong>尺を伸ばすと VRAM ピークはむしろ下がる</strong>(14,995 → 14,842 MiB)を収録。§2 のクリップ長、§2b の分割案、§8c(+4 行)、§10 を更新。<strong>ただし崖の位置は未探索</strong> — 25 秒以上は測っていない)。更新履歴はこのファイルの git コミットログを参照。<br>
-  次回の更新予定: ① <strong>尺の崖を探す</strong>(25 秒・30 秒。仕様外の 20 秒が通ったので上限が未確定)、② <strong>実験 4・5 のドリフト測定</strong>(残論点 B — <code>tools/face_drift.py</code> の流用を先に検討)、③ <strong>scheduler <code>simple</code> vs <code>beta</code> の 1 変数比較</strong>(§11j)、④ 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、⑤ FastH3 の Ref2VA 対応が出たら再評価。</p>
+  <strong>第 26 版 2026-09-06</strong>（<strong>尺の崖を 25 秒・30 秒で探った</strong>。<strong>25 秒（600f）は 20 秒と同じ性格のまま伸びる</strong>（363.0 秒）。<strong>30.667 秒（736f）も完走するが、ここで 3 つの指標が同時に曲がった</strong> — <strong>VRAM ピークが反転し（14,913→15,682 MiB、余裕 694 MiB）</strong>、<strong>超線形指数が 1.26→1.41 に上がり</strong>、<strong>フレーム間の動きが後半にかけて単調に減る</strong>（2.88→1.88。25 秒は下がって戻る）。音声 max も 30 秒だけ −11.7 dB と他より 8〜12 dB 大きい。「尺を伸ばすと VRAM ピークは下がる」に<strong>上限があった</strong>ことが分かり、台帳の該当行を訂正した。<strong>実用上限は 25 秒と見ているが、実物の品質判定は保留</strong>。あわせて <strong>同チャンネルの導入手順動画を §11j の追補に収録</strong> — <strong>Unified Loader に速度上の利点は無い</strong>（385.2 対 375 秒）、<strong>二段サンプリングのステップ指定は総数</strong>、<strong>モデル追加後は refresh では足りず完全再起動</strong>など。台帳 §8c は +7 行）。更新履歴はこのファイルの git コミットログを参照。<br>
+  次回の更新予定: ① <strong>30 秒版の品質判定</strong>（後半の動きと音。これで実用上限が確定する）、② <strong>実験 4・5 のドリフト測定</strong>(残論点 B — <code>tools/face_drift.py</code> の流用を先に検討)、③ <strong>scheduler <code>simple</code> vs <code>beta</code> の 1 変数比較</strong>(§11j)、④ 公式プロンプトガイド本体を読んだ上での <span class="c c3">要検証</span> 項目の格上げ、⑤ FastH3 の Ref2VA 対応が出たら再評価。</p>
 </footer>
 
 </main>
