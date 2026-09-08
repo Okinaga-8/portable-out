@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+
+# h3_prompt_convert.py の LLM 応答キャッシュ
+.h3_cache/

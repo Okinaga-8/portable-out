@@ -1,9 +1,74 @@
 # HANDOFF — 現在地
 
-**最終更新: 2026-09-06 06:18 / 更新者: ローカル(自宅 PC)セッション**
+**最終更新: 2026-09-08 / 更新者: クラウド(スマホ)セッション**
+（前回: 2026-09-06 06:18 ローカル(自宅 PC)セッション）
 
 ローカル(自宅 PC)の Claude Code で作業を再開するときに、**最初に読むファイル**。
 会話ログは引き継がない。ここと、リポジトリと、Artifact の 3 つで状態が完結するようにしてある。
+
+---
+
+## ★ 2026-09-08 追加: 177B プロンプト変換器（このブランチ）
+
+ブランチ `claude/qwen-177b-prompt-converter-2rgno2`。
+**日本語の場面メモ → MiniMax H3 プロンプト**を、ローカルの 177B
+（Qwen3.8-Flash-Next / llama-server）で起こす変換器を新規に作った。
+
+| ファイル | 中身 |
+|---|---|
+| `tools/h3_prompt_convert.py` | 変換器本体。`check` / `plan` / `render` / `auto` / `lint` |
+| `tools/h3_prompt_rules.md` | **知識パック。** 台帳から H3 のプロンプト規則を抜いたもの |
+| `templates/scene_example.md` | 段1 の入力例（日本語の場面メモ） |
+| `templates/scene_example.yaml` | 中間形式の例。25 秒 × 3 本の実寸 |
+| `tools/h3_prompt_convert.bat.example` | PC でダブルクリック運用するための雛形 |
+
+### 設計の要（ここだけ押さえれば直せる）
+
+**数値は Python が持ち、LLM には散文しか書かせない。**
+17k+5 のフレーム格子、25 秒(600f)の運用上限、台詞のモーラ予算、タイミングマーカーの
+位置はすべて Python 側が計算し、LLM が返した数値は採用しない。
+**知見が増えたら Python ではなく `h3_prompt_rules.md` を編集する。**
+
+`lint` は LLM を使わないので llama-server が落ちていても走る。
+既存のプロンプト設計を検査するだけならこれでよい。
+
+### 実測との突き合わせ（済）
+
+格子の計算は台帳の実測値と全一致することを確認した —
+15s→362f / 20s→481f / **25s→600f** / 30s→736f / 4s→107f。
+
+### ★ 未検証 — ここは PC でしか確かめられない
+
+- **177B に一度も通していない。** クラウド側からローカルの llama-server は見えない。
+  HTTP 経路・ストリーミング・修正ループ・キャッシュは**モックサーバで検証済み**だが、
+  **実際の 177B が出す YAML / JSON の癖は未知**。
+  段1（plan）の出力が崩れるようなら、まず `--temp` を下げ、それでも駄目なら
+  `--json` で中間形式を JSON にする（JSON のほうが崩れにくい）。
+- **`--repair` の効きが未知。** 既定 2 回。要修正が残るようなら増やす。
+- **速度が未知。** 177B は CPU オフロードが前提なので `--timeout` の既定は 30 分にしてある。
+
+### ★ 運用上の制約（これは確定）
+
+**ComfyUI と 177B は同時に載らない。** H3 は TE 15.7GB + DiT 21GB を使う。
+**プロンプトをまとめて作ってから llama-server を落とし、ComfyUI を起動する**という順番になる。
+だから変換器は 1 本ずつではなく**シーケンス全体を一度に**変換し、
+応答をキャッシュ（`.h3_cache/`、gitignore 済み）する作りにしてある。
+
+### ⚠ 見つからなかったもの
+
+- **`qwen-local-handoff.md` はこのリポジトリに存在しない。**
+  全ブランチ・全履歴を検索したが無く、Qwen に触れるファイルも 1 つも無い。
+  **ローカル PC にあって push されていない**と思われる。
+- **旧「minimax H3 用プロンプト変換器」も無い。** 同様にローカルのみ。
+  そのため**旧実装は踏襲せず、リポジトリに残っている H3 の知見から新規に作り直した。**
+  旧版に使い勝手の良い点があれば、push してもらえれば取り込める。
+
+### 次の一手（PC 側）
+
+1. `git pull` して `python tools/h3_prompt_convert.py check` で llama-server と繋がるか見る
+2. `python tools/h3_prompt_convert.py lint templates/scene_example.yaml` — LLM 無しで動くか
+3. `python tools/h3_prompt_convert.py auto templates/scene_example.md -o out/ -v` — 通しで回す
+4. 崩れ方を `h3_prompt_rules.md` か system prompt に反映する
 
 ---
 

@@ -1,0 +1,173 @@
+# 中間形式の例（段1 plan の出力にあたるもの）
+#
+# ここを人が直してから render にかける。数値は変換器が入れ直すので、
+# seconds は希望値でよい（17k+5 格子への丸めと 25 秒上限は自動）。
+#
+# この例は「1 分 = 25 秒 × 3 本・継ぎ目 2」の形。25 秒を台詞で埋めるには
+# 1 クリップあたり 5〜6 発話（各 20〜27 モーラ）要る、というのが実際の密度。
+title: 紙袋
+mode: ref2va
+megapixels: 0.4
+language: Japanese
+
+summary: >-
+  A three-clip live-action sequence, 75 seconds total, following one woman alone in a
+  sparsely furnished apartment as she picks up a paper bag, looks inside, and settles
+  into a tired acceptance. Read the clips in order; each cut is a hard reset of continuity.
+
+soundscape: >-
+  The quiet interior of a sparsely furnished apartment. Faint creases and rustles of kraft
+  paper, the soft friction of fabric as she moves, and her own steady breathing carry the
+  whole scene. A distant hum of traffic sits far behind the room tone.
+
+non_diegetic_music: None
+
+constraints:
+  - The camera stays locked off on a tripod, holding one framing for the whole clip.
+  - Soft natural window light falls from the left, with a muted neutral colour grade.
+  - Skin texture stays realistic and the depth of field stays shallow.
+
+references:
+  images:
+    - id: image1
+      role: character sheet — face, hair and wardrobe together in one sheet
+      used_as: reference
+      retention: fully_preserved
+  audio:
+    - id: audio1
+      role: voice reference for subject1
+      seconds: 8
+
+entities:
+  - id: subject1
+    name: Aoi
+    kind: person
+    from: image1
+    retention: fully_preserved
+    description: >-
+      A woman in her late twenties, wearing exactly the same clothes and hairstyle as the
+      reference sheet.
+    voice: a low, settled female voice, unhurried and slightly worn
+    voice_from: audio1
+  - id: location1
+    name: the apartment
+    kind: location
+    retention: weak_reference
+    description: >-
+      A quiet, sparsely furnished apartment with a wooden floor and a plain wall.
+  - id: prop1
+    name: the paper bag
+    kind: prop
+    description: >-
+      A plain brown kraft paper bag with a crumpled rim, resting on the floor.
+
+clips:
+  - id: C01
+    seconds: 25.0
+    camera: >-
+      Locked off on a tripod, full body from a three-quarter oblique angle at chest height.
+    description: >-
+      She stands still and looks down at the paper bag by her feet, then slowly bends her
+      knees and lowers herself into a deep crouch, spine upright and heels close to the
+      floor. Her fingers close around the crumpled rim and she lifts the bag in front of
+      her chest. The movement is slow, deliberate and weighted. Before she reaches down she
+      holds still for a long moment with her lips closed, silently listening to the room.
+    dialogue:
+      - speaker: S1
+        entity: subject1
+        text: またここに置いてある。ゆうべは無かったのに。
+        yomi: またここにおいてあるゆうべはなかったのに
+        delivery: murmuring under her breath
+      - speaker: S1
+        entity: subject1
+        text: 誰が運んできたんだろう。鍵はかけていたはずなのに。
+        yomi: だれがはこんできたんだろうかぎはかけていたはずなのに
+        delivery: still quietly, thinking aloud
+      - speaker: S1
+        entity: subject1
+        text: 床に直に置くの、やめてほしいんだけどな。
+        yomi: ゆかにじかにおくのやめてほしいんだけどな
+        delivery: with a flat, tired edge
+      - speaker: S1
+        entity: subject1
+        text: 紙袋って、持ち上げると思ったより重いんだよね。
+        yomi: かみぶくろってもちあげるとおもったよりおもいんだよね
+        delivery: half to herself, as she takes the weight
+      - speaker: S1
+        entity: subject1
+        text: まあ、開けてみないことには始まらないか。
+        yomi: まああけてみないことにははじまらないか
+        delivery: resigned, settling the bag against her chest
+
+  - id: C02
+    seconds: 25.0
+    camera: >-
+      Locked off on a tripod, a tight close shot holding both hands on the rim of the bag
+      and her whole face in the same frame, the lens level with the rim.
+    description: >-
+      She holds the paper bag in both hands and tilts her head down to look into it. The
+      opening is angled away from the lens toward her face alone, its inside in deep shadow.
+      She studies what is inside in silence for a long beat, her mouth closed. Her eyes
+      narrow, her brows draw together and her lips press thin.
+    dialogue:
+      - speaker: S1
+        entity: subject1
+        text: なにこれ。全部わたしの物じゃないんだけど。
+        yomi: なにこれぜんぶわたしのものじゃないんだけど
+        delivery: speaking low and flat, holding the anger down
+      - speaker: S1
+        entity: subject1
+        text: この靴も、この上着も、見た覚えが全然ない。
+        yomi: このくつもこのうわぎもみたおぼえがぜんぜんない
+        delivery: turning items over, voice tightening
+      - speaker: S1
+        entity: subject1
+        text: というか、サイズがまるで合ってないじゃない。
+        yomi: というかさいずがまるであってないじゃない
+        delivery: sharper now
+      - speaker: S1
+        entity: subject1
+        text: 間違えて置いていったにしても、限度があるでしょう。
+        yomi: まちがえておいていったにしてもげんどがあるでしょう
+        delivery: clipped, jaw tight
+      - speaker: S1
+        entity: subject1
+        text: しかも、わざわざ玄関の中まで入ってきてる。
+        yomi: しかもわざわざげんかんのなかまではいってきてる
+        delivery: quieter, and colder
+
+  - id: C03
+    seconds: 25.0
+    camera: >-
+      Locked off on a tripod, holding the same close framing on her face and hands.
+    description: >-
+      Her shoulders drop as she exhales and the tension leaves her face. Her mouth curves
+      into a small, tired smile while her eyes stay sad. She lowers the bag, turns her head
+      toward the window on the left, and holds there with her lips closed, silently
+      watching the light for the last stretch of the shot.
+    dialogue:
+      - speaker: S1
+        entity: subject1
+        text: まあ、いいか。怒っても誰も出てこないし。
+        yomi: まあいいかおこってもだれもでてこないし
+        delivery: exhaling the words, almost amused
+      - speaker: S1
+        entity: subject1
+        text: どうせ明日になれば、また同じ物が置いてある。
+        yomi: どうせあしたになればまたおなじものがおいてある
+        delivery: soft, matter-of-fact
+      - speaker: S1
+        entity: subject1
+        text: 一度くらい、顔を見てみたい気もするけどね。
+        yomi: いちどくらいかおをみてみたいきもするけどね
+        delivery: with the faintest smile
+      - speaker: S1
+        entity: subject1
+        text: たぶん、聞いたところで答えてはくれないんだろうな。
+        yomi: たぶんきいたところでこたえてはくれないんだろうな
+        delivery: trailing off, looking away
+      - speaker: S1
+        entity: subject1
+        text: さて、今日はもう寝ようかな。
+        yomi: さてきょうはもうねようかな
+        delivery: closing the thought, turning toward the window

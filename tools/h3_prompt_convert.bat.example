@@ -1,0 +1,36 @@
+@echo off
+rem ============================================================
+rem  h3_prompt_convert.py を PC でダブルクリック運用するための雛形。
+rem  絶対パスを自分の環境に書き換えてから、拡張子を .bat にして使う。
+rem  （このリポジトリは public なので、パス入りの .bat は置かない）
+rem ============================================================
+
+rem --- 1. 書き換えるところ ------------------------------------
+set PORTABLE=C:\path\to\portable-out
+set MODEL=C:\path\to\Qwen3.8-Flash-Next-177B-Q4_K_M.gguf
+set LLAMA=C:\path\to\llama.cpp\llama-server.exe
+set SCENE=%PORTABLE%\templates\scene_example.md
+
+rem PyYAML の要らない ComfyUI 同梱 python を使うのが手堅い
+set PY=C:\path\to\ComfyUI_windows_portable\python_embeded\python.exe
+
+rem --- 2. llama-server を起こす --------------------------------
+rem  -c      コンテキスト。ルール＋設計データで 16384 は欲しい
+rem  -ngl    GPU に載せる層数。16GB では全部は載らないので CPU に溢れる
+rem  --jinja モデル同梱のチャットテンプレートを使う
+start "llama-server" "%LLAMA%" -m "%MODEL%" -c 16384 -ngl 99 ^
+      --host 127.0.0.1 --port 8080 --jinja
+
+echo llama-server の起動を待っています（177B は読み込みに数分かかります）...
+timeout /t 60 /nobreak >nul
+
+rem --- 3. 変換する ---------------------------------------------
+"%PY%" "%PORTABLE%\tools\h3_prompt_convert.py" check
+"%PY%" "%PORTABLE%\tools\h3_prompt_convert.py" auto "%SCENE%" -v
+
+echo.
+echo ============================================================
+echo  終わったら llama-server のウィンドウを閉じてください。
+echo  ComfyUI と 177B は同時に載りません（H3 は TE 15.7GB + DiT 21GB）。
+echo ============================================================
+pause

@@ -11,8 +11,13 @@ description: ローカル ComfyUI の MiniMax H3 系（Hailuo H3 / 10Eros-Max �
 - **RAM 64GB** — offload ボトルネックの根本的な解決になる容量
 - **CUDA 13** — 4080 系で最も効いた既知の改善策は適用済み。速度問題で CUDA を疑う必要はない
 - **主用途 Ref2VA、FL2VA も併用**
-- **DiT: `minimax_h3_ref2va_pruned_int8_convrot.safetensors`**（Ref2VA / **pruned** / INT8 ConvRot / 19.53GB）
-- Turbo LoRA を実際に当てているかは**未確認**（`models/loras/` とワークフローのノードを見ること）
+- **ComfyUI 0.34.5** / torch 2.13.0+cu130 / Python 3.13.14 / comfy-aimdo 0.4.15 / comfy-kitchen 0.2.31
+- **DiT は beta4 を採用済み**（2026-09-06）:
+  `10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot.safetensors`（20,967,637,320 bytes）。
+  **turbo は焼き込み済みなので LoRA はバイパスする。**
+  base の `minimax_h3_ref2va_pruned_int8_convrot.safetensors` も残してあり、戻せる
+- 起動: `--windows-standalone-build --disable-pinned-memory --use-ck-attention`
+- **量子化は INT8 ConvRot 一択。GGUF は実測で却下**（1.8〜2.6 倍遅く VRAM も増えた）
 
 数値や推奨は常にこの構成を前提に答えること。
 
@@ -26,6 +31,8 @@ description: ローカル ComfyUI の MiniMax H3 系（Hailuo H3 / 10Eros-Max �
 - `docs/minimax-h3-10eros-max.html` — 10Eros-Max 導入の判断シート。Artifact として公開済み。
   **更新するときは新規作成せず、この HTML を編集して同じ URL に再デプロイする。**
 - `tools/h3_env_check.py` — 実機の GPU / ComfyUI バージョン / models 配下 / 空きディスクを Markdown で吐く。
+- `tools/h3_prompt_convert.py` + `tools/h3_prompt_rules.md` — 日本語の場面メモ → H3 プロンプト。
+  **知見が増えたら Python ではなく `h3_prompt_rules.md` を編集する。**
 
 Artifact には `db` capability がある。**具体的な相談を受けたら、まず `read_db` で読んでから答えること**
 （推測より実測が優先）。
@@ -119,9 +126,52 @@ ModelTC が Ref2VA 用ワークフロー JSON（`video_minimax_h3_ref2v_lightx2v
 
 ## 生成設定の既定値
 
-cfg **1.0** / sampler **euler + simple**（10Eros-Max beta4 は LCM/simple 6〜8 step も可）/
-sigma shift は上表 / steps **20〜32**（素）・**4〜8**（Turbo）・**6〜8**（beta4）/
-解像度 **0.2〜0.8 MP** / 最大 15 秒・24 fps。
+cfg **1.0** / sampler **euler + simple** / sigma shift は上表 /
+steps **20〜32**（素）・**4〜8**（Turbo）・**6**（beta4。実測で決着）/ 解像度 **0.2〜1.0 MP**。
+
+### 現行のベースライン（beta4 採用済み）`実測`
+
+モデル `10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot` / **turbo LoRA はバイパス** /
+`euler` / `simple` / **6 step** / ref2va か t2va。
+base に戻すなら turbo LoRA 有効 / `res_multistep` / 8 step。**混ぜると二重掛けになる。**
+
+**4 step は使わない。** 音声 Peak が −0.1〜−1.6 dB で割れる（実用域は −7 dB 前後）。
+**0.4MP だと映像は一見きれいに出るので、映像だけ見て判断すると必ず間違える。**
+
+### 尺 — 「最大 15 秒」は公式仕様であって実機の上限ではない `実測`
+
+**24fps / `length % 17 == 5` の格子**（5, 22, 39, 56 …）。指定秒数は次の格子点に切り上がる。
+
+| 尺 | フレーム | 実測 |
+|---|---|---|
+| 15 秒 | 362f | 194.0 秒・OOM なし（Ref2VA + 参照 3 枚 / 0.4MP / 6 step）|
+| 20.042 秒 | 481f | 274.7 秒・**破綻無し**。公式仕様の外だが通る |
+| **25.000 秒** | **600f** | 363.0 秒。20 秒と同じ性格のまま。**運用はここで固定** |
+| 30.667 秒 | 736f | 484.2 秒。完走はするが **3 指標が同時に曲がる** |
+
+**30 秒を落とした理由は品質ではなく VRAM 余裕が 694 MiB しかないこと。**
+目視・試聴では差が無かった。**32GB を借りたら真っ先に 30 秒を再確認すること。**
+
+**→ 1 分は「25 秒 × 3 本・継ぎ目 2」で作る。**
+
+**VRAM ピークは OOM 接近の指標にならない。** Dynamic VRAM が活性化領域に合わせて
+常駐重みを降ろすので、解像度と尺を上げるとサンプリング中の VRAM はむしろ減る。
+
+## プロンプトを作るとき
+
+**`tools/h3_prompt_convert.py`（変換器）と `tools/h3_prompt_rules.md`（知識パック）がある。**
+日本語の場面メモから H3 の公式フィールドを起こす。ローカルの llama-server（177B）に繋ぐ。
+
+- **プロンプトは 5 層**（被写体定義 → 要約 → retention → 詳細記述 → 制約と音声）。
+  外すと**キャラがシーン説明文を読み上げる**
+- **発話は `<d>[Japanese]…</d>` でくくる。** 話者 ID `(S1)` と喋り方はタグの外
+- **否定形は効かない。** 無音は「口を閉じて黙考している」と肯定形で描く
+- **クリップ長は台詞の実尺から決める。** 余ると H3 は雑音で埋め、キャラがそれにリップシンクする
+- **出力音声は常に合成される**（公式）。日本語アクセントの答えは **TTS への差し替え**
+- 数値の話（格子・上限・モーラ予算）は変換器が計算する。**手で数えない**
+
+`python tools/h3_prompt_convert.py lint scene.yaml` は LLM 無しで走るので、
+既存のプロンプト設計を検査するだけならこれでよい。
 
 ## 罠（毎回確認する）
 
